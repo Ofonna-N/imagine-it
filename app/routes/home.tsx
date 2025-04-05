@@ -45,7 +45,12 @@ export default function Home() {
         <Typography variant="h3" component="h1" gutterBottom>
           Welcome to Imagine It
         </Typography>
-        <Typography variant="h5" color="text.secondary" paragraph>
+        <Typography
+          variant="h5"
+          color="text.secondary"
+          component="p"
+          sx={{ mb: 2 }}
+        >
           Custom merchandise designed with AI - bring your ideas to life
         </Typography>
         <Button
@@ -74,7 +79,7 @@ export default function Home() {
             <Typography variant="h5" component="h2" gutterBottom>
               Create
             </Typography>
-            <Typography paragraph>
+            <Typography component="p">
               Use our AI-powered design playground to create unique designs for
               your merchandise.
             </Typography>
@@ -93,7 +98,7 @@ export default function Home() {
             <Typography variant="h5" component="h2" gutterBottom>
               Customize
             </Typography>
-            <Typography paragraph>
+            <Typography component="p">
               Apply your designs to a wide range of products - from t-shirts to
               mugs and more.
             </Typography>
@@ -112,7 +117,7 @@ export default function Home() {
             <Typography variant="h5" component="h2" gutterBottom>
               Order
             </Typography>
-            <Typography paragraph>
+            <Typography component="p">
               Get your custom merchandise delivered right to your doorstep with
               our fast shipping.
             </Typography>
@@ -125,7 +130,7 @@ export default function Home() {
         <Typography variant="h4" component="h2" gutterBottom align="center">
           Featured Products
         </Typography>
-        <Typography variant="body1" paragraph align="center" sx={{ mb: 4 }}>
+        <Typography variant="body1" component="p" align="center" sx={{ mb: 4 }}>
           Browse our most popular items ready for your creative designs
         </Typography>
 

@@ -1,5 +1,5 @@
 import { CssBaseline } from "@mui/material";
-import { ThemeProvider } from "./ThemeProvider";
+import { ThemeProvider } from "./theme_provider";
 import type { ReactNode } from "react";
 
 interface MuiProviderProps {
@@ -10,7 +10,7 @@ interface MuiProviderProps {
  * MuiProvider handles all Material-UI related providers
  * Currently includes ThemeProvider and CssBaseline
  */
-export function MuiProvider({ children }: MuiProviderProps) {
+export function MuiProvider({ children }: Readonly<MuiProviderProps>) {
   return (
     <ThemeProvider>
       <CssBaseline />

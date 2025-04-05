@@ -76,121 +76,116 @@ export default function Orders() {
             </TableHead>
             <TableBody>
               {orders.map((order) => (
-                <>
-                  <TableRow key={order.id}>
-                    <TableCell component="th" scope="row">
-                      {order.id}
-                    </TableCell>
-                    <TableCell>
-                      {new Date(order.date).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={order.status}
-                        color={
-                          order.status === "Delivered"
-                            ? "success"
-                            : order.status === "Shipped"
-                            ? "info"
-                            : order.status === "Processing"
-                            ? "warning"
-                            : "default"
-                        }
-                        size="small"
-                      />
-                    </TableCell>
-                    <TableCell align="right">
-                      ${order.total.toFixed(2)}
-                    </TableCell>
-                    <TableCell align="right">
-                      <Accordion
-                        sx={{
-                          boxShadow: "none",
-                          "&:before": { display: "none" },
-                        }}
-                      >
-                        <AccordionSummary expandIcon={<FiChevronDown />}>
-                          <Typography variant="body2">Details</Typography>
-                        </AccordionSummary>
-                        <AccordionDetails>
-                          <Typography variant="subtitle2" gutterBottom>
-                            Items
-                          </Typography>
-                          {order.items.map((item, index) => (
-                            <Box
-                              key={index}
-                              sx={{
-                                display: "flex",
-                                justifyContent: "space-between",
-                                mb: 1,
-                              }}
-                            >
-                              <Typography variant="body2">
-                                {item.name} x {item.quantity}
-                              </Typography>
-                              <Typography variant="body2">
-                                ${(item.price * item.quantity).toFixed(2)}
-                              </Typography>
-                            </Box>
-                          ))}
-
-                          <Divider sx={{ my: 2 }} />
-
-                          <Grid container spacing={2}>
-                            <Grid size={{ xs: 12, sm: 6 }}>
-                              <Typography variant="subtitle2" gutterBottom>
-                                Shipping Address
-                              </Typography>
-                              <Typography variant="body2">
-                                {order.shippingAddress}
-                              </Typography>
-                            </Grid>
-
-                            <Grid size={{ xs: 12, sm: 6 }}>
-                              <Typography variant="subtitle2" gutterBottom>
-                                Tracking
-                              </Typography>
-                              {order.trackingNumber ? (
-                                <>
-                                  <Typography variant="body2">
-                                    {order.trackingNumber}
-                                  </Typography>
-                                  <Button
-                                    size="small"
-                                    startIcon={<FiPackage />}
-                                    sx={{ mt: 1 }}
-                                  >
-                                    Track Package
-                                  </Button>
-                                </>
-                              ) : (
-                                <Typography
-                                  variant="body2"
-                                  color="text.secondary"
-                                >
-                                  Tracking will be available when your order
-                                  ships
-                                </Typography>
-                              )}
-                            </Grid>
-                          </Grid>
-
+                <TableRow key={order.id}>
+                  <TableCell component="th" scope="row">
+                    {order.id}
+                  </TableCell>
+                  <TableCell>
+                    {new Date(order.date).toLocaleDateString()}
+                  </TableCell>
+                  <TableCell>
+                    <Chip
+                      label={order.status}
+                      color={
+                        order.status === "Delivered"
+                          ? "success"
+                          : order.status === "Shipped"
+                          ? "info"
+                          : order.status === "Processing"
+                          ? "warning"
+                          : "default"
+                      }
+                      size="small"
+                    />
+                  </TableCell>
+                  <TableCell align="right">${order.total.toFixed(2)}</TableCell>
+                  <TableCell align="right">
+                    <Accordion
+                      sx={{
+                        boxShadow: "none",
+                        "&:before": { display: "none" },
+                      }}
+                    >
+                      <AccordionSummary expandIcon={<FiChevronDown />}>
+                        <Typography variant="body2">Details</Typography>
+                      </AccordionSummary>
+                      <AccordionDetails>
+                        <Typography variant="subtitle2" gutterBottom>
+                          Items
+                        </Typography>
+                        {order.items.map((item, index) => (
                           <Box
+                            key={index}
                             sx={{
-                              mt: 2,
                               display: "flex",
-                              justifyContent: "flex-end",
+                              justifyContent: "space-between",
+                              mb: 1,
                             }}
                           >
-                            <Button startIcon={<FiMail />} size="small">
-                              Contact Support
-                            </Button>
+                            <Typography variant="body2">
+                              {item.name} x {item.quantity}
+                            </Typography>
+                            <Typography variant="body2">
+                              ${(item.price * item.quantity).toFixed(2)}
+                            </Typography>
                           </Box>
-                        </AccordionDetails>
-                      </Accordion>
-                    </TableCell>
-                  </TableRow>
-                </>
+                        ))}
+
+                        <Divider sx={{ my: 2 }} />
+
+                        <Grid container spacing={2}>
+                          <Grid size={{ xs: 12, sm: 6 }}>
+                            <Typography variant="subtitle2" gutterBottom>
+                              Shipping Address
+                            </Typography>
+                            <Typography variant="body2">
+                              {order.shippingAddress}
+                            </Typography>
+                          </Grid>
+
+                          <Grid size={{ xs: 12, sm: 6 }}>
+                            <Typography variant="subtitle2" gutterBottom>
+                              Tracking
+                            </Typography>
+                            {order.trackingNumber ? (
+                              <>
+                                <Typography variant="body2">
+                                  {order.trackingNumber}
+                                </Typography>
+                                <Button
+                                  size="small"
+                                  startIcon={<FiPackage />}
+                                  sx={{ mt: 1 }}
+                                >
+                                  Track Package
+                                </Button>
+                              </>
+                            ) : (
+                              <Typography
+                                variant="body2"
+                                color="text.secondary"
+                              >
+                                Tracking will be available when your order ships
+                              </Typography>
+                            )}
+                          </Grid>
+                        </Grid>
+
+                        <Box
+                          sx={{
+                            mt: 2,
+                            display: "flex",
+                            justifyContent: "flex-end",
+                          }}
+                        >
+                          <Button startIcon={<FiMail />} size="small">
+                            Contact Support
+                          </Button>
+                        </Box>
+                      </AccordionDetails>
+                    </Accordion>
+                  </TableCell>
+                </TableRow>
               ))}
             </TableBody>
           </Table>

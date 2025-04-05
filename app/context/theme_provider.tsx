@@ -28,7 +28,9 @@ const ThemeContext = createContext<ThemeContextType>({
 export const useTheme = () => useContext(ThemeContext);
 
 // Theme provider component
-export function ThemeProvider({ children }: { children: React.ReactNode }) {
+export function ThemeProvider({
+  children,
+}: Readonly<{ children: React.ReactNode }>) {
   // Get initial theme from local storage or default to light
   const [mode, setMode] = useState<PaletteMode>(() => {
     if (typeof window !== "undefined") {

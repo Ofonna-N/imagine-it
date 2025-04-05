@@ -71,7 +71,7 @@ export default function ProductListing() {
       <Typography variant="h4" component="h1" gutterBottom>
         Products
       </Typography>
-      <Typography variant="body1" paragraph>
+      <Typography variant="body1" component="p" sx={{ mb: 2 }}>
         Choose a product to customize with your designs
       </Typography>
 

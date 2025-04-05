@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { MuiProvider } from "./MuiProvider";
+import { MuiProvider } from "./mui_provider";
 
 interface AppProvidersProps {
   children: ReactNode;
@@ -9,7 +9,7 @@ interface AppProvidersProps {
  * AppProviders is the top-level provider component that composes all application providers
  * Add additional providers here as your application grows (auth, data fetching, etc.)
  */
-export function AppProviders({ children }: AppProvidersProps) {
+export function AppProviders({ children }: Readonly<AppProvidersProps>) {
   return (
     <MuiProvider>
       {/* Add additional providers here as needed */}
