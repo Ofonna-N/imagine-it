@@ -50,7 +50,7 @@ export default function Layout() {
     <div>
       <Toolbar>
         <Typography variant="h6" noWrap component="div">
-          Image-It
+          Imagine It
         </Typography>
       </Toolbar>
       <Divider />
@@ -95,7 +95,7 @@ export default function Layout() {
             <FiMenu />
           </IconButton>
           <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-            Image-It
+            Imagine It
           </Typography>
           <Button color="inherit" component={Link} to="/checkout">
             Checkout

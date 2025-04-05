@@ -1,3 +1,5 @@
+# Imagine It
+
 An innovative e-commerce platform that lets you browse products and customize them with your own AI-generated designs before purchasing.
 
 ## 🚀 Features
@@ -57,7 +59,7 @@ yarn install
 ## 📖 Project Structure
 
 ```
-picture-me/
+imagine-it/
 ├── README.md
 ├── package.json
 ├── tsconfig.json
@@ -101,8 +103,8 @@ The app integrates with Replicate API to generate images based on text prompts. 
 The project includes a Dockerfile for containerized deployment:
 
 ```bash
-docker build -t picture-me .
-docker run -p 3000:3000 picture-me
+docker build -t imagine-it .
+docker run -p 3000:3000 imagine-it
 ```
 
 ### Deployment Platforms

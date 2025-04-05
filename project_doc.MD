@@ -1,3 +1,5 @@
+# Imagine It - Project Documentation
+
 # Considerations: React Router (v6+/Remix) vs. Next.js
 
 When choosing between Next.js and React Router (especially as used in Remix or modern standalone setups) for your React application, here are the key factors to consider:
