@@ -7,7 +7,7 @@ export default function Home() {
     <Box sx={{ mt: 4 }}>
       <Box sx={{ mb: 6, textAlign: "center" }}>
         <Typography variant="h3" component="h1" gutterBottom>
-          Welcome to Image-It
+          Welcome to Imagine It
         </Typography>
         <Typography variant="h5" color="text.secondary" paragraph>
           Custom merchandise designed with AI - bring your ideas to life
