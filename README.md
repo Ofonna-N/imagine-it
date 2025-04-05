@@ -116,6 +116,18 @@ This application can be deployed to:
 - Railway
 - Any platform supporting Node.js or Docker containers
 
+## 🎨 Theme Configuration
+
+The application comes with a fully configured Material UI theme system that provides:
+
+- Light and dark mode support
+- Theme persistence using localStorage
+- System preference detection
+- Smooth theme transitions
+- Customizable color palette
+
+You can toggle between light and dark themes using the theme switcher in the navigation bar.
+
 ## 📄 API Integration
 
 ### Printful API
