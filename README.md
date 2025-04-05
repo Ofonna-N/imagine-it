@@ -1,87 +1,139 @@
-# Welcome to React Router!
+An innovative e-commerce platform that lets you browse products and customize them with your own AI-generated designs before purchasing.
 
-A modern, production-ready template for building full-stack React applications using React Router.
+## 🚀 Features
 
-[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/remix-run/react-router-templates/tree/main/default)
+- **Product Catalog:** Browse a variety of customizable products pulled from Printful
+- **AI Image Generation:** Create unique designs using text prompts powered by Replicate AI
+- **Product Customization:** Place your AI-generated designs on products before purchase
+- **Interactive Preview:** See how your designs look on products in real-time
+- **Responsive Design:** Fully functional on mobile, tablet, and desktop
 
-## Features
+## 🛠️ Tech Stack
 
-- 🚀 Server-side rendering
-- ⚡️ Hot Module Replacement (HMR)
-- 📦 Asset bundling and optimization
-- 🔄 Data loading and mutations
-- 🔒 TypeScript by default
-- 🎉 TailwindCSS for styling
-- 📖 [React Router docs](https://reactrouter.com/)
+### Frontend
 
-## Getting Started
+- React 19: Modern UI library
+- React Router 7: Next-gen routing with built-in SSR capability
+- Material UI 7: Component library for sleek, responsive UI
+- TanStack Query: Data fetching, caching, and state management
+- Swiper: Touch-enabled slider for product images
+- React Hook Form: Form handling with Zod validation
+- TypeScript: Static typing for improved developer experience
+
+### Backend & Services
+
+- Node.js: Server-side JavaScript runtime
+- Printful API: Product catalog and fulfillment
+- Replicate API: AI image generation
+- Vite: Fast and efficient build tool
+
+## 📋 Prerequisites
+
+- Node.js (v18+)
+- npm or yarn
+- Printful API credentials
+- Replicate API token
+
+## 🚀 Getting Started
+
+### Environment Setup
+
+Create a `.env` file in the root directory with the following variables:
+
+```
+# Example .env
+PRINTFUL_API_KEY=your_printful_api_key
+REPLICATE_API_TOKEN=your_replicate_api_token
+```
 
 ### Installation
 
-Install the dependencies:
-
 ```bash
 npm install
+# or
+yarn install
 ```
 
-### Development
+## 📖 Project Structure
 
-Start the development server with HMR:
-
-```bash
-npm run dev
+```
+picture-me/
+├── README.md
+├── package.json
+├── tsconfig.json
+├── .env
+├── app/
+│   ├── routes/
+│   │   ├── product_listing.tsx
+│   │   ├── product_detail.tsx
+│   │   └── image_gen_playground.tsx
+│   └── components/
+│       ├── ProductCard.tsx
+│       └── ImageGenerator.tsx
+├── public/
+│   └── assets/
+└── server.js
 ```
 
-Your application will be available at `http://localhost:5173`.
+## 🖼️ Key Features Explained
 
-## Building for Production
+### Product Browsing
 
-Create a production build:
+The product listing page (`app/routes/product_listing.tsx`) displays products fetched from the Printful API, with filtering options by category and responsive grid layouts.
 
-```bash
-npm run build
-```
+### Product Customization
 
-## Deployment
+The product detail page (`app/routes/product_detail.tsx`) allows users to:
+
+- Select product variants (color, size)
+- Generate AI images using text prompts
+- Preview the generated design on the product
+- Add customized products to cart
+
+### AI Image Generation
+
+The app integrates with Replicate API to generate images based on text prompts. This functionality is available in the product detail page and the AI image generation playground (`app/routes/image_gen_playground.tsx`).
+
+## 🚢 Deployment
 
 ### Docker Deployment
 
-To build and run using Docker:
+The project includes a Dockerfile for containerized deployment:
 
 ```bash
-docker build -t my-app .
-
-# Run the container
-docker run -p 3000:3000 my-app
+docker build -t picture-me .
+docker run -p 3000:3000 picture-me
 ```
 
-The containerized application can be deployed to any platform that supports Docker, including:
+### Deployment Platforms
 
-- AWS ECS
+This application can be deployed to:
+
+- Vercel (optimized with `@vercel/react-router`)
+- AWS (EC2, ECS, or Elastic Beanstalk)
 - Google Cloud Run
-- Azure Container Apps
-- Digital Ocean App Platform
-- Fly.io
+- Heroku
 - Railway
+- Any platform supporting Node.js or Docker containers
 
-### DIY Deployment
+## 📄 API Integration
 
-If you're familiar with deploying Node applications, the built-in app server is production-ready.
+### Printful API
 
-Make sure to deploy the output of `npm run build`
+Used for fetching product catalogs, variants, and generating mockups. API endpoints are called from server-side loaders to protect API credentials.
 
-```
-├── package.json
-├── package-lock.json (or pnpm-lock.yaml, or bun.lockb)
-├── build/
-│   ├── client/    # Static assets
-│   └── server/    # Server-side code
-```
+### Replicate API
 
-## Styling
+Powers the AI image generation feature using Stability AI's SDXL model.
 
-This template comes with [Tailwind CSS](https://tailwindcss.com/) already configured for a simple default starting experience. You can use whatever CSS framework you prefer.
+## 🤝 Contributing
 
----
+1.  Fork the repository
+2.  Create your feature branch (`git checkout -b feature/amazing-feature`)
+3.  Commit your changes (`git commit -m 'Add some amazing feature')
+4.  Push to the branch (`git push origin feature/amazing-feature`)
+5.  Open a Pull Request
 
-Built with ❤️ using React Router.
+## 📝 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
