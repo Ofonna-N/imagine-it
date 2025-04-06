@@ -27,8 +27,6 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
             id={product.id}
             name={product.title}
             thumbnailUrl={product.image}
-            variantCount={product.variant_count}
-            category={product.main_category_id.toString()}
             featured={featured}
           />
         ))}
