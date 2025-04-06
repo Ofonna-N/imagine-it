@@ -14,7 +14,10 @@ interface ProductCardProps {
   id: string | number;
   name: string;
   thumbnailUrl: string;
-  price: string | number;
+  // Make price optional
+  price?: string | number;
+  // Add variant count as alternative
+  variantCount?: number;
   category: string;
   featured?: boolean;
 }
@@ -24,6 +27,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   name,
   thumbnailUrl,
   price,
+  variantCount,
   category,
   featured = false,
 }) => {
@@ -58,14 +62,22 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               alignItems: "center",
             }}
           >
-            <Typography variant="body1" color="text.secondary">
-              $
-              {price === null || price === undefined
-                ? "0.00"
-                : typeof price === "string"
-                ? Number(price).toFixed(2)
-                : price.toFixed(2)}
-            </Typography>
+            {price ? (
+              <Typography variant="body1" color="text.secondary">
+                $
+                {typeof price === "string"
+                  ? Number(price).toFixed(2)
+                  : price.toFixed(2)}
+              </Typography>
+            ) : variantCount ? (
+              <Typography variant="body1" color="text.secondary">
+                {variantCount} {variantCount === 1 ? "option" : "options"}
+              </Typography>
+            ) : (
+              <Typography variant="body1" color="text.secondary">
+                See pricing
+              </Typography>
+            )}
             <Chip
               label={category}
               size="small"
