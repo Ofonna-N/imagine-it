@@ -125,17 +125,13 @@ export default function Home({ loaderData }: Readonly<Route.ComponentProps>) {
               variant="body1"
               component="p"
               align="center"
-              sx={{ mb: 4 }}
+              sx={{ mb: 2 }}
             >
               We've randomly selected these gems for your inspiration!
             </Typography>
-          </Box>
-        </Fade>
 
-        {products && products.length > 0 ? (
-          <>
-            <ProductGrid catalogProducts={products} featured />
-            <Box sx={{ display: "flex", justifyContent: "center", mt: 3 }}>
+            {/* Moved the button here, above the product grid */}
+            <Box sx={{ display: "flex", justifyContent: "center", mb: 4 }}>
               <Button
                 variant="outlined"
                 onClick={handleRefresh}
@@ -149,7 +145,11 @@ export default function Home({ loaderData }: Readonly<Route.ComponentProps>) {
                 Shuffle New Lucky Products
               </Button>
             </Box>
-          </>
+          </Box>
+        </Fade>
+
+        {products && products.length > 0 ? (
+          <ProductGrid catalogProducts={products} featured />
         ) : (
           <Alert severity="info" sx={{ mb: 2 }}>
             No lucky products found. Please try again later!
