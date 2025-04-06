@@ -15,7 +15,7 @@ export async function loader({ request }: { request: Request }) {
 
     // Get all catalog products
     const response = await fetchCatalogProducts({
-      categoryId: category || undefined,
+      categoryId: category ?? undefined, // Changed || to ??
     });
 
     if (!response) {

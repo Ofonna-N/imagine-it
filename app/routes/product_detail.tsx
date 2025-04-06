@@ -42,7 +42,6 @@ export default function ProductDetail() {
 
   const { product, variants } = catalogProductResponse.result;
   const [selectedVariantIndex, setSelectedVariantIndex] = useState(0);
-  const [activeTab, setActiveTab] = useState(0);
 
   const selectedVariant = variants[selectedVariantIndex];
 
@@ -54,7 +53,7 @@ export default function ProductDetail() {
     const variantWithColor = variants.find((v) => v.color === color);
     return {
       color,
-      colorCode: variantWithColor?.color_code || "",
+      colorCode: variantWithColor?.color_code ?? "",
     };
   });
 
@@ -193,7 +192,7 @@ export default function ProductDetail() {
                             ? "#ffffff"
                             : color === "Black"
                             ? "#000000"
-                            : colorCode, // Use each color's own color code
+                            : colorCode,
                         border: "2px solid",
                         borderColor:
                           color === selectedVariant.color
@@ -310,7 +309,7 @@ export default function ProductDetail() {
                     Product Specifications
                   </Typography>
                   <Box component="ul" sx={{ pl: 2, mt: 1 }}>
-                    <li>Brand: {product.brand}</li>
+                    {product.brand && <li>Brand: {product.brand}</li>}
                     <li>Type: {product.type_name}</li>
                     <li>Origin: {product.origin_country}</li>
                     <li>

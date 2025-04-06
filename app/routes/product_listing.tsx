@@ -73,12 +73,14 @@ export default function ProductListing() {
           placeholder="Search products..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <FiSearch />
-              </InputAdornment>
-            ),
+          slotProps={{
+            input: {
+              startAdornment: (
+                <InputAdornment position="start">
+                  <FiSearch />
+                </InputAdornment>
+              ),
+            },
           }}
         />
       </Paper>
