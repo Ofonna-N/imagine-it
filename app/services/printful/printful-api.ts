@@ -68,7 +68,7 @@ export async function fetchCatalogProductById(productId: string) {
  * Fetches featured products
  */
 export async function fetchCatalogFeaturedProducts(
-  limit: number = 8
+  limit: number = 6
 ): Promise<PrintfulCatalogProductsList> {
   try {
     const response = await fetchCatalogProducts();
@@ -82,8 +82,22 @@ export async function fetchCatalogFeaturedProducts(
     // The result field contains the array of products directly
     const productsArray = response.result;
 
-    // Select a subset as featured
-    const featured = productsArray.slice(0, limit);
+    // Ensure limit doesn't exceed array length
+    const actualLimit = Math.min(limit, productsArray.length);
+
+    // Create an array of featured products by selecting random indices
+    const featured = [];
+    const usedIndices = new Set<number>();
+
+    while (featured.length < actualLimit) {
+      const randomIndex = Math.floor(Math.random() * productsArray.length);
+
+      // Avoid duplicates
+      if (!usedIndices.has(randomIndex)) {
+        usedIndices.add(randomIndex);
+        featured.push(productsArray[randomIndex]);
+      }
+    }
 
     return featured;
   } catch (error) {
