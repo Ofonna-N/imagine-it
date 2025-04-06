@@ -12,8 +12,9 @@ import { ProductGrid } from "~/features/product/components/ProductGrid";
 import type { Route } from "./+types/home";
 import { useQueryClient } from "@tanstack/react-query";
 import { FaStar, FaMagic } from "react-icons/fa";
+import { FiShoppingBag } from "react-icons/fi";
+import { Link, useRevalidator } from "react-router"; // Combined imports from react-router
 import { queryClient } from "~/context/query_provider";
-import { useRevalidator } from "react-router";
 
 // Define the pulse animation using MUI's keyframes
 const pulseAnimation = keyframes`
@@ -130,8 +131,10 @@ export default function Home({ loaderData }: Readonly<Route.ComponentProps>) {
               We've randomly selected these gems for your inspiration!
             </Typography>
 
-            {/* Moved the button here, above the product grid */}
-            <Box sx={{ display: "flex", justifyContent: "center", mb: 4 }}>
+            {/* Action buttons */}
+            <Box
+              sx={{ display: "flex", justifyContent: "center", mb: 4, gap: 2 }}
+            >
               <Button
                 variant="outlined"
                 onClick={handleRefresh}
@@ -143,6 +146,14 @@ export default function Home({ loaderData }: Readonly<Route.ComponentProps>) {
                 }}
               >
                 Shuffle New Lucky Products
+              </Button>
+              <Button
+                variant="contained"
+                component={Link}
+                to="/products"
+                startIcon={<FiShoppingBag />}
+              >
+                View All Products
               </Button>
             </Box>
           </Box>
