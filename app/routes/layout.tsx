@@ -3,7 +3,6 @@ import { Outlet, Link, useLocation } from "react-router";
 import {
   AppBar,
   Box,
-  CssBaseline,
   Divider,
   Drawer,
   IconButton,
@@ -18,13 +17,15 @@ import {
   Container,
 } from "@mui/material";
 // Replace Material UI icons with React Icons
-import { FiMenu } from "react-icons/fi";
-import { FiHome } from "react-icons/fi";
-import { FiShoppingBag } from "react-icons/fi";
-import { FiShoppingCart } from "react-icons/fi";
-import { FiEdit } from "react-icons/fi";
-import { FiFileText } from "react-icons/fi";
-import { FiImage } from "react-icons/fi";
+import {
+  FiMenu,
+  FiImage,
+  FiFileText,
+  FiEdit,
+  FiShoppingCart,
+  FiShoppingBag,
+  FiHome,
+} from "react-icons/fi";
 
 const drawerWidth = 240;
 
@@ -76,7 +77,6 @@ export default function Layout() {
 
   return (
     <Box sx={{ display: "flex" }}>
-      <CssBaseline />
       <AppBar
         position="fixed"
         sx={{
