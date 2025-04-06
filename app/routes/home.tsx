@@ -1,49 +1,164 @@
-import { Typography, Box, CircularProgress, Alert } from "@mui/material";
+import {
+  Typography,
+  Box,
+  Alert,
+  Skeleton,
+  Grid,
+  Button,
+  Fade,
+  keyframes,
+} from "@mui/material";
 import { ProductGrid } from "~/features/product/components/ProductGrid";
-import useQueryFeaturedProducts from "~/features/product/hooks/useFeaturedProducts";
+import type { Route } from "./+types/home";
+import { useQueryClient } from "@tanstack/react-query";
+import { FaStar, FaMagic } from "react-icons/fa";
+import { queryClient } from "~/context/query_provider";
 
-export default function Home() {
-  // Use our custom hook to fetch featured products
-  const {
-    data: products,
-    isLoading,
-    isError,
-    error,
-  } = useQueryFeaturedProducts();
+// Define the pulse animation using MUI's keyframes
+const pulseAnimation = keyframes`
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.2);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+`;
 
-  // Determine the source of data and if the request was successful
-  const source = products?.length ? "api" : "mock";
-  const ok = !isError && !!products;
+// React Router client loader using the Query Client
+export async function clientLoader() {
+  // Use the query client to fetch and cache the data with 1-hour stale time
+  const products = await queryClient.fetchQuery({
+    queryKey: ["featuredProducts"],
+    queryFn: async () => {
+      const response = await fetch("/api/products/featured");
+      return response.json();
+    },
+    staleTime: 10 * 60 * 1000, // 10 minutes
+  });
+
+  return { products };
+}
+
+export function HydrateFallback() {
+  return (
+    <Box sx={{ mt: 4, textAlign: "center" }}>
+      <Typography variant="h4" gutterBottom>
+        <FaStar
+          style={{
+            marginRight: "8px",
+            animation: `${pulseAnimation} 1.5s infinite`,
+          }}
+        />
+        Discovering Lucky Products
+      </Typography>
+      <Typography variant="body1" sx={{ mb: 4 }}>
+        Hold tight while we curate a special selection just for you!
+      </Typography>
+
+      <Grid container spacing={3}>
+        {Array.from(new Array(6)).map((_, index) => (
+          <Grid size={{ xs: 12, sm: 6, md: 4 }} key={index}>
+            <Box sx={{ width: "100%", my: 1 }}>
+              <Skeleton
+                variant="rectangular"
+                width="100%"
+                height={200}
+                sx={{ mb: 1 }}
+              />
+              <Skeleton variant="text" width="80%" height={32} sx={{ mb: 1 }} />
+              <Skeleton variant="text" width="40%" />
+            </Box>
+          </Grid>
+        ))}
+      </Grid>
+    </Box>
+  );
+}
+
+export default function Home({ loaderData }: Readonly<Route.ComponentProps>) {
+  const { products } = loaderData;
+  const queryClient = useQueryClient();
+
+  // Function to manually refresh products
+  const handleRefresh = async () => {
+    // Invalidate and refetch
+    await queryClient.invalidateQueries({ queryKey: ["featuredProducts"] });
+
+    // Force a fresh fetch from the server
+    await queryClient.fetchQuery({
+      queryKey: ["featuredProducts"],
+      queryFn: async () => {
+        const response = await fetch("/api/products/featured");
+        return response.json();
+      },
+    });
+  };
 
   return (
     <Box sx={{ mt: 4 }}>
-      {/* Featured Products Section */}
+      {/* Lucky Products Section */}
       <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" component="h2" gutterBottom align="center">
-          Featured Products
-        </Typography>
-        <Typography variant="body1" component="p" align="center" sx={{ mb: 4 }}>
-          Browse our most popular items ready for your creative designs
-        </Typography>
-
-        {isError && (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            {error?.message ?? "Failed to load products"}
-          </Alert>
-        )}
-
-        {source === "mock" && (
-          <Alert severity="info" sx={{ mb: 2 }}>
-            Using sample data. Connect to Printful API for live products.
-          </Alert>
-        )}
-
-        {!isLoading && products && products.length > 0 ? (
-          <ProductGrid catalogProducts={products} featured />
-        ) : (
-          <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
-            <CircularProgress />
+        <Fade in={true} timeout={800}>
+          <Box>
+            <Typography
+              variant="h4"
+              component="h2"
+              gutterBottom
+              align="center"
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <FaMagic
+                style={{
+                  marginRight: "8px",
+                  color: "#1976d2", // primary color
+                  animation: `${pulseAnimation} 2.5s infinite`,
+                }}
+              />
+              Today's Lucky Finds
+            </Typography>
+            <Typography
+              variant="body1"
+              component="p"
+              align="center"
+              sx={{ mb: 4 }}
+            >
+              We've randomly selected these gems for your inspiration!
+            </Typography>
           </Box>
+        </Fade>
+
+        {products && products.length > 0 ? (
+          <>
+            <ProductGrid catalogProducts={products} featured />
+            <Box sx={{ display: "flex", justifyContent: "center", mt: 3 }}>
+              <Button
+                variant="outlined"
+                onClick={handleRefresh}
+                startIcon={<FaStar />}
+                sx={{
+                  "&:hover svg": {
+                    animation: `${pulseAnimation} 1s`,
+                  },
+                }}
+              >
+                Shuffle New Lucky Products
+              </Button>
+            </Box>
+          </>
+        ) : (
+          <Alert severity="info" sx={{ mb: 2 }}>
+            No lucky products found. Please try again later!
+          </Alert>
         )}
       </Box>
     </Box>
