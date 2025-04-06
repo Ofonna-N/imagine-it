@@ -162,11 +162,13 @@ export default function ProductDetail() {
                     color="primary"
                     variant="outlined"
                   />
-                  <Chip
-                    label={product.brand}
-                    color="secondary"
-                    variant="outlined"
-                  />
+                  {product.brand && (
+                    <Chip
+                      label={product.brand}
+                      color="secondary"
+                      variant="outlined"
+                    />
+                  )}
                 </Stack>
                 <Typography variant="h5" color="primary" fontWeight="bold">
                   ${parseFloat(selectedVariant.price).toFixed(2)}
