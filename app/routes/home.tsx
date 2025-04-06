@@ -13,6 +13,7 @@ import type { Route } from "./+types/home";
 import { useQueryClient } from "@tanstack/react-query";
 import { FaStar, FaMagic } from "react-icons/fa";
 import { queryClient } from "~/context/query_provider";
+import { useRevalidator } from "react-router";
 
 // Define the pulse animation using MUI's keyframes
 const pulseAnimation = keyframes`
@@ -84,20 +85,14 @@ export function HydrateFallback() {
 export default function Home({ loaderData }: Readonly<Route.ComponentProps>) {
   const { products } = loaderData;
   const queryClient = useQueryClient();
-
+  const revalidator = useRevalidator();
   // Function to manually refresh products
   const handleRefresh = async () => {
     // Invalidate and refetch
     await queryClient.invalidateQueries({ queryKey: ["featuredProducts"] });
 
     // Force a fresh fetch from the server
-    await queryClient.fetchQuery({
-      queryKey: ["featuredProducts"],
-      queryFn: async () => {
-        const response = await fetch("/api/products/featured");
-        return response.json();
-      },
-    });
+    revalidator.revalidate();
   };
 
   return (
