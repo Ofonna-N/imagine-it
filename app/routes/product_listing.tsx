@@ -1,10 +1,9 @@
 import { Typography, Box } from "@mui/material";
 import { ProductGrid } from "../features/product/components/ProductGrid";
-import { ProductFilter } from "../features/product/components/ProductFilter";
-import { useProducts } from "../features/product/hooks/useProducts";
+import useQueryFeaturedProducts from "~/features/product/hooks/useFeaturedProducts";
 
 export default function ProductListing() {
-  const { products, filterOptions, setCategory } = useProducts();
+  const { data: products, error, isLoading } = useQueryFeaturedProducts();
 
   return (
     <Box sx={{ mt: 4 }}>
@@ -15,12 +14,7 @@ export default function ProductListing() {
         Choose a product to customize with your designs
       </Typography>
 
-      <ProductFilter
-        category={filterOptions.category ?? ""}
-        onCategoryChange={setCategory}
-      />
-
-      <ProductGrid products={products} />
+      <ProductGrid catalogProductResponses={products ?? []} featured />
     </Box>
   );
 }

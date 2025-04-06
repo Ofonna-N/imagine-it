@@ -1,23 +1,37 @@
-import { Grid } from "@mui/material";
+import { Box } from "@mui/material";
 import { ProductCard } from "./ProductCard";
-import type { Product } from "~/types/printful";
+import type { PrintfulCatalogProductsList } from "~/types/printful";
 
 interface ProductGridProps {
-  products: Product[];
+  catalogProducts?: PrintfulCatalogProductsList;
   featured?: boolean;
 }
 
 export const ProductGrid: React.FC<ProductGridProps> = ({
-  products,
+  catalogProducts = [],
   featured = false,
 }) => {
   return (
-    <Grid container spacing={3}>
-      {products.map((product) => (
-        <Grid size={{ xs: 12, sm: 6, md: 4 }} key={product.id}>
-          <ProductCard product={product} featured={featured} />
-        </Grid>
-      ))}
-    </Grid>
+    <Box
+      sx={{
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
+        gap: 3,
+      }}
+    >
+      {/* Handle new format (PrintfulCatalogProductsList) */}
+      {catalogProducts.length > 0 &&
+        catalogProducts.map((product) => (
+          <ProductCard
+            key={product.id.toString()}
+            id={product.id}
+            name={product.title}
+            thumbnailUrl={product.image}
+            price={product.variant_count}
+            category={product.main_category_id.toString()}
+            featured={featured}
+          />
+        ))}
+    </Box>
   );
 };

@@ -1,4 +1,14 @@
-import type { Product } from "../types";
+type Product = {
+  id: string;
+  name: string;
+  price: number;
+  category: string;
+  image: string;
+  description: string;
+  details: {
+    [key: string]: string | number | boolean | undefined; // Flexible structure for product details
+  };
+};
 
 // Mock product data with proper type annotation
 export const products: { [key: string]: Product } = {

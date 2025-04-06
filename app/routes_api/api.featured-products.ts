@@ -1,46 +1,20 @@
-import { fetchFeaturedProducts } from "~/services/printful/printful-api";
-import { getFeaturedProducts } from "../features/product/api/mockData";
+import { fetchCatalogFeaturedProducts } from "~/services/printful/printful-api";
 
 /**
  * Resource route for featured products
  * Returns proper Response objects with appropriate status codes
  */
-export async function loader() {
-  try {
-    // Try to fetch from Printful API
-    const featuredProducts = await fetchFeaturedProducts(8);
+export async function loader({ request }: { request: Request }) {
+  const url = new URL(request.url);
+  const limit = parseInt(url.searchParams.get("limit") ?? "10", 10);
 
-    return new Response(
-      JSON.stringify({
-        products: featuredProducts,
-        source: "printful",
-      }),
-      {
-        status: 200,
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }
-    );
-  } catch (error) {
-    console.error("Error fetching featured products from Printful:", error);
-
-    // Fall back to mock data if API fails
-    const mockProducts = getFeaturedProducts();
-
-    return new Response(
-      JSON.stringify({
-        products: mockProducts,
-        source: "mock",
-        error: error instanceof Error ? error.message : "Unknown error",
-      }),
-      {
-        status: 200, // Still returning 200 since we're providing fallback data
-        headers: {
-          "Content-Type": "application/json",
-          "X-Data-Source": "mock",
-        },
-      }
-    );
-  }
+  // Get products filtered by category if provided
+  const featuredProducts = await fetchCatalogFeaturedProducts(limit);
+  console.log("Featured products:", featuredProducts);
+  return new Response(JSON.stringify(featuredProducts), {
+    status: 200,
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
 }

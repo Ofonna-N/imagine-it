@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { MuiProvider } from "./mui_provider";
+import { QueryProvider } from "./query_provider";
 
 interface AppProvidersProps {
   children: ReactNode;
@@ -11,9 +12,11 @@ interface AppProvidersProps {
  */
 export function AppProviders({ children }: Readonly<AppProvidersProps>) {
   return (
-    <MuiProvider>
-      {/* Add additional providers here as needed */}
-      {children}
-    </MuiProvider>
+    <QueryProvider>
+      <MuiProvider>
+        {/* Add additional providers here as needed */}
+        {children}
+      </MuiProvider>
+    </QueryProvider>
   );
 }

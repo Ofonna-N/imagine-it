@@ -23,55 +23,6 @@ export interface PrintfulVariant {
   availability_status: string;
 }
 
-// Sync product (product in your store)
-export interface PrintfulSyncProduct {
-  id: number;
-  external_id: string;
-  name: string;
-  variants: number;
-  synced: number;
-  thumbnail_url: string;
-  is_ignored: boolean;
-}
-
-// Sync variant
-export interface PrintfulSyncVariant {
-  id: number;
-  external_id: string;
-  sync_product_id: number;
-  name: string;
-  synced: boolean;
-  variant_id: number;
-  warehouse_product_variant_id: number;
-  retail_price: string;
-  sku: string;
-  currency: string;
-  product: {
-    variant_id: number;
-    product_id: number;
-    image: string;
-    name: string;
-  };
-  files: Array<{
-    id: number;
-    type: string;
-    hash: string;
-    url: string;
-    filename: string;
-    mime_type: string;
-    size: number;
-    width: number;
-    height: number;
-    dpi: number;
-    status: string;
-    created: number;
-    thumbnail_url: string;
-    preview_url: string;
-    visible: boolean;
-    is_temporary: boolean;
-  }>;
-}
-
 // Catalog file option
 export interface PrintfulFileOption {
   id: string;
@@ -165,26 +116,33 @@ export interface PrintfulCatalogVariant {
   material?: PrintfulMaterial[];
 }
 
-// Type aliases for common response types
-export type PrintfulCatalogResponse = PrintfulBaseResponse<
-  PrintfulSyncProduct[]
->;
-export type PrintfulProductResponse = PrintfulBaseResponse<{
-  sync_product: PrintfulSyncProduct;
-  sync_variants: PrintfulSyncVariant[];
-}>;
-
-// Catalog product response
+// Catalog product detail response (for single product with variants)
 export type PrintfulCatalogProductResponse = PrintfulBaseResponse<{
   product: PrintfulCatalogProduct;
   variants: PrintfulCatalogVariant[];
 }>;
 
-// Extended product type with our app-specific fields
-export type Product = PrintfulSyncProduct & {
-  description?: string;
-  category?: string;
-  isFeatured?: boolean;
-  variants?: PrintfulVariant[];
-  price?: string; // We'll use the lowest price from variants
-};
+// Catalog products list response (for multiple products without variants)
+export type PrintfulCatalogProductsResponse =
+  PrintfulBaseResponse<PrintfulCatalogProductsList>;
+
+// Type for catalog products list with expanded result definition
+export type PrintfulCatalogProductsList = {
+  id: number;
+  main_category_id: number;
+  type: string;
+  type_name: string;
+  title: string;
+  brand: string;
+  model: string;
+  image: string;
+  variant_count: number;
+  currency: string;
+  files: PrintfulFile[];
+  options: PrintfulProductOption[];
+  is_discontinued: boolean;
+  avg_fulfillment_time: number;
+  description: string;
+  techniques: PrintfulTechnique[];
+  origin_country: string;
+}[];

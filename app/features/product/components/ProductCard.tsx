@@ -8,15 +8,23 @@ import {
   Box,
   Chip,
 } from "@mui/material";
-import type { Product } from "~/types/printful";
 
+// Define a simpler interface with only the needed properties
 interface ProductCardProps {
-  product: Product;
+  id: string | number;
+  name: string;
+  thumbnailUrl: string;
+  price: string | number;
+  category: string;
   featured?: boolean;
 }
 
 export const ProductCard: React.FC<ProductCardProps> = ({
-  product,
+  id,
+  name,
+  thumbnailUrl,
+  price,
+  category,
   featured = false,
 }) => {
   return (
@@ -32,16 +40,16 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         },
       }}
     >
-      <CardActionArea component={Link} to={`/products/${product.id}`}>
+      <CardActionArea component={Link} to={`/products/${id}`}>
         <CardMedia
           component="img"
           height={featured ? "200" : "180"}
-          image={product.thumbnail_url}
-          alt={product.name}
+          image={thumbnailUrl}
+          alt={name}
         />
         <CardContent>
           <Typography gutterBottom variant="h6" component="h3">
-            {product.name}
+            {name}
           </Typography>
           <Box
             sx={{
@@ -51,10 +59,15 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             }}
           >
             <Typography variant="body1" color="text.secondary">
-              ${Number(product.variants?.[0].price).toFixed(2)}
+              $
+              {price === null || price === undefined
+                ? "0.00"
+                : typeof price === "string"
+                ? Number(price).toFixed(2)
+                : price.toFixed(2)}
             </Typography>
             <Chip
-              label={product.category}
+              label={category}
               size="small"
               color="primary"
               variant="outlined"

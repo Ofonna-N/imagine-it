@@ -3,19 +3,10 @@
  */
 
 import type {
-  PrintfulCatalogResponse,
-  PrintfulProductResponse,
-  Product,
+  PrintfulCatalogProductResponse,
+  PrintfulCatalogProductsResponse,
+  PrintfulCatalogProductsList,
 } from "../../types/printful";
-
-// Helper function to transform a PrintfulSyncProduct to our app's Product type
-function transformProduct(syncProduct: any): Product {
-  return {
-    ...syncProduct,
-    isFeatured: false, // We could set this based on certain criteria
-    price: syncProduct.retail_price || "0.00", // This would be set from variants ideally
-  };
-}
 
 /**
  * Creates headers for Printful API requests
@@ -61,32 +52,38 @@ export async function fetchFromPrintful<T>(
  * Fetches catalog products from Printful
  */
 export async function fetchCatalogProducts() {
-  return fetchFromPrintful<PrintfulCatalogResponse>("/store/products");
+  return fetchFromPrintful<PrintfulCatalogProductsResponse>("/products");
 }
 
 /**
  * Fetches a specific product by ID
  */
-export async function fetchProductById(productId: string) {
-  return fetchFromPrintful<PrintfulProductResponse>(
-    `/store/products/${productId}`
+export async function fetchCatalogProductById(productId: string) {
+  return fetchFromPrintful<PrintfulCatalogProductResponse>(
+    `/products/${productId}`
   );
 }
 
 /**
  * Fetches featured products
  */
-export async function fetchFeaturedProducts(
+export async function fetchCatalogFeaturedProducts(
   limit: number = 8
-): Promise<Product[]> {
+): Promise<PrintfulCatalogProductsList> {
   try {
     const response = await fetchCatalogProducts();
 
-    // Convert to our app's product type and select a subset as featured
-    const featured = response.result
-      .filter((product) => product.thumbnail_url) // Only products with images
-      .slice(0, limit)
-      .map(transformProduct);
+    // Make sure we have a valid response with results
+    if (!response) {
+      console.error("Unexpected API response format:", response);
+      throw new Error("Unexpected API response format");
+    }
+
+    // The result field contains the array of products directly
+    const productsArray = response.result;
+
+    // Select a subset as featured
+    const featured = productsArray.slice(0, limit);
 
     return featured;
   } catch (error) {
