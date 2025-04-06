@@ -28,11 +28,13 @@ const useQueryCatalogProducts = ({
   options,
 }: {
   params?: CatalogProductsParams;
-  options?: UseQueryOptions<
-    CatalogProductsResponse,
-    Error,
-    CatalogProductsResponse,
-    ["catalogProducts", CatalogProductsParams]
+  options?: Partial<
+    UseQueryOptions<
+      CatalogProductsResponse,
+      Error,
+      CatalogProductsResponse,
+      ["catalogProducts", CatalogProductsParams]
+    >
   >;
 } = {}) => {
   const { limit = 20, offset = 0, category, search } = params;

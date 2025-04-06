@@ -45,6 +45,9 @@ export default function ProductListing() {
       offset: (page - 1) * ITEMS_PER_PAGE,
       search: debouncedSearch || undefined,
     },
+    options: {
+      staleTime: 40 * 60 * 1000, // 10 minutes
+    },
   });
 
   // Handle page change
