@@ -6,7 +6,7 @@ import { fetchCatalogFeaturedProducts } from "~/services/printful/printful-api";
  */
 export async function loader({ request }: { request: Request }) {
   const url = new URL(request.url);
-  const limit = parseInt(url.searchParams.get("limit") ?? "10", 10);
+  const limit = parseInt(url.searchParams.get("limit") ?? "10", 6);
 
   // Get products filtered by category if provided
   const featuredProducts = await fetchCatalogFeaturedProducts(limit);
