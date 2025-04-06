@@ -31,7 +31,7 @@ const drawerWidth = 240;
 
 // Navigation items
 const navItems = [
-  { text: "Home", path: "/", icon: <FiHome /> },
+  { text: "Home", path: "/home", icon: <FiHome /> },
   { text: "Products", path: "/products", icon: <FiShoppingBag /> },
   { text: "Design Playground", path: "/design-playground", icon: <FiEdit /> },
   { text: "My Designs", path: "/my-designs", icon: <FiImage /> },
