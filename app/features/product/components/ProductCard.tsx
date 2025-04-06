@@ -43,7 +43,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       <CardActionArea component={Link} to={`/products/${id}`}>
         <CardMedia
           component="img"
-          height={featured ? "200" : "180"}
+          // height={featured ? "200" : "180"}
           image={thumbnailUrl}
           alt={name}
         />
