@@ -8,7 +8,7 @@ import {
   Box,
   Chip,
 } from "@mui/material";
-import type { Product } from "../types";
+import type { Product } from "~/types/printful";
 
 interface ProductCardProps {
   product: Product;
@@ -36,7 +36,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         <CardMedia
           component="img"
           height={featured ? "200" : "180"}
-          image={product.image}
+          image={product.thumbnail_url}
           alt={product.name}
         />
         <CardContent>
@@ -51,7 +51,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             }}
           >
             <Typography variant="body1" color="text.secondary">
-              ${product.price.toFixed(2)}
+              ${Number(product.variants?.[0].price).toFixed(2)}
             </Typography>
             <Chip
               label={product.category}

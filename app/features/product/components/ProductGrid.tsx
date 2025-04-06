@@ -1,6 +1,6 @@
 import { Grid } from "@mui/material";
 import { ProductCard } from "./ProductCard";
-import type { Product } from "../types";
+import type { Product } from "~/types/printful";
 
 interface ProductGridProps {
   products: Product[];
