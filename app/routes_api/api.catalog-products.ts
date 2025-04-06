@@ -13,7 +13,7 @@ export async function loader({ request }: { request: Request }) {
     // Get all catalog products
     const response = await fetchCatalogProducts();
 
-    if (!response || !response.result) {
+    if (!response) {
       throw new Error("Failed to fetch catalog products");
     }
 
