@@ -6,9 +6,9 @@ import {
   Scripts,
   ScrollRestoration,
 } from "react-router";
-
 import type { Route } from "./+types/root";
-import "./app.css";
+import { Container, Box, Typography, Paper } from "@mui/material";
+import { AppProviders } from "./context/app_providers";
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -23,17 +23,19 @@ export const links: Route.LinksFunction = () => [
   },
 ];
 
-export function Layout({ children }: { children: React.ReactNode }) {
+export function Layout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Imagine It</title>
+        <meta name="description" content="Imagine It - Design Playground" />
         <Meta />
         <Links />
       </head>
       <body>
-        {children}
+        <AppProviders>{children}</AppProviders>
         <ScrollRestoration />
         <Scripts />
       </body>
@@ -45,7 +47,7 @@ export default function App() {
   return <Outlet />;
 }
 
-export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
+export function ErrorBoundary({ error }: Readonly<Route.ErrorBoundaryProps>) {
   let message = "Oops!";
   let details = "An unexpected error occurred.";
   let stack: string | undefined;
@@ -62,14 +64,22 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
   }
 
   return (
-    <main className="pt-16 p-4 container mx-auto">
-      <h1>{message}</h1>
-      <p>{details}</p>
+    <Container sx={{ pt: 8, p: 2, maxWidth: "lg" }}>
+      <Typography variant="h4">{message}</Typography>
+      <Typography variant="body1">{details}</Typography>
       {stack && (
-        <pre className="w-full p-4 overflow-x-auto">
-          <code>{stack}</code>
-        </pre>
+        <Paper
+          variant="outlined"
+          sx={{ width: "100%", p: 2, mt: 2, overflow: "auto" }}
+        >
+          <Box
+            component="code"
+            sx={{ display: "block", whiteSpace: "pre-wrap" }}
+          >
+            {stack}
+          </Box>
+        </Paper>
       )}
-    </main>
+    </Container>
   );
 }
