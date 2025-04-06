@@ -1,36 +1,40 @@
 /**
- * Utility functions for interacting with the Printful API
+ * Server-only utility functions for interacting with the Printful API
  */
 
 import type {
   PrintfulCatalogResponse,
   PrintfulProductResponse,
-} from "~/types/printful";
+  Product,
+} from "../../types/printful";
 
-const PRINTFUL_BASE_URL =
-  process.env.PRINTFUL_BASE_URL || "https://api.printful.com";
-const PRINTFUL_ACCESS_TOKEN = process.env.PRINTFUL_ACCESS_TOKEN;
+// Helper function to transform a PrintfulSyncProduct to our app's Product type
+function transformProduct(syncProduct: any): Product {
+  return {
+    ...syncProduct,
+    isFeatured: false, // We could set this based on certain criteria
+    price: syncProduct.retail_price || "0.00", // This would be set from variants ideally
+  };
+}
 
 /**
  * Creates headers for Printful API requests
  */
 function getHeaders() {
   return {
-    Authorization: `Bearer ${PRINTFUL_ACCESS_TOKEN}`,
+    Authorization: `Bearer ${process.env.PRINTFUL_ACCESS_TOKEN}`,
     "Content-Type": "application/json",
   };
 }
 
 /**
  * Generic fetch function for Printful API
- * @param endpoint - API endpoint to call
- * @param options - Additional fetch options
  */
 export async function fetchFromPrintful<T>(
   endpoint: string,
   options?: RequestInit
 ): Promise<T> {
-  const url = `${PRINTFUL_BASE_URL}${endpoint}`;
+  const url = `${process.env.PRINTFUL_BASE_URL}${endpoint}`;
   const response = await fetch(url, {
     ...options,
     headers: {
@@ -40,11 +44,10 @@ export async function fetchFromPrintful<T>(
   });
 
   if (!response.ok) {
-    // Extract error details from response if possible
-    let errorMessage = `API error: ${response.status}`;
+    let errorMessage = `Printful API error: ${response.status}`;
     try {
       const errorData = await response.json();
-      errorMessage = errorData.message || errorMessage;
+      errorMessage = errorData.result || errorMessage;
     } catch (e) {
       // If we can't parse the error response, use the default error message
     }
@@ -72,17 +75,22 @@ export async function fetchProductById(productId: string) {
 
 /**
  * Fetches featured products
- * Currently using a simple approach of getting all products and filtering
- * Could be enhanced with specific criteria or using Printful's filtering
  */
-export async function fetchFeaturedProducts(limit: number = 8) {
-  const response = await fetchCatalogProducts();
+export async function fetchFeaturedProducts(
+  limit: number = 8
+): Promise<Product[]> {
+  try {
+    const response = await fetchCatalogProducts();
 
-  // Logic to determine featured products
-  // For now, we'll simply take the first few available products
-  const featured = response.result
-    .filter((product) => product.thumbnail_url) // Only products with images
-    .slice(0, limit);
+    // Convert to our app's product type and select a subset as featured
+    const featured = response.result
+      .filter((product) => product.thumbnail_url) // Only products with images
+      .slice(0, limit)
+      .map(transformProduct);
 
-  return featured;
+    return featured;
+  } catch (error) {
+    console.error("Error fetching from Printful:", error);
+    throw error;
+  }
 }

@@ -22,4 +22,6 @@ export default [
     route("my-designs", "routes/my_designs.tsx"),
     route("orders", "routes/orders.tsx"),
   ]),
+
+  route("api/products/featured", "routes_api/api.featured-products.ts"),
 ] satisfies RouteConfig;
