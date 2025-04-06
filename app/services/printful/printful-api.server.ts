@@ -6,7 +6,7 @@ import type {
   PrintfulCatalogResponse,
   PrintfulProductResponse,
   Product,
-} from "../types/printful";
+} from "../../types/printful";
 
 // Helper function to transform a PrintfulSyncProduct to our app's Product type
 function transformProduct(syncProduct: any): Product {

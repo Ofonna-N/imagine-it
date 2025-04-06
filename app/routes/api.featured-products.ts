@@ -1,4 +1,4 @@
-import { fetchFeaturedProducts } from "../services/printful.server";
+import { fetchFeaturedProducts } from "../services/printful/printful.server";
 import { getFeaturedProducts } from "../features/product/api/mockData";
 
 /**
