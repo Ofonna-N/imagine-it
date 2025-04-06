@@ -1,5 +1,6 @@
 import { Box, Grid, Paper, Typography, Container } from "@mui/material";
-import { CartList, CartSummary } from "../features/cart/components";
+import { CartList } from "../features/cart/components/CartList";
+import { CartSummary } from "../features/cart/components/CartSummary";
 import { useCart } from "../features/cart/hooks/useCart";
 
 export default function Cart() {

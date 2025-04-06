@@ -8,8 +8,8 @@ import {
 } from "@mui/material";
 import { FiPackage, FiClock } from "react-icons/fi";
 import { Link } from "react-router";
+import type { Order } from "../types/index";
 import { OrderStatusBadge } from "./OrderStatusBadge";
-import type { Order } from "../types";
 
 interface OrderCardProps {
   order: Order;

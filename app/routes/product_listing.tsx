@@ -1,6 +1,6 @@
-import { useState } from "react";
 import { Typography, Box } from "@mui/material";
-import { ProductGrid, ProductFilter } from "../features/product/components";
+import { ProductGrid } from "../features/product/components/ProductGrid";
+import { ProductFilter } from "../features/product/components/ProductFilter";
 import { useProducts } from "../features/product/hooks/useProducts";
 
 export default function ProductListing() {
@@ -16,7 +16,7 @@ export default function ProductListing() {
       </Typography>
 
       <ProductFilter
-        category={filterOptions.category || ""}
+        category={filterOptions.category ?? ""}
         onCategoryChange={setCategory}
       />
 

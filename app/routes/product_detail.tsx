@@ -1,6 +1,6 @@
 import { Grid, Box, Paper } from "@mui/material";
 import { useParams } from "react-router";
-import { ProductDetails } from "../features/product/components";
+import { ProductDetails } from "../features/product/components/ProductDetails";
 import { useProducts } from "../features/product/hooks/useProducts";
 
 export default function ProductDetail() {
@@ -8,7 +8,7 @@ export default function ProductDetail() {
   const { getProduct } = useProducts();
 
   // Find the product using our hook
-  const product = getProduct(productId || "");
+  const product = getProduct(productId ?? "");
 
   return (
     <Box sx={{ mt: 4 }}>

@@ -1,5 +1,5 @@
 import { Box, Typography, Paper, CircularProgress } from "@mui/material";
-import { OrderCard } from "../features/order/components";
+import { OrderCard } from "../features/order/components/OrderCard";
 import { useOrders } from "../features/order/hooks/useOrders";
 
 export default function Orders() {
