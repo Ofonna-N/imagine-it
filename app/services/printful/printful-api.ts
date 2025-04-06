@@ -51,8 +51,17 @@ export async function fetchFromPrintful<T>(
 /**
  * Fetches catalog products from Printful
  */
-export async function fetchCatalogProducts() {
-  return fetchFromPrintful<PrintfulCatalogProductsResponse>("/products");
+export async function fetchCatalogProducts(params?: { categoryId?: string }) {
+  const { categoryId } = params || {};
+
+  // Build query string - only categoryId is supported by Printful API
+  const queryParams = new URLSearchParams();
+  if (categoryId) queryParams.append("category_id", categoryId);
+
+  const queryString = queryParams.toString();
+  const endpoint = queryString ? `/products?${queryString}` : "/products";
+
+  return fetchFromPrintful<PrintfulCatalogProductsResponse>(endpoint);
 }
 
 /**

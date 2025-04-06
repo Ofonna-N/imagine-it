@@ -2,11 +2,19 @@
  * Types for Printful API responses
  */
 
+// Pagination information
+export interface PrintfulPagination {
+  total: number;
+  offset: number;
+  limit: number;
+}
+
 // Base response type from Printful
 export interface PrintfulBaseResponse<T> {
   code: number;
   result: T;
   extra: any[];
+  paging?: PrintfulPagination;
 }
 
 // Product variant
