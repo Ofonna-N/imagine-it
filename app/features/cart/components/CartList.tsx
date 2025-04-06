@@ -1,0 +1,53 @@
+import { Box, Typography, Button } from "@mui/material";
+import { CartItem } from "./CartItem";
+import type { Cart } from "../types";
+
+interface CartListProps {
+  cart: Cart;
+  onUpdateQuantity: (id: number, quantity: number) => void;
+  onRemoveItem: (id: number) => void;
+  onClearCart: () => void;
+}
+
+export const CartList: React.FC<CartListProps> = ({
+  cart,
+  onUpdateQuantity,
+  onRemoveItem,
+  onClearCart,
+}) => {
+  if (cart.items.length === 0) {
+    return (
+      <Box sx={{ textAlign: "center", my: 4 }}>
+        <Typography variant="h6" gutterBottom>
+          Your cart is empty
+        </Typography>
+        <Typography variant="body1" color="text.secondary">
+          Add some products to your cart to see them here.
+        </Typography>
+      </Box>
+    );
+  }
+
+  return (
+    <Box>
+      <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
+        <Typography variant="h6">
+          Shopping Cart ({cart.items.length}{" "}
+          {cart.items.length === 1 ? "item" : "items"})
+        </Typography>
+        <Button variant="text" color="error" size="small" onClick={onClearCart}>
+          Clear Cart
+        </Button>
+      </Box>
+
+      {cart.items.map((item) => (
+        <CartItem
+          key={item.id}
+          item={item}
+          onUpdateQuantity={onUpdateQuantity}
+          onRemoveItem={onRemoveItem}
+        />
+      ))}
+    </Box>
+  );
+};
