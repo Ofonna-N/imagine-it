@@ -17,27 +17,10 @@ import {
   Container,
 } from "@mui/material";
 // Replace Material UI icons with React Icons
-import {
-  FiMenu,
-  FiImage,
-  FiFileText,
-  FiEdit,
-  FiShoppingCart,
-  FiShoppingBag,
-  FiHome,
-} from "react-icons/fi";
+import { FiMenu } from "react-icons/fi";
+import { NAV_ITEMS, PATHS } from "~/constants/navigation";
 
 const drawerWidth = 240;
-
-// Navigation items
-const navItems = [
-  { text: "Home", path: "/home", icon: <FiHome /> },
-  { text: "Products", path: "/products", icon: <FiShoppingBag /> },
-  { text: "Design Playground", path: "/design-playground", icon: <FiEdit /> },
-  { text: "My Designs", path: "/my-designs", icon: <FiImage /> },
-  { text: "Cart", path: "/cart", icon: <FiShoppingCart /> },
-  { text: "Orders", path: "/orders", icon: <FiFileText /> },
-];
 
 export default function Layout() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -56,7 +39,7 @@ export default function Layout() {
       </Toolbar>
       <Divider />
       <List>
-        {navItems.map((item) => (
+        {NAV_ITEMS.map((item) => (
           <ListItem key={item.text} disablePadding>
             <ListItemButton
               component={Link}
@@ -97,7 +80,7 @@ export default function Layout() {
           <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
             Imagine It
           </Typography>
-          <Button color="inherit" component={Link} to="/checkout">
+          <Button color="inherit" component={Link} to={PATHS.CHECKOUT}>
             Checkout
           </Button>
         </Toolbar>
