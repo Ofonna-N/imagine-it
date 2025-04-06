@@ -24,4 +24,5 @@ export default [
   ]),
 
   route("api/products/featured", "routes_api/api.featured-products.ts"),
+  route("api/catalog-products", "routes_api/api.catalog-products.ts"),
 ] satisfies RouteConfig;
