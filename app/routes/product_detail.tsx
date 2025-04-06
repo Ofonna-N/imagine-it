@@ -46,10 +46,17 @@ export default function ProductDetail() {
 
   const selectedVariant = variants[selectedVariantIndex];
 
-  // Extract unique colors for the color selector
-  const uniqueColors = Array.from(
+  // Extract unique colors and their color codes for the color selector
+  const uniqueColorsWithCodes = Array.from(
     new Set(variants.map((variant) => variant.color))
-  );
+  ).map((color) => {
+    // Find the first variant with this color to get its color code
+    const variantWithColor = variants.find((v) => v.color === color);
+    return {
+      color,
+      colorCode: variantWithColor?.color_code || "",
+    };
+  });
 
   // Extract unique sizes for the size selector
   const uniqueSizes = Array.from(
@@ -172,7 +179,7 @@ export default function ProductDetail() {
                   Color: {selectedVariant.color}
                 </Typography>
                 <Stack direction="row" spacing={1} sx={{ mb: 3 }}>
-                  {uniqueColors.map((color) => (
+                  {uniqueColorsWithCodes.map(({ color, colorCode }) => (
                     <Box
                       key={color}
                       onClick={() => handleColorSelect(color)}
@@ -184,7 +191,7 @@ export default function ProductDetail() {
                             ? "#ffffff"
                             : color === "Black"
                             ? "#000000"
-                            : selectedVariant.color_code,
+                            : colorCode, // Use each color's own color code
                         border: "2px solid",
                         borderColor:
                           color === selectedVariant.color
