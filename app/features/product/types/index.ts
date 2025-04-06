@@ -10,7 +10,7 @@ export interface Product {
 }
 
 // Types for product listings and filtering
-export type ProductCategory = "clothing" | "accessories" | "art" | string;
+export type ProductCategory = "clothing" | "accessories" | "art";
 
 export interface ProductFilterOptions {
   category?: ProductCategory;

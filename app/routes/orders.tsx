@@ -1,5 +1,4 @@
 import { Box, Typography, Paper, CircularProgress } from "@mui/material";
-import { OrderCard } from "../features/order/components/OrderCard";
 import { useOrders } from "../features/order/hooks/useOrders";
 
 export default function Orders() {
@@ -12,20 +11,15 @@ export default function Orders() {
       </Typography>
 
       <Paper sx={{ p: 3 }}>
-        {loading ? (
+        {loading && (
           <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
             <CircularProgress />
           </Box>
-        ) : orders.length === 0 ? (
+        )}
+        {!loading && orders.length === 0 && (
           <Typography variant="body1" sx={{ textAlign: "center", py: 4 }}>
             You haven't placed any orders yet.
           </Typography>
-        ) : (
-          <Box>
-            {orders.map((order) => (
-              <OrderCard key={order.id} order={order} />
-            ))}
-          </Box>
         )}
       </Paper>
     </Box>

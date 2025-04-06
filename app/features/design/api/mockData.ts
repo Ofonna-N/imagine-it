@@ -1,8 +1,12 @@
-import { generateUniqueId } from "../../../shared/utils/formatting";
 import { getProductById } from "../../product/api/mockData";
 import type { Design, ImageCanvasObject, TextCanvasObject } from "../types";
 
 // Create sample text object for canvas
+// Helper function to generate unique ID using crypto API
+const generateUniqueId = (): string => {
+  return window.crypto.randomUUID();
+};
+
 const createSampleText = (text: string): TextCanvasObject => ({
   id: generateUniqueId(),
   type: "text",

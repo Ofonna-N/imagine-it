@@ -3,10 +3,8 @@ import { useState, useCallback, useEffect } from "react";
 import {
   getAllDesigns,
   getDesignById,
-  getPublicDesigns,
   getDesignsByProductId,
 } from "../api/mockData";
-import { generateUniqueId } from "../../../shared/utils/formatting";
 import type { CanvasData, Design } from "../types";
 
 export const useDesigns = (productId?: string) => {
@@ -56,7 +54,7 @@ export const useDesigns = (productId?: string) => {
 
       // Create new design
       const newDesign: Design = {
-        id: `design-${generateUniqueId()}`,
+        id: `design-${crypto.randomUUID()}`,
         name,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),

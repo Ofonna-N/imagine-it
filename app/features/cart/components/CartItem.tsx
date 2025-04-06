@@ -65,7 +65,7 @@ export const CartItem: React.FC<CartItemProps> = ({
               label="Qty"
               value={quantity}
               onChange={handleQuantityChange}
-              InputProps={{ inputProps: { min: 1 } }}
+              slotProps={{ input: { inputProps: { min: 1 } } }}
               sx={{ width: "80px" }}
             />
 

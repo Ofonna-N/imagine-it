@@ -1,8 +1,9 @@
 import { TextField, MenuItem, Box } from "@mui/material";
+import type { ProductFilterOptions } from "../types";
 
 interface ProductFilterProps {
   category: string;
-  onCategoryChange: (category: string) => void;
+  onCategoryChange: (category: ProductFilterOptions["category"]) => void;
 }
 
 export const ProductFilter: React.FC<ProductFilterProps> = ({
@@ -10,7 +11,7 @@ export const ProductFilter: React.FC<ProductFilterProps> = ({
   onCategoryChange,
 }) => {
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    onCategoryChange(event.target.value);
+    onCategoryChange(event.target.value as ProductFilterOptions["category"]);
   };
 
   return (
