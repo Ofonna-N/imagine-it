@@ -8,10 +8,11 @@ import {
   Stack,
   InputAdornment,
   Paper,
+  debounce,
 } from "@mui/material";
 import { ProductGrid } from "~/features/product/components/ProductGrid";
 import useQueryCatalogProducts from "~/features/product/hooks/useCatalogProducts";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { FiSearch } from "react-icons/fi";
 
 export default function ProductListing() {
@@ -21,16 +22,21 @@ export default function ProductListing() {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const ITEMS_PER_PAGE = 12;
 
-  // Debounce search input to prevent too many API calls
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearch(searchTerm);
-      // Reset to first page when search changes
-      setPage(1);
-    }, 500);
+  // Create a debounced search handler using MUI's debounce
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const debouncedSearchHandler = useCallback(
+    debounce((value: string) => {
+      setDebouncedSearch(value);
+      setPage(1); // Reset to first page when search changes
+    }, 500),
+    []
+  );
 
-    return () => clearTimeout(timer);
-  }, [searchTerm]);
+  // Update the debounced value when search term changes
+  useEffect(() => {
+    debouncedSearchHandler(searchTerm);
+    // No cleanup needed as MUI's debounce handles cancelation
+  }, [searchTerm, debouncedSearchHandler]);
 
   // Fetch products with pagination and search
   const { data, isLoading, isError, error } = useQueryCatalogProducts({
