@@ -9,14 +9,14 @@ import {
   keyframes,
 } from "@mui/material";
 import { ProductGrid } from "~/features/product/components/ProductGrid";
-import { type LoaderFunctionArgs } from "react-router";
+
 import { useQueryClient } from "@tanstack/react-query";
 import { FaStar, FaMagic } from "react-icons/fa";
 import { FiShoppingBag } from "react-icons/fi";
 import { Link, useRevalidator } from "react-router";
 import { queryClient } from "~/context/query_provider";
 import createSupabaseServerClient from "~/services/supabase/supabase-client";
-import { requireAuth } from "~/context/auth_provider";
+import type { Route } from "./+types/home";
 
 // Define the pulse animation using MUI's keyframes
 const pulseAnimation = keyframes`
@@ -43,7 +43,7 @@ interface HomeProps {
 }
 
 // Server loader - check authentication but don't force redirect
-export async function loader({ request }: LoaderFunctionArgs) {
+export async function loader({ request }: Route.LoaderArgs) {
   try {
     // Try to get session, but don't force redirect
     const { supabase } = createSupabaseServerClient({ request });
@@ -64,7 +64,10 @@ export async function loader({ request }: LoaderFunctionArgs) {
 }
 
 // React Router client loader using the Query Client
-export async function clientLoader() {
+export async function clientLoader({
+  request,
+  serverLoader,
+}: Route.ClientLoaderArgs) {
   // Use the query client to fetch and cache the data with 1-hour stale time
   const products = await queryClient.fetchQuery({
     queryKey: ["featuredProducts"],
@@ -75,7 +78,9 @@ export async function clientLoader() {
     staleTime: 10 * 60 * 1000, // 10 minutes
   });
 
-  return { products };
+  const serverLoaderData = await serverLoader();
+
+  return { products, isAuthenticated: serverLoaderData.isAuthenticated };
 }
 
 export function HydrateFallback() {

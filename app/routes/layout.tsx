@@ -41,24 +41,7 @@ export default function Layout() {
   const navigate = useNavigate();
   const { user, session, loading, signOut } = useAuth();
 
-  // Always call hooks at the top level, even if we don't always use the result
-  const homeLoaderData = useRouteLoaderData("home") as {
-    isAuthenticated?: boolean;
-  } | null;
-
-  // Use state to track authentication from the home route
-  const [homeIsAuthenticated, setHomeIsAuthenticated] = useState<
-    boolean | undefined
-  >(undefined);
-
-  // Update homeIsAuthenticated when either location or homeLoaderData changes
-  useEffect(() => {
-    if (location.pathname === "/" && homeLoaderData) {
-      setHomeIsAuthenticated(homeLoaderData.isAuthenticated);
-    } else {
-      setHomeIsAuthenticated(undefined);
-    }
-  }, [location.pathname, homeLoaderData]);
+  const isAuthenticated = !!session;
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
@@ -93,11 +76,6 @@ export default function Layout() {
       </Box>
     );
   }
-
-  // For root path, check authentication from loader data
-  // For other paths, check from session
-  const isAuthenticated =
-    location.pathname === "/" ? homeIsAuthenticated : !!session;
 
   // If not authenticated, show landing page
   if (!isAuthenticated) {
