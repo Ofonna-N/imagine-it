@@ -1,11 +1,5 @@
-import { useState, useEffect } from "react";
-import {
-  Outlet,
-  Link,
-  useLocation,
-  useNavigate,
-  useRouteLoaderData,
-} from "react-router";
+import { useState } from "react";
+import { Outlet, Link, useLocation, useNavigate } from "react-router";
 import {
   AppBar,
   Box,
@@ -29,19 +23,39 @@ import { FiMenu, FiUser, FiLogOut, FiShoppingCart } from "react-icons/fi";
 import { NAV_ITEMS, PATHS } from "~/constants/navigation";
 import { useAuth } from "~/context/auth_provider";
 import { LandingComponent } from "~/components/LandingComponent";
-
+import createSupabaseServerClient from "~/services/supabase/supabase-client";
+import type { Route } from "./+types/layout";
 const drawerWidth = 240;
 
-export default function Layout() {
+export async function loader({ request }: Route.LoaderArgs) {
+  try {
+    // Try to get session, but don't force redirect
+    const { supabase } = createSupabaseServerClient({ request });
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    // Return auth status to let client handle appropriate UI
+    return {
+      isAuthenticated: !!session,
+    };
+  } catch (error) {
+    // Just return not authenticated on any errors
+    return {
+      isAuthenticated: false,
+    };
+  }
+}
+
+export default function Layout({ loaderData }: Readonly<Route.ComponentProps>) {
+  const { isAuthenticated } = loaderData;
   const [mobileOpen, setMobileOpen] = useState(false);
   const [userMenuAnchor, setUserMenuAnchor] = useState<null | HTMLElement>(
     null
   );
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, session, loading, signOut } = useAuth();
-
-  const isAuthenticated = !!session;
+  const { user, loading, signOut } = useAuth();
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
