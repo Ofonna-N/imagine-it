@@ -9,11 +9,12 @@ import {
   InputAdornment,
   Paper,
   debounce,
+  IconButton,
 } from "@mui/material";
 import { ProductGrid } from "~/features/product/components/ProductGrid";
 import useQueryCatalogProducts from "~/features/product/hooks/useCatalogProducts";
 import { useState, useEffect, useCallback } from "react";
-import { FiSearch } from "react-icons/fi";
+import { FiSearch, FiX } from "react-icons/fi";
 
 export default function ProductListing() {
   // Pagination and search state
@@ -60,6 +61,11 @@ export default function ProductListing() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  // Clear search function
+  const handleClearSearch = () => {
+    setSearchTerm("");
+  };
+
   // Get total pages based on API response
   const totalPages = data?.paging
     ? Math.ceil(data.paging.total / ITEMS_PER_PAGE)
@@ -89,6 +95,18 @@ export default function ProductListing() {
                   <FiSearch />
                 </InputAdornment>
               ),
+              endAdornment: searchTerm ? (
+                <InputAdornment position="end">
+                  <IconButton
+                    aria-label="clear search"
+                    onClick={handleClearSearch}
+                    edge="end"
+                    size="small"
+                  >
+                    <FiX />
+                  </IconButton>
+                </InputAdornment>
+              ) : null,
             },
           }}
         />
