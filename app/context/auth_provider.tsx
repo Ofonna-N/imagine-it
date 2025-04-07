@@ -1,95 +1,62 @@
-import { createContext, useContext, useState, useEffect, useMemo } from "react";
-import type { Session, User } from "@supabase/supabase-js";
+import { createContext, useContext, useMemo } from "react";
 import type { ReactNode } from "react";
-import { createBrowserClient } from "@supabase/ssr";
 import { redirect } from "react-router";
+import { useQuery } from "@tanstack/react-query";
 import createSupabaseServerClient from "~/services/supabase/supabase-client";
 import {
   useLoginMutation,
   useSignupMutation,
   useSignoutMutation,
 } from "~/features/auth/hooks/useAuthMutations";
+import type { User } from "@supabase/supabase-js";
 
-// Types for our auth context
+type CompactUserProfile = Pick<User, "id" | "email" | "user_metadata">;
+
+// Enhanced types for our auth context to include auth methods
 type AuthContextType = {
-  session: Session | null;
-  user: User | null;
+  user: CompactUserProfile | null;
   loading: boolean;
+  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signUp: (
+    email: string,
+    password: string,
+    metadata?: Record<string, any>
+  ) => Promise<{ error: Error | null; emailConfirmationRequired?: boolean }>;
+  signOut: () => Promise<void>;
 };
 
 // Create the auth context
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Environment variables for client-side only state monitoring
-// Using the VITE_ prefixed variables which are safe to expose to the client
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL ?? "";
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY ?? "";
+// Custom hook for fetching the current user
+export function useQueryUser() {
+  return useQuery<CompactUserProfile | null>({
+    queryKey: ["user"],
+    queryFn: async () => {
+      const response = await fetch("/api/auth/session", {
+        credentials: "include",
+      });
 
-// Browser client ONLY for tracking auth state changes
-export const supabaseBrowserClient = createBrowserClient(
-  supabaseUrl,
-  supabaseAnonKey
-);
+      if (!response.ok) {
+        return null;
+      }
+
+      const data = await response.json();
+      return data.user || null;
+    },
+  });
+}
 
 // Auth provider component
 export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
-  const [session, setSession] = useState<Session | null>(null);
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { data: user, isLoading: loading } = useQueryUser();
 
-  useEffect(() => {
-    // Set up auth state listener - this is the ONLY thing we use the browser client for
-    const {
-      data: { subscription },
-    } = supabaseBrowserClient.auth.onAuthStateChange(
-      (event, currentSession) => {
-        setSession(currentSession);
-        setUser(currentSession?.user ?? null);
-        setLoading(false);
-      }
-    );
-
-    // Get initial session
-    supabaseBrowserClient.auth
-      .getSession()
-      .then(({ data: { session: initialSession } }) => {
-        setSession(initialSession);
-        setUser(initialSession?.user ?? null);
-        setLoading(false);
-      });
-
-    // Clean up
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, []);
-
-  // Memoize the context value to prevent unnecessary re-renders
-  const value = useMemo(
-    () => ({
-      session,
-      user,
-      loading,
-    }),
-    [session, user, loading]
-  );
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-}
-
-// Hook to use auth context
-export function useAuth() {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
-
-  // Get authentication mutations
+  // Get authentication mutations within the provider
   const loginMutation = useLoginMutation();
   const signupMutation = useSignupMutation();
   const signoutMutation = useSignoutMutation();
 
-  // Create helper functions with the same API as before
+  // Implement auth methods in the provider
   const signIn = async (email: string, password: string) => {
     try {
       await loginMutation.mutateAsync({ email, password });
@@ -126,12 +93,25 @@ export function useAuth() {
     }
   };
 
-  return {
-    ...context,
-    signIn,
-    signUp,
-    signOut,
-  };
+  // Memoize the context value including auth methods
+  const value: AuthContextType = useMemo(
+    () => ({
+      user: user ?? null, // Ensure user is never undefined
+      loading,
+      signIn,
+      signUp,
+      signOut,
+    }),
+    [user, loading, signIn, signUp, signOut]
+  );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
+
+// Simplified hook to use auth context
+export function useAuth() {
+  const context = useContext(AuthContext) as AuthContextType;
+  return context;
 }
 
 // Server-side auth check for protected routes
@@ -140,13 +120,13 @@ export async function requireAuth(request: Request) {
 
   // Check if user is authenticated using cookies from request
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  if (!session) {
+  if (!user) {
     // If not authenticated, redirect to login
-    throw redirect("/login");
+    throw redirect("/");
   }
 
-  return session;
+  return user;
 }

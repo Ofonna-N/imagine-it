@@ -15,8 +15,8 @@ import { FaStar, FaMagic } from "react-icons/fa";
 import { FiShoppingBag } from "react-icons/fi";
 import { Link, useRevalidator } from "react-router";
 import { queryClient } from "~/context/query_provider";
-import createSupabaseServerClient from "~/services/supabase/supabase-client";
 import type { Route } from "./+types/home";
+import { useAuth } from "~/context/auth_provider";
 
 // Define the pulse animation using MUI's keyframes
 const pulseAnimation = keyframes`
@@ -42,32 +42,8 @@ interface HomeProps {
   };
 }
 
-// Server loader - check authentication but don't force redirect
-export async function loader({ request }: Route.LoaderArgs) {
-  try {
-    // Try to get session, but don't force redirect
-    const { supabase } = createSupabaseServerClient({ request });
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-
-    // Return auth status to let client handle appropriate UI
-    return {
-      isAuthenticated: !!session,
-    };
-  } catch (error) {
-    // Just return not authenticated on any errors
-    return {
-      isAuthenticated: false,
-    };
-  }
-}
-
 // React Router client loader using the Query Client
-export async function clientLoader({
-  request,
-  serverLoader,
-}: Route.ClientLoaderArgs) {
+export async function clientLoader() {
   // Use the query client to fetch and cache the data with 1-hour stale time
   const products = await queryClient.fetchQuery({
     queryKey: ["featuredProducts"],
@@ -78,9 +54,7 @@ export async function clientLoader({
     staleTime: 10 * 60 * 1000, // 10 minutes
   });
 
-  const serverLoaderData = await serverLoader();
-
-  return { products, isAuthenticated: serverLoaderData.isAuthenticated };
+  return { products };
 }
 
 export function HydrateFallback() {
@@ -120,10 +94,11 @@ export function HydrateFallback() {
 }
 
 export default function Home({ loaderData }: Readonly<HomeProps>) {
-  const { products, isAuthenticated } = loaderData;
+  const { products } = loaderData;
   const queryClient = useQueryClient();
   const revalidator = useRevalidator();
-
+  const isAuthenticated = !!useAuth()?.user;
+  console.log("isAuthenticated", isAuthenticated);
   // If not authenticated, return null to let the Layout component handle rendering
   // the LandingComponent instead through its own authentication check
   if (isAuthenticated === false) {

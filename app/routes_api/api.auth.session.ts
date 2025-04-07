@@ -11,10 +11,10 @@ export async function loader({ request }: { request: Request }) {
 
     // Get the current session from cookies
     const {
-      data: { session },
-    } = await supabase.auth.getSession();
+      data: { user },
+    } = await supabase.auth.getUser();
 
-    if (!session) {
+    if (!user) {
       return new Response(
         JSON.stringify({
           user: null,
@@ -35,9 +35,9 @@ export async function loader({ request }: { request: Request }) {
       JSON.stringify({
         authenticated: true,
         user: {
-          id: session.user.id,
-          email: session.user.email,
-          user_metadata: session.user.user_metadata,
+          id: user.id,
+          email: user.email,
+          user_metadata: user.user_metadata,
         },
       }),
       {
