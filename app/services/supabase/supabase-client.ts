@@ -5,21 +5,25 @@ import {
 } from "@supabase/ssr";
 import type { LoaderFunctionArgs } from "react-router";
 
-// Get environment variables
-const supabaseUrl =
-  process.env.SUPABASE_URL ?? "https://bnrdhpyasurtcrananic.supabase.co";
-const supabaseKey = process.env.SUPABASE_ANON_KEY ?? "";
+// Get environment variables - never exposed to client
+const supabaseUrl = process.env.SUPABASE_URL ?? "";
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
 
-// Initialize the Supabase client
-function createSupabaseClient(request: LoaderFunctionArgs["request"]) {
+/**
+ * Creates a Supabase server client with the SERVICE_ROLE key for server-side operations
+ * This function will handle authentication and database operations securely on the server
+ */
+function createSupabaseServerClient({
+  request,
+}: {
+  request: LoaderFunctionArgs["request"];
+}) {
   const headers = new Headers();
-  const client = createServerClient(supabaseUrl, supabaseKey, {
+  const supabase = createServerClient(supabaseUrl, supabaseServiceKey, {
     cookies: {
-      // Using the new API pattern
       getAll: () => {
         const cookieHeader = request.headers.get("Cookie") ?? "";
         const parsedCookieHeader = parseCookieHeader(cookieHeader);
-        // Convert to required format with explicit name/value
         return parsedCookieHeader.map(({ name, value }) => ({
           name,
           value: value ?? "",
@@ -34,7 +38,7 @@ function createSupabaseClient(request: LoaderFunctionArgs["request"]) {
     },
   });
 
-  return { headers, client };
+  return { headers, supabase };
 }
 
-export default createSupabaseClient;
+export default createSupabaseServerClient;

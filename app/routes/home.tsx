@@ -9,12 +9,14 @@ import {
   keyframes,
 } from "@mui/material";
 import { ProductGrid } from "~/features/product/components/ProductGrid";
-import type { Route } from "./+types/home";
+import { type LoaderFunctionArgs } from "react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { FaStar, FaMagic } from "react-icons/fa";
 import { FiShoppingBag } from "react-icons/fi";
-import { Link, useRevalidator } from "react-router"; // Combined imports from react-router
+import { Link, useRevalidator } from "react-router";
 import { queryClient } from "~/context/query_provider";
+import createSupabaseServerClient from "~/services/supabase/supabase-client";
+import { requireAuth } from "~/context/auth_provider";
 
 // Define the pulse animation using MUI's keyframes
 const pulseAnimation = keyframes`
@@ -31,6 +33,35 @@ const pulseAnimation = keyframes`
     transform: scale(1);
   }
 `;
+
+// Define component props type
+interface HomeProps {
+  loaderData: {
+    products?: any[];
+    isAuthenticated?: boolean;
+  };
+}
+
+// Server loader - check authentication but don't force redirect
+export async function loader({ request }: LoaderFunctionArgs) {
+  try {
+    // Try to get session, but don't force redirect
+    const { supabase } = createSupabaseServerClient({ request });
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    // Return auth status to let client handle appropriate UI
+    return {
+      isAuthenticated: !!session,
+    };
+  } catch (error) {
+    // Just return not authenticated on any errors
+    return {
+      isAuthenticated: false,
+    };
+  }
+}
 
 // React Router client loader using the Query Client
 export async function clientLoader() {
@@ -83,10 +114,17 @@ export function HydrateFallback() {
   );
 }
 
-export default function Home({ loaderData }: Readonly<Route.ComponentProps>) {
-  const { products } = loaderData;
+export default function Home({ loaderData }: Readonly<HomeProps>) {
+  const { products, isAuthenticated } = loaderData;
   const queryClient = useQueryClient();
   const revalidator = useRevalidator();
+
+  // If not authenticated, return null to let the Layout component handle rendering
+  // the LandingComponent instead through its own authentication check
+  if (isAuthenticated === false) {
+    return null;
+  }
+
   // Function to manually refresh products
   const handleRefresh = async () => {
     // Invalidate and refetch

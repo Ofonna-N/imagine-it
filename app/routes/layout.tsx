@@ -1,5 +1,11 @@
-import { useState } from "react";
-import { Outlet, Link, useLocation } from "react-router";
+import { useState, useEffect } from "react";
+import {
+  Outlet,
+  Link,
+  useLocation,
+  useNavigate,
+  useRouteLoaderData,
+} from "react-router";
 import {
   AppBar,
   Box,
@@ -13,22 +19,90 @@ import {
   ListItemText,
   Toolbar,
   Typography,
-  Button,
   Container,
+  Menu,
+  MenuItem,
+  Avatar,
+  CircularProgress,
 } from "@mui/material";
-// Replace Material UI icons with React Icons
-import { FiMenu } from "react-icons/fi";
+import { FiMenu, FiUser, FiLogOut, FiShoppingCart } from "react-icons/fi";
 import { NAV_ITEMS, PATHS } from "~/constants/navigation";
+import { useAuth } from "~/context/auth_provider";
+import { LandingComponent } from "~/components/LandingComponent";
 
 const drawerWidth = 240;
 
 export default function Layout() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [userMenuAnchor, setUserMenuAnchor] = useState<null | HTMLElement>(
+    null
+  );
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, session, loading, signOut } = useAuth();
+
+  // Always call hooks at the top level, even if we don't always use the result
+  const homeLoaderData = useRouteLoaderData("home") as {
+    isAuthenticated?: boolean;
+  } | null;
+
+  // Use state to track authentication from the home route
+  const [homeIsAuthenticated, setHomeIsAuthenticated] = useState<
+    boolean | undefined
+  >(undefined);
+
+  // Update homeIsAuthenticated when either location or homeLoaderData changes
+  useEffect(() => {
+    if (location.pathname === "/" && homeLoaderData) {
+      setHomeIsAuthenticated(homeLoaderData.isAuthenticated);
+    } else {
+      setHomeIsAuthenticated(undefined);
+    }
+  }, [location.pathname, homeLoaderData]);
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
   };
+
+  const handleUserMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+    setUserMenuAnchor(event.currentTarget);
+  };
+
+  const handleUserMenuClose = () => {
+    setUserMenuAnchor(null);
+  };
+
+  const handleSignOut = async () => {
+    handleUserMenuClose();
+    await signOut();
+    navigate("/login");
+  };
+
+  // If still loading auth state, show loading spinner
+  if (loading) {
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          minHeight: "100vh",
+        }}
+      >
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  // For root path, check authentication from loader data
+  // For other paths, check from session
+  const isAuthenticated =
+    location.pathname === "/" ? homeIsAuthenticated : !!session;
+
+  // If not authenticated, show landing page
+  if (!isAuthenticated) {
+    return <LandingComponent />;
+  }
 
   const drawer = (
     <div>
@@ -80,9 +154,63 @@ export default function Layout() {
           <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
             Imagine It
           </Typography>
-          <Button color="inherit" component={Link} to={PATHS.CHECKOUT}>
-            Checkout
-          </Button>
+
+          {/* Shopping Cart Button */}
+          <IconButton
+            color="inherit"
+            component={Link}
+            to={PATHS.CART}
+            sx={{ mr: 1 }}
+          >
+            <FiShoppingCart />
+          </IconButton>
+
+          {/* User Menu */}
+          <IconButton
+            color="inherit"
+            onClick={handleUserMenuOpen}
+            sx={{ p: 0, ml: 1 }}
+          >
+            <Avatar
+              alt={user?.email?.charAt(0).toUpperCase() ?? "U"}
+              src={user?.user_metadata?.avatar_url}
+              sx={{ width: 32, height: 32, bgcolor: "secondary.main" }}
+            >
+              {user?.email?.charAt(0).toUpperCase() ?? "U"}
+            </Avatar>
+          </IconButton>
+
+          <Menu
+            anchorEl={userMenuAnchor}
+            open={Boolean(userMenuAnchor)}
+            onClose={handleUserMenuClose}
+            slotProps={{
+              paper: {
+                elevation: 3,
+                sx: { minWidth: 180 },
+              },
+            }}
+            transformOrigin={{ horizontal: "right", vertical: "top" }}
+            anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
+          >
+            <MenuItem
+              component={Link}
+              to="/account"
+              onClick={handleUserMenuClose}
+            >
+              <ListItemIcon>
+                <FiUser fontSize="small" />
+              </ListItemIcon>
+              My Account
+            </MenuItem>
+            <Divider />
+            <MenuItem onClick={handleSignOut}>
+              <ListItemIcon>
+                <FiLogOut fontSize="small" />
+              </ListItemIcon>
+              Sign Out
+            </MenuItem>
+          </Menu>
         </Toolbar>
       </AppBar>
       <Box

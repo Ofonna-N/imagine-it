@@ -9,7 +9,7 @@ import {
 
 // Define path constants for use throughout the application
 export const PATHS = {
-  HOME: "/home",
+  HOME: "/",
   PRODUCTS: "/products",
   DESIGN_PLAYGROUND: "/design-playground",
   MY_DESIGNS: "/my-designs",

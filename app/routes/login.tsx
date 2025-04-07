@@ -1,125 +1,135 @@
-import React, { useState } from "react";
 import {
-  Box,
-  Paper,
-  Typography,
   TextField,
   Button,
+  Typography,
   Container,
-  Link as MuiLink,
+  Box,
+  Paper,
   Alert,
+  Link as MuiLink,
   CircularProgress,
 } from "@mui/material";
-import { Link, useNavigate } from "react-router";
+import { useNavigate } from "react-router";
+import { Link } from "react-router";
 import { FiLogIn } from "react-icons/fi";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  loginSchema,
+  useLoginMutation,
+  type LoginFormValues,
+} from "~/features/auth/hooks/useAuthMutations";
 
 export default function Login() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const login = useLoginMutation();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
+  // Initialize react-hook-form with zod resolver
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginFormValues>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+  });
 
-    try {
-      // Here you would call your authentication API
-      // For now, let's simulate a login with a timeout
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      // Navigate to the main application home page inside the layout
-      navigate("/home");
-    } catch (err) {
-      setError("Invalid email or password. Please try again.");
-    } finally {
-      setLoading(false);
-    }
+  const onSubmit = (data: LoginFormValues) => {
+    login.mutate(data, {
+      onSuccess: () => {
+        // Successfully logged in, redirect to home
+        navigate("/");
+      },
+    });
   };
 
   return (
-    <Container maxWidth="sm" sx={{ py: 8 }}>
-      <Paper elevation={3} sx={{ p: 4, borderRadius: 2 }}>
-        <Typography variant="h4" component="h1" align="center" gutterBottom>
-          Log In to Imagine It
-        </Typography>
-
-        <Typography
-          variant="body2"
-          color="text.secondary"
-          align="center"
-          sx={{ mb: 4 }}
+    <Container maxWidth="sm">
+      <Box sx={{ mt: 8, mb: 8 }}>
+        <Paper
+          elevation={3}
+          sx={{
+            p: 4,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            borderRadius: 2,
+          }}
         >
-          Enter your credentials to access your account
-        </Typography>
+          <FiLogIn size={36} color="#1976d2" style={{ marginBottom: 16 }} />
 
-        {error && (
-          <Alert severity="error" sx={{ mb: 3 }}>
-            {error}
-          </Alert>
-        )}
+          <Typography component="h1" variant="h4" gutterBottom>
+            Log in
+          </Typography>
 
-        <Box component="form" onSubmit={handleSubmit} noValidate>
-          <TextField
-            margin="normal"
-            required
-            fullWidth
-            id="email"
-            label="Email Address"
-            name="email"
-            autoComplete="email"
-            autoFocus
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-          <TextField
-            margin="normal"
-            required
-            fullWidth
-            name="password"
-            label="Password"
-            type="password"
-            id="password"
-            autoComplete="current-password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+            Sign in to access your designs and orders
+          </Typography>
 
-          <Button
-            type="submit"
-            fullWidth
-            variant="contained"
-            startIcon={
-              loading ? (
-                <CircularProgress size={20} color="inherit" />
-              ) : (
-                <FiLogIn />
-              )
-            }
-            disabled={loading}
-            sx={{ mt: 3, mb: 2, py: 1.5 }}
+          {login.error && (
+            <Alert severity="error" sx={{ width: "100%", mb: 3 }}>
+              {login.error.message}
+            </Alert>
+          )}
+
+          <Box
+            component="form"
+            onSubmit={handleSubmit(onSubmit)}
+            sx={{ width: "100%" }}
           >
-            {loading ? "Logging in..." : "Log In"}
-          </Button>
+            <TextField
+              margin="normal"
+              required
+              fullWidth
+              id="email"
+              label="Email Address"
+              autoComplete="email"
+              autoFocus
+              disabled={login.isPending}
+              {...register("email")}
+              error={!!errors.email}
+              helperText={errors.email?.message}
+            />
+            <TextField
+              margin="normal"
+              required
+              fullWidth
+              label="Password"
+              type="password"
+              id="password"
+              autoComplete="current-password"
+              disabled={login.isPending}
+              {...register("password")}
+              error={!!errors.password}
+              helperText={errors.password?.message}
+            />
+            <Button
+              type="submit"
+              fullWidth
+              variant="contained"
+              sx={{ mt: 3, mb: 2, py: 1.5 }}
+              disabled={login.isPending}
+              startIcon={
+                login.isPending ? <CircularProgress size={20} /> : null
+              }
+            >
+              {login.isPending ? "Signing in..." : "Sign In"}
+            </Button>
 
-          <Box sx={{ textAlign: "center", mt: 2 }}>
-            <Typography variant="body2">
-              Don't have an account?{" "}
-              <MuiLink component={Link} to="/signup" underline="hover">
-                Sign up
-              </MuiLink>
-            </Typography>
-
-            <Typography variant="body2" sx={{ mt: 1 }}>
-              <MuiLink component={Link} to="/" underline="hover">
-                Back to landing page
-              </MuiLink>
-            </Typography>
+            <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
+              <Typography variant="body2">
+                Don't have an account?{" "}
+                <MuiLink component={Link} to="/signup">
+                  Sign up
+                </MuiLink>
+              </Typography>
+            </Box>
           </Box>
-        </Box>
-      </Paper>
+        </Paper>
+      </Box>
     </Container>
   );
 }
