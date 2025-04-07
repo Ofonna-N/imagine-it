@@ -22,8 +22,8 @@ export const signupSchema = z
 export type LoginFormValues = z.infer<typeof loginSchema>;
 export type SignupFormValues = z.infer<typeof signupSchema>;
 
-// Login mutation
-export function useLoginMutation() {
+// Login mutation - rename to follow convention
+export function useMutateAuthLogin() {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -50,8 +50,11 @@ export function useLoginMutation() {
   });
 }
 
-// Signup mutation
-export function useSignupMutation() {
+// Keep backward compatibility
+export const useLoginMutation = useMutateAuthLogin;
+
+// Signup mutation - rename to follow convention
+export function useMutateAuthSignup() {
   return useMutation({
     mutationFn: async (
       { email, password }: Omit<SignupFormValues, "confirmPassword">,
@@ -75,8 +78,11 @@ export function useSignupMutation() {
   });
 }
 
-// Signout mutation
-export function useSignoutMutation() {
+// Keep backward compatibility
+export const useSignupMutation = useMutateAuthSignup;
+
+// Signout mutation - rename to follow convention
+export function useMutateAuthSignout() {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -99,3 +105,6 @@ export function useSignoutMutation() {
     },
   });
 }
+
+// Keep backward compatibility
+export const useSignoutMutation = useMutateAuthSignout;

@@ -1,7 +1,7 @@
 import { createContext, useContext, useMemo } from "react";
 import type { ReactNode } from "react";
 import { redirect } from "react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, type UseQueryOptions } from "@tanstack/react-query";
 import createSupabaseServerClient from "~/services/supabase/supabase-client";
 import {
   useLoginMutation,
@@ -28,28 +28,63 @@ type AuthContextType = {
 // Create the auth context
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Custom hook for fetching the current user
-export function useQueryUser() {
-  return useQuery<CompactUserProfile | null>({
-    queryKey: ["user"],
+/**
+ * Interface for user query parameters
+ */
+interface UserQueryParams {
+  includeMetadata?: boolean;
+}
+
+/**
+ * Interface for user query response
+ */
+interface UserQueryResponse {
+  user: CompactUserProfile | null;
+}
+
+/**
+ * Hook for fetching the current user using TanStack Query
+ *
+ * @param params - Query parameters for customizing the user fetch
+ * @param options - TanStack Query options for customizing query behavior
+ * @returns Query result with user data, loading state, error state, etc.
+ */
+export function useQueryUser({
+  params = {},
+  options,
+}: {
+  params?: UserQueryParams;
+  options?: Partial<
+    UseQueryOptions<
+      UserQueryResponse,
+      Error,
+      UserQueryResponse,
+      ["user", UserQueryParams]
+    >
+  >;
+} = {}) {
+  return useQuery({
+    queryKey: ["user", params],
     queryFn: async () => {
       const response = await fetch("/api/auth/session", {
         credentials: "include",
       });
 
       if (!response.ok) {
-        return null;
+        return { user: null };
       }
 
       const data = await response.json();
-      return data.user || null;
+      return { user: data.user || null };
     },
+    ...options,
   });
 }
 
 // Auth provider component
 export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
-  const { data: user, isLoading: loading } = useQueryUser();
+  const { data, isLoading: loading } = useQueryUser();
+  const user = data?.user ?? null;
 
   // Get authentication mutations within the provider
   const loginMutation = useLoginMutation();
@@ -96,7 +131,7 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
   // Memoize the context value including auth methods
   const value: AuthContextType = useMemo(
     () => ({
-      user: user ?? null, // Ensure user is never undefined
+      user,
       loading,
       signIn,
       signUp,
@@ -110,7 +145,10 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
 
 // Simplified hook to use auth context
 export function useAuth() {
-  const context = useContext(AuthContext) as AuthContextType;
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
   return context;
 }
 
