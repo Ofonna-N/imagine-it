@@ -1,23 +1,60 @@
-import { Grid } from "@mui/material";
+import { Box } from "@mui/material";
 import { ProductCard } from "./ProductCard";
-import type { Product } from "../types";
+import type { PrintfulCatalogProductsList } from "~/types/printful";
+import { motion } from "framer-motion";
+
+// Animation variants for container and items
+const container = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+    },
+  },
+};
+
+const item = {
+  hidden: { opacity: 0, y: 20 },
+  show: { opacity: 1, y: 0 },
+};
 
 interface ProductGridProps {
-  products: Product[];
+  catalogProducts?: PrintfulCatalogProductsList;
   featured?: boolean;
 }
 
 export const ProductGrid: React.FC<ProductGridProps> = ({
-  products,
+  catalogProducts = [],
   featured = false,
 }) => {
   return (
-    <Grid container spacing={3}>
-      {products.map((product) => (
-        <Grid size={{ xs: 12, sm: 6, md: 4 }} key={product.id}>
-          <ProductCard product={product} featured={featured} />
-        </Grid>
-      ))}
-    </Grid>
+    <Box
+      component={motion.div}
+      variants={container}
+      initial="hidden"
+      animate="show"
+      sx={{
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
+        gap: 3,
+      }}
+    >
+      {catalogProducts.length > 0 &&
+        catalogProducts.map((product) => (
+          <Box
+            component={motion.div}
+            key={product.id.toString()}
+            variants={item}
+          >
+            <ProductCard
+              id={product.id}
+              name={product.title}
+              thumbnailUrl={product.image}
+              featured={featured}
+            />
+          </Box>
+        ))}
+    </Box>
   );
 };

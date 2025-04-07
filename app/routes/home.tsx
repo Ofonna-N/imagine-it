@@ -1,200 +1,171 @@
 import {
   Typography,
   Box,
+  Alert,
+  Skeleton,
   Grid,
-  Paper,
   Button,
-  Card,
-  CardContent,
-  CardMedia,
-  CardActionArea,
-  Chip,
+  Fade,
+  keyframes,
 } from "@mui/material";
-import { FiEdit, FiShoppingBag } from "react-icons/fi";
-import { Link } from "react-router";
+import { ProductGrid } from "~/features/product/components/ProductGrid";
+import type { Route } from "./+types/home";
+import { useQueryClient } from "@tanstack/react-query";
+import { FaStar, FaMagic } from "react-icons/fa";
+import { FiShoppingBag } from "react-icons/fi";
+import { Link, useRevalidator } from "react-router"; // Combined imports from react-router
+import { queryClient } from "~/context/query_provider";
 
-// Featured products data (subset of products from product_listing)
-const featuredProducts = [
-  {
-    id: "1",
-    name: "T-Shirt",
-    price: 24.99,
-    category: "clothing",
-    image: "https://placehold.co/300x300/e66/fff?text=T-Shirt",
-  },
-  {
-    id: "3",
-    name: "Mug",
-    price: 14.99,
-    category: "accessories",
-    image: "https://placehold.co/300x300/66e/fff?text=Mug",
-  },
-  {
-    id: "2",
-    name: "Hoodie",
-    price: 39.99,
-    category: "clothing",
-    image: "https://placehold.co/300x300/6e6/fff?text=Hoodie",
-  },
-];
+// Define the pulse animation using MUI's keyframes
+const pulseAnimation = keyframes`
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.2);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+`;
 
-export default function Home() {
+// React Router client loader using the Query Client
+export async function clientLoader() {
+  // Use the query client to fetch and cache the data with 1-hour stale time
+  const products = await queryClient.fetchQuery({
+    queryKey: ["featuredProducts"],
+    queryFn: async () => {
+      const response = await fetch("/api/products/featured");
+      return response.json();
+    },
+    staleTime: 10 * 60 * 1000, // 10 minutes
+  });
+
+  return { products };
+}
+
+export function HydrateFallback() {
+  return (
+    <Box sx={{ mt: 4, textAlign: "center" }}>
+      <Typography variant="h4" gutterBottom>
+        <FaStar
+          style={{
+            marginRight: "8px",
+            animation: `${pulseAnimation} 1.5s infinite`,
+          }}
+        />
+        Discovering Lucky Products
+      </Typography>
+      <Typography variant="body1" sx={{ mb: 4 }}>
+        Hold tight while we curate a special selection just for you!
+      </Typography>
+
+      <Grid container spacing={3}>
+        {Array.from(new Array(6)).map((_, index) => (
+          <Grid size={{ xs: 12, sm: 6, md: 4 }} key={index}>
+            <Box sx={{ width: "100%", my: 1 }}>
+              <Skeleton
+                variant="rectangular"
+                width="100%"
+                height={200}
+                sx={{ mb: 1 }}
+              />
+              <Skeleton variant="text" width="80%" height={32} sx={{ mb: 1 }} />
+              <Skeleton variant="text" width="40%" />
+            </Box>
+          </Grid>
+        ))}
+      </Grid>
+    </Box>
+  );
+}
+
+export default function Home({ loaderData }: Readonly<Route.ComponentProps>) {
+  const { products } = loaderData;
+  const queryClient = useQueryClient();
+  const revalidator = useRevalidator();
+  // Function to manually refresh products
+  const handleRefresh = async () => {
+    // Invalidate and refetch
+    await queryClient.invalidateQueries({ queryKey: ["featuredProducts"] });
+
+    // Force a fresh fetch from the server
+    revalidator.revalidate();
+  };
+
   return (
     <Box sx={{ mt: 4 }}>
-      <Box sx={{ mb: 6, textAlign: "center" }}>
-        <Typography variant="h3" component="h1" gutterBottom>
-          Welcome to Imagine It
-        </Typography>
-        <Typography
-          variant="h5"
-          color="text.secondary"
-          component="p"
-          sx={{ mb: 2 }}
-        >
-          Custom merchandise designed with AI - bring your ideas to life
-        </Typography>
-        <Button
-          variant="contained"
-          size="large"
-          component={Link}
-          to="/design-playground"
-          startIcon={<FiEdit />}
-          sx={{ mt: 2 }}
-        >
-          Start Designing
-        </Button>
-      </Box>
+      {/* Lucky Products Section */}
+      <Box sx={{ mb: 4 }}>
+        <Fade in={true} timeout={800}>
+          <Box>
+            <Typography
+              variant="h4"
+              component="h2"
+              gutterBottom
+              align="center"
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <FaMagic
+                style={{
+                  marginRight: "8px",
+                  color: "#1976d2", // primary color
+                  animation: `${pulseAnimation} 2.5s infinite`,
+                }}
+              />
+              Today's Lucky Finds
+            </Typography>
+            <Typography
+              variant="body1"
+              component="p"
+              align="center"
+              sx={{ mb: 2 }}
+            >
+              We've randomly selected these gems for your inspiration!
+            </Typography>
 
-      <Grid container spacing={4}>
-        <Grid size={{ xs: 12, md: 4 }}>
-          <Paper
-            elevation={2}
-            sx={{
-              p: 3,
-              height: "100%",
-              display: "flex",
-              flexDirection: "column",
-            }}
-          >
-            <Typography variant="h5" component="h2" gutterBottom>
-              Create
-            </Typography>
-            <Typography component="p">
-              Use our AI-powered design playground to create unique designs for
-              your merchandise.
-            </Typography>
-          </Paper>
-        </Grid>
-        <Grid size={{ xs: 12, md: 4 }}>
-          <Paper
-            elevation={2}
-            sx={{
-              p: 3,
-              height: "100%",
-              display: "flex",
-              flexDirection: "column",
-            }}
-          >
-            <Typography variant="h5" component="h2" gutterBottom>
-              Customize
-            </Typography>
-            <Typography component="p">
-              Apply your designs to a wide range of products - from t-shirts to
-              mugs and more.
-            </Typography>
-          </Paper>
-        </Grid>
-        <Grid size={{ xs: 12, md: 4 }}>
-          <Paper
-            elevation={2}
-            sx={{
-              p: 3,
-              height: "100%",
-              display: "flex",
-              flexDirection: "column",
-            }}
-          >
-            <Typography variant="h5" component="h2" gutterBottom>
-              Order
-            </Typography>
-            <Typography component="p">
-              Get your custom merchandise delivered right to your doorstep with
-              our fast shipping.
-            </Typography>
-          </Paper>
-        </Grid>
-      </Grid>
-
-      {/* Featured Products Section */}
-      <Box sx={{ mt: 8, mb: 4 }}>
-        <Typography variant="h4" component="h2" gutterBottom align="center">
-          Featured Products
-        </Typography>
-        <Typography variant="body1" component="p" align="center" sx={{ mb: 4 }}>
-          Browse our most popular items ready for your creative designs
-        </Typography>
-
-        <Grid container spacing={3}>
-          {featuredProducts.map((product) => (
-            <Grid size={{ xs: 12, sm: 6, md: 4 }} key={product.id}>
-              <Card
+            {/* Action buttons */}
+            <Box
+              sx={{ display: "flex", justifyContent: "center", mb: 4, gap: 2 }}
+            >
+              <Button
+                variant="outlined"
+                onClick={handleRefresh}
+                startIcon={<FaStar />}
                 sx={{
-                  height: "100%",
-                  display: "flex",
-                  flexDirection: "column",
-                  transform: "scale(1)",
-                  transition: "transform 0.2s ease-in-out",
-                  "&:hover": {
-                    transform: "scale(1.03)",
+                  "&:hover svg": {
+                    animation: `${pulseAnimation} 1s`,
                   },
                 }}
               >
-                <CardActionArea component={Link} to={`/products/${product.id}`}>
-                  <CardMedia
-                    component="img"
-                    height="200"
-                    image={product.image}
-                    alt={product.name}
-                  />
-                  <CardContent>
-                    <Typography gutterBottom variant="h6" component="h3">
-                      {product.name}
-                    </Typography>
-                    <Box
-                      sx={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                      }}
-                    >
-                      <Typography variant="body1" color="text.secondary">
-                        ${product.price.toFixed(2)}
-                      </Typography>
-                      <Chip
-                        label={product.category}
-                        size="small"
-                        color="primary"
-                        variant="outlined"
-                      />
-                    </Box>
-                  </CardContent>
-                </CardActionArea>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
+                Shuffle New Lucky Products
+              </Button>
+              <Button
+                variant="contained"
+                component={Link}
+                to="/products"
+                startIcon={<FiShoppingBag />}
+              >
+                View All Products
+              </Button>
+            </Box>
+          </Box>
+        </Fade>
 
-        <Box sx={{ textAlign: "center", mt: 4 }}>
-          <Button
-            variant="outlined"
-            component={Link}
-            to="/products"
-            startIcon={<FiShoppingBag />}
-            size="large"
-          >
-            View All Products
-          </Button>
-        </Box>
+        {products && products.length > 0 ? (
+          <ProductGrid catalogProducts={products} featured />
+        ) : (
+          <Alert severity="info" sx={{ mb: 2 }}>
+            No lucky products found. Please try again later!
+          </Alert>
+        )}
       </Box>
     </Box>
   );

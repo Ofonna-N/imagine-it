@@ -6,17 +6,23 @@ import {
   CardMedia,
   Typography,
   Box,
-  Chip,
 } from "@mui/material";
-import type { Product } from "../types";
 
+// Define a simpler interface with only the needed properties
 interface ProductCardProps {
-  product: Product;
+  id: string | number;
+  name: string;
+  thumbnailUrl: string;
+  // Make price optional
+  price?: string | number;
   featured?: boolean;
 }
 
 export const ProductCard: React.FC<ProductCardProps> = ({
-  product,
+  id,
+  name,
+  thumbnailUrl,
+  price,
   featured = false,
 }) => {
   return (
@@ -32,33 +38,25 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         },
       }}
     >
-      <CardActionArea component={Link} to={`/products/${product.id}`}>
-        <CardMedia
-          component="img"
-          height={featured ? "200" : "180"}
-          image={product.image}
-          alt={product.name}
-        />
+      <CardActionArea component={Link} to={`/products/${id}`}>
+        <CardMedia component="img" image={thumbnailUrl} alt={name} />
         <CardContent>
           <Typography gutterBottom variant="h6" component="h3">
-            {product.name}
+            {name}
           </Typography>
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            <Typography variant="body1" color="text.secondary">
-              ${product.price.toFixed(2)}
-            </Typography>
-            <Chip
-              label={product.category}
-              size="small"
-              color="primary"
-              variant="outlined"
-            />
+          <Box>
+            {price ? (
+              <Typography variant="body1" color="text.secondary">
+                $
+                {typeof price === "string"
+                  ? Number(price).toFixed(2)
+                  : price.toFixed(2)}
+              </Typography>
+            ) : (
+              <Typography variant="body1" color="text.secondary">
+                See pricing
+              </Typography>
+            )}
           </Box>
         </CardContent>
       </CardActionArea>
