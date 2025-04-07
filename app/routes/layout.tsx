@@ -72,7 +72,7 @@ export default function Layout({ loaderData }: Readonly<Route.ComponentProps>) {
   const handleSignOut = async () => {
     handleUserMenuClose();
     await signOut();
-    navigate("/login");
+    navigate("/");
   };
 
   // If still loading auth state, show loading spinner
