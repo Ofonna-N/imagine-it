@@ -1,5 +1,5 @@
 import { Chip } from "@mui/material";
-import { getOrderStatusLabel, getOrderStatusColor } from "../api/mockData";
+import { getOrderStatusLabel, getOrderStatusColor } from "../api/mock_data";
 import type { OrderStatus } from "../types";
 
 interface OrderStatusBadgeProps {

@@ -1,249 +1,178 @@
-import React, { useState } from "react";
 import {
-  Box,
-  Paper,
-  Typography,
   TextField,
   Button,
+  Typography,
   Container,
-  Link as MuiLink,
+  Box,
+  Paper,
   Alert,
+  Link as MuiLink,
   CircularProgress,
-  Stepper,
-  Step,
-  StepLabel,
 } from "@mui/material";
 import { Link, useNavigate } from "react-router";
 import { FiUserPlus } from "react-icons/fi";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useState } from "react";
+import {
+  signupSchema,
+  useSignupMutation,
+  type SignupFormValues,
+} from "~/features/auth/hooks/use_auth_mutations";
+import { checkAuthAndRedirect } from "~/features/auth/utils/auth_redirects";
+import type { Route } from "./+types/layout";
 
-export default function Signup() {
+// Add loader function that checks if user is already authenticated
+export async function loader({ request }: Route.LoaderArgs) {
+  // Redirect to home if already authenticated
+  return await checkAuthAndRedirect(request, "/");
+}
+
+export default function SignupPage() {
+  const [success, setSuccess] = useState<string | null>(null);
   const navigate = useNavigate();
-  const [activeStep, setActiveStep] = useState(0);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const signup = useSignupMutation();
 
-  // Account details
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  // Initialize react-hook-form with zod resolver
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<SignupFormValues>({
+    resolver: zodResolver(signupSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+      confirmPassword: "",
+    },
+  });
 
-  // Personal details
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
+  const onSubmit = (data: SignupFormValues) => {
+    const { email, password } = data;
 
-  const steps = ["Account Details", "Personal Information", "Confirmation"];
+    signup.mutate(
+      { email, password },
+      {
+        onSuccess: (result) => {
+          // Success message - with Supabase, users need to confirm their email
+          setSuccess(
+            "Account created! Please check your email to confirm your account."
+          );
 
-  const handleNext = () => {
-    if (activeStep === 0) {
-      // Validate first step
-      if (!email || !password || !confirmPassword) {
-        setError("Please fill in all required fields");
-        return;
+          // Optionally redirect after a delay
+          setTimeout(() => {
+            navigate("/");
+          }, 5000);
+        },
       }
-      if (password !== confirmPassword) {
-        setError("Passwords do not match");
-        return;
-      }
-    } else if (activeStep === 1) {
-      // Validate second step
-      if (!firstName || !lastName) {
-        setError("Please fill in all required fields");
-        return;
-      }
-    }
-
-    setError("");
-    setActiveStep((prevStep) => prevStep + 1);
-  };
-
-  const handleBack = () => {
-    setActiveStep((prevStep) => prevStep - 1);
-    setError("");
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
-
-    try {
-      // Here you would call your registration API
-      // For now, let's simulate a signup with a timeout
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-
-      // Navigate to the main application home page inside the layout
-      navigate("/home");
-    } catch (err) {
-      setError("Failed to create account. Please try again.");
-    } finally {
-      setLoading(false);
-    }
+    );
   };
 
   return (
-    <Container maxWidth="sm" sx={{ py: 8 }}>
-      <Paper elevation={3} sx={{ p: 4, borderRadius: 2 }}>
-        <Typography variant="h4" component="h1" align="center" gutterBottom>
-          Create an Account
-        </Typography>
-
-        <Typography
-          variant="body2"
-          color="text.secondary"
-          align="center"
-          sx={{ mb: 4 }}
+    <Container maxWidth="sm">
+      <Box sx={{ mt: 8, mb: 8 }}>
+        <Paper
+          elevation={3}
+          sx={{
+            p: 4,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            borderRadius: 2,
+          }}
         >
-          Join Imagine It and start creating unique designs
-        </Typography>
+          <FiUserPlus size={36} color="#1976d2" style={{ marginBottom: 16 }} />
 
-        <Stepper activeStep={activeStep} sx={{ mb: 4 }}>
-          {steps.map((label) => (
-            <Step key={label}>
-              <StepLabel>{label}</StepLabel>
-            </Step>
-          ))}
-        </Stepper>
+          <Typography component="h1" variant="h4" gutterBottom>
+            Create an Account
+          </Typography>
 
-        {error && (
-          <Alert severity="error" sx={{ mb: 3 }}>
-            {error}
-          </Alert>
-        )}
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+            Join us to create and customize your own designs
+          </Typography>
 
-        <Box component="form" onSubmit={handleSubmit} noValidate>
-          {activeStep === 0 && (
-            <>
-              <TextField
-                margin="normal"
-                required
-                fullWidth
-                id="email"
-                label="Email Address"
-                name="email"
-                autoComplete="email"
-                autoFocus
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-              <TextField
-                margin="normal"
-                required
-                fullWidth
-                name="password"
-                label="Password"
-                type="password"
-                id="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-              <TextField
-                margin="normal"
-                required
-                fullWidth
-                name="confirmPassword"
-                label="Confirm Password"
-                type="password"
-                id="confirmPassword"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-              />
-            </>
+          {signup.error && (
+            <Alert severity="error" sx={{ width: "100%", mb: 3 }}>
+              {signup.error.message}
+            </Alert>
           )}
 
-          {activeStep === 1 && (
-            <>
-              <TextField
-                margin="normal"
-                required
-                fullWidth
-                id="firstName"
-                label="First Name"
-                name="firstName"
-                autoComplete="given-name"
-                value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
-              />
-              <TextField
-                margin="normal"
-                required
-                fullWidth
-                id="lastName"
-                label="Last Name"
-                name="lastName"
-                autoComplete="family-name"
-                value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
-              />
-            </>
+          {success && (
+            <Alert severity="success" sx={{ width: "100%", mb: 3 }}>
+              {success}
+            </Alert>
           )}
 
-          {activeStep === 2 && (
-            <Box sx={{ my: 2 }}>
-              <Typography variant="h6" gutterBottom>
-                Review Your Information
-              </Typography>
-              <Typography>Email: {email}</Typography>
-              <Typography>
-                Name: {firstName} {lastName}
+          <Box
+            component="form"
+            onSubmit={handleSubmit(onSubmit)}
+            sx={{ width: "100%" }}
+          >
+            <TextField
+              margin="normal"
+              required
+              fullWidth
+              id="email"
+              label="Email Address"
+              autoComplete="email"
+              autoFocus
+              disabled={signup.isPending || !!success}
+              {...register("email")}
+              error={!!errors.email}
+              helperText={errors.email?.message}
+            />
+            <TextField
+              margin="normal"
+              required
+              fullWidth
+              label="Password"
+              type="password"
+              id="password"
+              autoComplete="new-password"
+              disabled={signup.isPending || !!success}
+              {...register("password")}
+              error={!!errors.password}
+              helperText={
+                errors.password?.message ?? "Must be at least 6 characters"
+              }
+            />
+            <TextField
+              margin="normal"
+              required
+              fullWidth
+              label="Confirm Password"
+              type="password"
+              id="confirmPassword"
+              autoComplete="new-password"
+              disabled={signup.isPending || !!success}
+              {...register("confirmPassword")}
+              error={!!errors.confirmPassword}
+              helperText={errors.confirmPassword?.message}
+            />
+            <Button
+              type="submit"
+              fullWidth
+              variant="contained"
+              sx={{ mt: 3, mb: 2, py: 1.5 }}
+              disabled={signup.isPending || !!success}
+              startIcon={
+                signup.isPending ? <CircularProgress size={20} /> : null
+              }
+            >
+              {signup.isPending ? "Creating Account..." : "Sign Up"}
+            </Button>
+
+            <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
+              <Typography variant="body2">
+                Already have an account?{" "}
+                <MuiLink component={Link} to="/login">
+                  Log in
+                </MuiLink>
               </Typography>
             </Box>
-          )}
-
-          <Box sx={{ display: "flex", justifyContent: "space-between", mt: 3 }}>
-            {activeStep > 0 && (
-              <Button
-                variant="outlined"
-                onClick={handleBack}
-                disabled={loading}
-              >
-                Back
-              </Button>
-            )}
-
-            {activeStep < steps.length - 1 ? (
-              <Button
-                variant="contained"
-                onClick={handleNext}
-                sx={{ ml: activeStep === 0 ? "auto" : 0 }}
-              >
-                Next
-              </Button>
-            ) : (
-              <Button
-                type="submit"
-                variant="contained"
-                color="primary"
-                startIcon={
-                  loading ? (
-                    <CircularProgress size={20} color="inherit" />
-                  ) : (
-                    <FiUserPlus />
-                  )
-                }
-                disabled={loading}
-                sx={{ ml: "auto" }}
-              >
-                {loading ? "Creating Account..." : "Create Account"}
-              </Button>
-            )}
           </Box>
-
-          <Box sx={{ textAlign: "center", mt: 4 }}>
-            <Typography variant="body2">
-              Already have an account?{" "}
-              <MuiLink component={Link} to="/login" underline="hover">
-                Log in
-              </MuiLink>
-            </Typography>
-
-            <Typography variant="body2" sx={{ mt: 1 }}>
-              <MuiLink component={Link} to="/" underline="hover">
-                Back to landing page
-              </MuiLink>
-            </Typography>
-          </Box>
-        </Box>
-      </Paper>
+        </Paper>
+      </Box>
     </Container>
   );
 }

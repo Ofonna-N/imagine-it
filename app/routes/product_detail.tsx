@@ -15,7 +15,7 @@ import {
 } from "@mui/material";
 import { useState } from "react";
 import { useLoaderData, Link } from "react-router";
-import { fetchCatalogProductById } from "../services/printful/printful-api";
+import { fetchCatalogProductById } from "../services/printful/printful_api";
 import type { PrintfulCatalogProductResponse } from "../types/printful";
 import { FiEdit, FiUpload, FiZap, FiInfo, FiChevronDown } from "react-icons/fi";
 

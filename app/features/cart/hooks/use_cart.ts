@@ -1,8 +1,7 @@
 import { useReducer, useCallback } from "react";
 
-import { mockCartItems, calculateCartTotals } from "../api/mockData";
+import { mockCartItems, calculateCartTotals } from "../api/mock_data";
 import type { Cart, CartAction, CartItem } from "../types";
-import type { Product } from "~/features/product/types";
 
 // Initial cart state with mock data
 const initialCartState: Cart = {
@@ -94,7 +93,7 @@ export const useCart = () => {
   const [cart, dispatch] = useReducer(cartReducer, initialCartState);
 
   const addItem = useCallback(
-    (product: Product, design?: string, quantity: number = 1) => {
+    (product: any, design?: string, quantity: number = 1) => {
       dispatch({ type: "ADD_ITEM", payload: { product, design, quantity } });
     },
     []

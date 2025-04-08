@@ -1,125 +1,140 @@
-import React, { useState } from "react";
 import {
-  Box,
-  Paper,
-  Typography,
   TextField,
   Button,
+  Typography,
   Container,
-  Link as MuiLink,
+  Box,
   Alert,
+  Link as MuiLink,
   CircularProgress,
+  Avatar,
 } from "@mui/material";
-import { Link, useNavigate } from "react-router";
+import { useNavigate, Link } from "react-router";
 import { FiLogIn } from "react-icons/fi";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  loginSchema,
+  useLoginMutation,
+  type LoginFormValues,
+} from "~/features/auth/hooks/use_auth_mutations";
+import { SocialSignIn } from "~/features/auth/components/social_signin";
+import { checkAuthAndRedirect } from "~/features/auth/utils/auth_redirects";
+import type { Route } from "./+types/layout";
 
-export default function Login() {
+// Add loader function that checks if user is already authenticated
+export async function loader({ request }: Route.LoaderArgs) {
+  // Redirect to home if already authenticated
+  return await checkAuthAndRedirect(request, "/");
+}
+
+export default function LoginPage() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const login = useLoginMutation();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
+  // Initialize react-hook-form with zod resolver
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginFormValues>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+  });
 
-    try {
-      // Here you would call your authentication API
-      // For now, let's simulate a login with a timeout
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      // Navigate to the main application home page inside the layout
-      navigate("/home");
-    } catch (err) {
-      setError("Invalid email or password. Please try again.");
-    } finally {
-      setLoading(false);
-    }
+  const onSubmit = (data: LoginFormValues) => {
+    login.mutate(data, {
+      onSuccess: () => {
+        // Successfully logged in, redirect to home
+        navigate("/");
+      },
+    });
   };
 
   return (
-    <Container maxWidth="sm" sx={{ py: 8 }}>
-      <Paper elevation={3} sx={{ p: 4, borderRadius: 2 }}>
-        <Typography variant="h4" component="h1" align="center" gutterBottom>
-          Log In to Imagine It
+    <Container maxWidth="xs">
+      <Box
+        sx={{
+          marginTop: 8,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+        }}
+      >
+        <Avatar sx={{ m: 1, bgcolor: "primary.main" }}>
+          <FiLogIn size={36} color="#fff" />
+        </Avatar>
+        <Typography component="h1" variant="h5">
+          Sign in
         </Typography>
 
-        <Typography
-          variant="body2"
-          color="text.secondary"
-          align="center"
-          sx={{ mb: 4 }}
-        >
-          Enter your credentials to access your account
-        </Typography>
-
-        {error && (
-          <Alert severity="error" sx={{ mb: 3 }}>
-            {error}
+        {login.error && (
+          <Alert severity="error" sx={{ mt: 2, width: "100%" }}>
+            {login.error.message || "Failed to sign in. Please try again."}
           </Alert>
         )}
 
-        <Box component="form" onSubmit={handleSubmit} noValidate>
+        {/* Regular email/password login form */}
+        <Box
+          component="form"
+          onSubmit={handleSubmit(onSubmit)}
+          noValidate
+          sx={{ mt: 1, width: "100%" }}
+        >
           <TextField
             margin="normal"
             required
             fullWidth
             id="email"
             label="Email Address"
-            name="email"
             autoComplete="email"
             autoFocus
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            disabled={login.isPending}
+            {...register("email")}
+            error={!!errors.email}
+            helperText={errors.email?.message}
           />
           <TextField
             margin="normal"
             required
             fullWidth
-            name="password"
             label="Password"
             type="password"
             id="password"
             autoComplete="current-password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            disabled={login.isPending}
+            {...register("password")}
+            error={!!errors.password}
+            helperText={errors.password?.message}
           />
-
           <Button
             type="submit"
             fullWidth
             variant="contained"
-            startIcon={
-              loading ? (
-                <CircularProgress size={20} color="inherit" />
-              ) : (
-                <FiLogIn />
-              )
-            }
-            disabled={loading}
             sx={{ mt: 3, mb: 2, py: 1.5 }}
+            disabled={login.isPending}
+            startIcon={login.isPending ? <CircularProgress size={20} /> : null}
           >
-            {loading ? "Logging in..." : "Log In"}
+            {login.isPending ? "Signing in..." : "Sign In"}
           </Button>
-
-          <Box sx={{ textAlign: "center", mt: 2 }}>
-            <Typography variant="body2">
-              Don't have an account?{" "}
-              <MuiLink component={Link} to="/signup" underline="hover">
-                Sign up
-              </MuiLink>
-            </Typography>
-
-            <Typography variant="body2" sx={{ mt: 1 }}>
-              <MuiLink component={Link} to="/" underline="hover">
-                Back to landing page
-              </MuiLink>
-            </Typography>
-          </Box>
         </Box>
-      </Paper>
+
+        {/* Add social sign-in options */}
+        <SocialSignIn />
+
+        {/* Links */}
+        <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
+          <Typography variant="body2">
+            Don't have an account?{" "}
+            <MuiLink component={Link} to="/signup">
+              Sign up
+            </MuiLink>
+          </Typography>
+        </Box>
+      </Box>
     </Container>
   );
 }

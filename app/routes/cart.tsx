@@ -1,7 +1,7 @@
 import { Box, Grid, Paper, Typography, Container } from "@mui/material";
-import { CartList } from "../features/cart/components/CartList";
-import { CartSummary } from "../features/cart/components/CartSummary";
-import { useCart } from "../features/cart/hooks/useCart";
+import { CartList } from "../features/cart/components/cart_list";
+import { CartSummary } from "../features/cart/components/cart_summary";
+import { useCart } from "../features/cart/hooks/use_cart";
 
 export default function Cart() {
   const { cart, removeItem, updateQuantity, clearCart } = useCart();

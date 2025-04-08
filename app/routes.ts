@@ -1,28 +1,48 @@
-import {
-  type RouteConfig,
-  index,
-  route,
-  layout,
-} from "@react-router/dev/routes";
+import { type RouteConfig, route, layout } from "@react-router/dev/routes";
+import { API_ROUTES, APP_ROUTES, AUTH_ROUTES } from "./constants/route_paths";
 
 export default [
-  // Public routes outside the authenticated layout
-  index("routes/landing.tsx"),
-  route("login", "routes/login.tsx"),
-  route("signup", "routes/signup.tsx"),
+  // Public authentication routes (accessible when not logged in)
+  route(AUTH_ROUTES.LOGIN.slice(1), "routes/login.tsx"),
+  route(AUTH_ROUTES.SIGNUP.slice(1), "routes/signup.tsx"),
 
-  // Main application layout (requires authentication)
+  // Main application layout - conditionally shows landing or protected content
   layout("routes/layout.tsx", [
-    route("/home", "routes/home.tsx"), // This becomes /home when accessed directly
-    route("products", "routes/product_listing.tsx"),
-    route("products/:productId", "routes/product_detail.tsx"),
-    route("design-playground", "routes/image_gen_playground.tsx"),
-    route("cart", "routes/cart.tsx"),
-    route("checkout", "routes/checkout.tsx"),
-    route("my-designs", "routes/my_designs.tsx"),
-    route("orders", "routes/orders.tsx"),
+    // Home route is now at the root with ID for loader data access
+    route(APP_ROUTES.HOME, "routes/home.tsx", { id: "home" }),
+
+    // Product related routes
+    route(APP_ROUTES.PRODUCTS.slice(1), "routes/product_listing.tsx"),
+    route(
+      `${APP_ROUTES.PRODUCTS.slice(1)}/:productId`,
+      "routes/product_detail.tsx"
+    ),
+
+    // Design and creation routes
+    route(
+      APP_ROUTES.DESIGN_PLAYGROUND.slice(1),
+      "routes/image_gen_playground.tsx"
+    ),
+
+    // Shopping cart and checkout
+    route(APP_ROUTES.CART.slice(1), "routes/cart.tsx"),
+    route(APP_ROUTES.CHECKOUT.slice(1), "routes/checkout.tsx"),
+
+    // User account routes
+    route(APP_ROUTES.MY_DESIGNS.slice(1), "routes/my_designs.tsx"),
+    route(APP_ROUTES.ORDERS.slice(1), "routes/orders.tsx"),
+    route(APP_ROUTES.ACCOUNT.slice(1), "routes/account.tsx"),
   ]),
 
-  route("api/products/featured", "routes_api/api.featured-products.ts"),
-  route("api/catalog-products", "routes_api/api.catalog-products.ts"),
+  // API routes
+  route(API_ROUTES.FEATURED_PRODUCTS, "routes_api/api.featured_products.ts"),
+  route(API_ROUTES.CATALOG_PRODUCTS, "routes_api/api.catalog_products.ts"),
+
+  // Auth resource routes
+  route(API_ROUTES.AUTH.LOGIN, "routes_api/api.auth.login.ts"),
+  route(API_ROUTES.AUTH.SIGNUP, "routes_api/api.auth.signup.ts"),
+  route(API_ROUTES.AUTH.SIGNOUT, "routes_api/api.auth.signout.ts"),
+  route(API_ROUTES.AUTH.SESSION, "routes_api/api.auth.session.ts"),
+  route("api/auth/oauth/:provider", "routes_api/api.auth.oauth.$provider.ts"),
+  route(AUTH_ROUTES.OAUTH_CALLBACK, "routes_api/api.auth.oauth.callback.ts"),
 ] satisfies RouteConfig;

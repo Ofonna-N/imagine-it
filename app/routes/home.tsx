@@ -8,12 +8,11 @@ import {
   Fade,
   keyframes,
 } from "@mui/material";
-import { ProductGrid } from "~/features/product/components/ProductGrid";
-import type { Route } from "./+types/home";
+import { ProductGrid } from "~/features/product/components/product_grid";
 import { useQueryClient } from "@tanstack/react-query";
 import { FaStar, FaMagic } from "react-icons/fa";
 import { FiShoppingBag } from "react-icons/fi";
-import { Link, useRevalidator } from "react-router"; // Combined imports from react-router
+import { Link, useRevalidator, useLoaderData } from "react-router";
 import { queryClient } from "~/context/query_provider";
 
 // Define the pulse animation using MUI's keyframes
@@ -83,10 +82,12 @@ export function HydrateFallback() {
   );
 }
 
-export default function Home({ loaderData }: Readonly<Route.ComponentProps>) {
-  const { products } = loaderData;
+export default function Home() {
+  // Use loader data directly instead of props
+  const { products } = useLoaderData<typeof clientLoader>();
   const queryClient = useQueryClient();
   const revalidator = useRevalidator();
+
   // Function to manually refresh products
   const handleRefresh = async () => {
     // Invalidate and refetch

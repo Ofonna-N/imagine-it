@@ -4,7 +4,7 @@ import {
   getAllDesigns,
   getDesignById,
   getDesignsByProductId,
-} from "../api/mockData";
+} from "../api/mock_data";
 import type { CanvasData, Design } from "../types";
 
 export const useDesigns = (productId?: string) => {

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { getOrdersByCustomerId, getOrderById } from "../api/mockData";
+import { getOrdersByCustomerId, getOrderById } from "../api/mock_data";
 import type { Order } from "../types";
 
 export const useOrders = (customerId: string = "CUST-12345") => {

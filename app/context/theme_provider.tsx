@@ -17,15 +17,23 @@ import { getTheme } from "../config/theme";
 type ThemeContextType = {
   mode: PaletteMode;
   toggleTheme: () => void;
+  setMode: (mode: PaletteMode) => void;
 };
 
 const ThemeContext = createContext<ThemeContextType>({
   mode: "light",
   toggleTheme: () => {},
+  setMode: () => {},
 });
 
 // Custom hook for using the theme context
 export const useTheme = () => useContext(ThemeContext);
+
+// Alias for useTheme to match the naming expected by layout.tsx
+export const useColorScheme = () => {
+  const { mode, toggleTheme, setMode } = useContext(ThemeContext);
+  return { mode, toggleColorMode: toggleTheme, setMode };
+};
 
 // Theme provider component
 export function ThemeProvider({
@@ -35,7 +43,7 @@ export function ThemeProvider({
   const [mode, setMode] = useState<PaletteMode>(() => {
     if (typeof window !== "undefined") {
       const savedMode = localStorage.getItem("themeMode") as PaletteMode | null;
-      return savedMode || "light";
+      return savedMode ?? "light";
     }
     return "light";
   });
@@ -51,6 +59,14 @@ export function ThemeProvider({
     });
   }, []);
 
+  // Direct mode setter function
+  const setThemeMode = useCallback((newMode: PaletteMode) => {
+    setMode(newMode);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("themeMode", newMode);
+    }
+  }, []);
+
   // Create the current theme based on mode
   const theme = useMemo(() => getTheme(mode), [mode]);
 
@@ -59,8 +75,9 @@ export function ThemeProvider({
     () => ({
       mode,
       toggleTheme,
+      setMode: setThemeMode,
     }),
-    [mode, toggleTheme]
+    [mode, toggleTheme, setThemeMode]
   );
 
   // Effect to handle system preference changes

@@ -1,4 +1,4 @@
-import { getProductById } from "../../product/api/mockData";
+import { getProductById } from "../../product/api/mock_data";
 import type { CartItem } from "../types";
 
 // Mock cart data

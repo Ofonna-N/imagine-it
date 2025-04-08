@@ -9,7 +9,7 @@ import {
 import { FiPackage, FiClock } from "react-icons/fi";
 import { Link } from "react-router";
 import type { Order } from "../types/index";
-import { OrderStatusBadge } from "./OrderStatusBadge";
+import { OrderStatusBadge } from "./order_status_badge";
 
 interface OrderCardProps {
   order: Order;

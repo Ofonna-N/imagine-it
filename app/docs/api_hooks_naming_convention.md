@@ -30,6 +30,7 @@ For hooks that combine multiple queries/mutations or contain business logic:
 - `useQueryProduct` - Fetches a single product by ID
 - `useQueryFeaturedProducts` - Fetches featured products
 - `useQueryOrders` - Fetches a list of orders
+- `useQueryUser` - Fetches the current user session
 
 ### Mutation Hooks
 

@@ -1,4 +1,4 @@
-import { fetchCatalogFeaturedProducts } from "~/services/printful/printful-api";
+import { fetchCatalogFeaturedProducts } from "~/services/printful/printful_api";
 
 /**
  * Resource route for featured products
