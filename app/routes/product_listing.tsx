@@ -11,7 +11,7 @@ import {
   debounce,
   IconButton,
 } from "@mui/material";
-import { ProductGrid } from "~/features/product/components/Product_grid";
+import { ProductGrid } from "~/features/product/components/product_grid";
 import useQueryCatalogProducts from "~/features/product/hooks/use_catalog_products";
 import { useState, useEffect, useCallback } from "react";
 import { FiSearch, FiX } from "react-icons/fi";
