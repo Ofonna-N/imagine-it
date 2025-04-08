@@ -144,7 +144,7 @@ export default function Account() {
             </Box>
             <Divider sx={{ mb: 3 }} />
 
-            <Typography variant="body2" paragraph>
+            <Typography variant="body2">
               Manage your email notification preferences here.
             </Typography>
 

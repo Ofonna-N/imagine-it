@@ -35,7 +35,7 @@ export function ThemeProvider({
   const [mode, setMode] = useState<PaletteMode>(() => {
     if (typeof window !== "undefined") {
       const savedMode = localStorage.getItem("themeMode") as PaletteMode | null;
-      return savedMode || "light";
+      return savedMode ?? "light";
     }
     return "light";
   });
