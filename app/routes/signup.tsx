@@ -10,18 +10,21 @@ import {
   CircularProgress,
   keyframes,
   Fade,
+  Divider,
 } from "@mui/material";
 import { Link, useNavigate } from "react-router";
 import { FiUserPlus, FiArrowRight } from "react-icons/fi";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useState } from "react";
 import {
   signupSchema,
   useSignupMutation,
   type SignupFormValues,
 } from "~/features/auth/hooks/use_auth_mutations";
 import { checkAuthAndRedirect } from "~/features/auth/utils/auth_redirects";
+import { useOAuthMutation } from "~/features/auth/hooks/use_auth_mutations";
+import { useSnackbar } from "notistack";
+import { FcGoogle } from "react-icons/fc";
 import type { Route } from "./+types/layout";
 
 // Add animation for visual feedback
@@ -38,9 +41,26 @@ export async function loader({ request }: Route.LoaderArgs) {
 }
 
 export default function SignupPage() {
-  const [success, setSuccess] = useState<string | null>(null);
   const navigate = useNavigate();
   const signup = useSignupMutation();
+  const oauthMutation = useOAuthMutation();
+  const { enqueueSnackbar } = useSnackbar();
+
+  const handleGoogleSignIn = () => {
+    oauthMutation.mutate("google", {
+      onSuccess: (data) => {
+        enqueueSnackbar("Redirecting to Google authentication...", {
+          variant: "info",
+          autoHideDuration: 3000,
+        });
+      },
+      onError: (error) => {
+        enqueueSnackbar(error.message || "Failed to connect with Google", {
+          variant: "error",
+        });
+      },
+    });
+  };
 
   // Initialize react-hook-form with zod resolver
   const {
@@ -62,16 +82,17 @@ export default function SignupPage() {
     signup.mutate(
       { email, password },
       {
-        onSuccess: (result) => {
-          // Success message - with Supabase, users need to confirm their email
-          setSuccess(
-            "Account created! Please check your email to confirm your account."
+        onSuccess: () => {
+          enqueueSnackbar(
+            "Account created! Please check your email to confirm your account.",
+            {
+              variant: "success",
+              autoHideDuration: 5000,
+            }
           );
 
-          // Optionally redirect after a delay
-          setTimeout(() => {
-            navigate("/");
-          }, 5000);
+          // Redirect after a delay
+          setTimeout(() => navigate("/"), 5000);
         },
       }
     );
@@ -103,7 +124,9 @@ export default function SignupPage() {
                 alignItems: "center",
                 justifyContent: "center",
                 mb: 3,
-                animation: !success ? `${iconPulse} 2s infinite` : "none",
+                animation: !signup.isSuccess
+                  ? `${iconPulse} 2s infinite`
+                  : "none",
                 boxShadow: "0 8px 16px rgba(94, 106, 210, 0.3)",
               }}
             >
@@ -131,7 +154,7 @@ export default function SignupPage() {
               Create an account to start designing your own custom products
             </Typography>
 
-            {signup.error && (
+            {signup.isError && (
               <Alert
                 severity="error"
                 sx={{
@@ -144,7 +167,7 @@ export default function SignupPage() {
               </Alert>
             )}
 
-            {success && (
+            {signup.isSuccess && (
               <Alert
                 severity="success"
                 sx={{
@@ -156,7 +179,8 @@ export default function SignupPage() {
                   },
                 }}
               >
-                {success}
+                Account created! Please check your email to confirm your
+                account.
               </Alert>
             )}
 
@@ -173,7 +197,7 @@ export default function SignupPage() {
                 label="Email Address"
                 autoComplete="email"
                 autoFocus
-                disabled={signup.isPending || !!success}
+                disabled={signup.isPending || signup.isSuccess}
                 {...register("email")}
                 error={!!errors.email}
                 helperText={errors.email?.message}
@@ -195,7 +219,7 @@ export default function SignupPage() {
                 type="password"
                 id="password"
                 autoComplete="new-password"
-                disabled={signup.isPending || !!success}
+                disabled={signup.isPending || signup.isSuccess}
                 {...register("password")}
                 error={!!errors.password}
                 helperText={
@@ -218,7 +242,7 @@ export default function SignupPage() {
                 type="password"
                 id="confirmPassword"
                 autoComplete="new-password"
-                disabled={signup.isPending || !!success}
+                disabled={signup.isPending || signup.isSuccess}
                 {...register("confirmPassword")}
                 error={!!errors.confirmPassword}
                 helperText={errors.confirmPassword?.message}
@@ -248,7 +272,7 @@ export default function SignupPage() {
                     boxShadow: "0 6px 16px rgba(94, 106, 210, 0.6)",
                   },
                 }}
-                disabled={signup.isPending || !!success}
+                disabled={signup.isPending || signup.isSuccess}
                 startIcon={
                   signup.isPending ? (
                     <CircularProgress size={20} />
@@ -258,6 +282,35 @@ export default function SignupPage() {
                 }
               >
                 {signup.isPending ? "Creating Account..." : "Create Account"}
+              </Button>
+
+              <Divider sx={{ my: 3 }}>
+                <Typography variant="body2" color="text.secondary">
+                  OR
+                </Typography>
+              </Divider>
+
+              <Button
+                variant="outlined"
+                fullWidth
+                size="large"
+                startIcon={<FcGoogle />}
+                onClick={handleGoogleSignIn}
+                disabled={oauthMutation.isPending}
+                sx={{
+                  mb: 2,
+                  py: 1.5,
+                  color: "text.primary",
+                  borderColor: "divider",
+                  "&:hover": {
+                    borderColor: "primary.main",
+                    bgcolor: "background.paper",
+                  },
+                }}
+              >
+                {oauthMutation.isPending
+                  ? "Connecting..."
+                  : "Sign up with Google"}
               </Button>
 
               <Box sx={{ display: "flex", justifyContent: "center", mt: 3 }}>
