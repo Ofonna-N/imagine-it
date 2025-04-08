@@ -1,13 +1,13 @@
 import { createContext, useContext, useMemo } from "react";
 import type { ReactNode } from "react";
 import { redirect } from "react-router";
-import { useQuery, type UseQueryOptions } from "@tanstack/react-query";
 import createSupabaseServerClient from "~/services/supabase/supabase-client";
 import {
   useLoginMutation,
   useSignupMutation,
   useSignoutMutation,
 } from "~/features/auth/hooks/useAuthMutations";
+import { useQueryUser } from "~/features/auth/hooks/useQueryUser";
 import type { User } from "@supabase/supabase-js";
 
 type CompactUserProfile = Pick<User, "id" | "email" | "user_metadata">;
@@ -27,59 +27,6 @@ type AuthContextType = {
 
 // Create the auth context
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-/**
- * Interface for user query parameters
- */
-interface UserQueryParams {
-  includeMetadata?: boolean;
-}
-
-/**
- * Interface for user query response
- */
-interface UserQueryResponse {
-  user: CompactUserProfile | null;
-}
-
-/**
- * Hook for fetching the current user using TanStack Query
- *
- * @param params - Query parameters for customizing the user fetch
- * @param options - TanStack Query options for customizing query behavior
- * @returns Query result with user data, loading state, error state, etc.
- */
-export function useQueryUser({
-  params = {},
-  options,
-}: {
-  params?: UserQueryParams;
-  options?: Partial<
-    UseQueryOptions<
-      UserQueryResponse,
-      Error,
-      UserQueryResponse,
-      ["user", UserQueryParams]
-    >
-  >;
-} = {}) {
-  return useQuery({
-    queryKey: ["user", params],
-    queryFn: async () => {
-      const response = await fetch("/api/auth/session", {
-        credentials: "include",
-      });
-
-      if (!response.ok) {
-        return { user: null };
-      }
-
-      const data = await response.json();
-      return { user: data.user || null };
-    },
-    ...options,
-  });
-}
 
 // Auth provider component
 export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
@@ -150,21 +97,4 @@ export function useAuth() {
     throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
-}
-
-// Server-side auth check for protected routes
-export async function requireAuth(request: Request) {
-  const { supabase } = createSupabaseServerClient({ request });
-
-  // Check if user is authenticated using cookies from request
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    // If not authenticated, redirect to login
-    throw redirect("/");
-  }
-
-  return user;
 }
