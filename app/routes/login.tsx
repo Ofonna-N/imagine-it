@@ -4,14 +4,12 @@ import {
   Typography,
   Container,
   Box,
-  Paper,
   Alert,
   Link as MuiLink,
   CircularProgress,
   Avatar,
 } from "@mui/material";
-import { useNavigate } from "react-router";
-import { Link } from "react-router";
+import { useNavigate, Link, useLoaderData } from "react-router";
 import { FiLogIn } from "react-icons/fi";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -21,6 +19,14 @@ import {
   type LoginFormValues,
 } from "~/features/auth/hooks/useAuthMutations";
 import { SocialSignIn } from "~/features/auth/components/SocialSignIn";
+import { checkAuthAndRedirect } from "~/features/auth/utils/auth-redirects";
+import type { Route } from "./+types/layout";
+
+// Add loader function that checks if user is already authenticated
+export async function loader({ request }: Route.LoaderArgs) {
+  // Redirect to home if already authenticated
+  return await checkAuthAndRedirect(request, "/");
+}
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -64,6 +70,12 @@ export default function LoginPage() {
         <Typography component="h1" variant="h5">
           Sign in
         </Typography>
+
+        {login.error && (
+          <Alert severity="error" sx={{ mt: 2, width: "100%" }}>
+            {login.error.message || "Failed to sign in. Please try again."}
+          </Alert>
+        )}
 
         {/* Regular email/password login form */}
         <Box

@@ -1,5 +1,11 @@
 import { useState } from "react";
-import { Outlet, Link, useLocation, useNavigate } from "react-router";
+import {
+  Outlet,
+  Link,
+  useLocation,
+  useNavigate,
+  useLoaderData,
+} from "react-router";
 import {
   AppBar,
   Box,
@@ -23,39 +29,25 @@ import { FiMenu, FiUser, FiLogOut, FiShoppingCart } from "react-icons/fi";
 import { NAV_ITEMS, PATHS } from "~/constants/navigation";
 import { useAuth } from "~/context/auth_provider";
 import { LandingComponent } from "~/components/LandingComponent";
-import createSupabaseServerClient from "~/services/supabase/supabase-client";
+import { checkAuthAndRedirect } from "~/features/auth/utils/auth-redirects";
 import type { Route } from "./+types/layout";
+
 const drawerWidth = 240;
 
 export async function loader({ request }: Route.LoaderArgs) {
-  try {
-    // Try to get session, but don't force redirect
-    const { supabase } = createSupabaseServerClient({ request });
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-
-    // Return auth status to let client handle appropriate UI
-    return {
-      isAuthenticated: !!session,
-    };
-  } catch (error) {
-    // Just return not authenticated on any errors
-    return {
-      isAuthenticated: false,
-    };
-  }
+  // Use the utility function but don't redirect either way
+  return await checkAuthAndRedirect(request, null, null);
 }
 
-export default function Layout({ loaderData }: Readonly<Route.ComponentProps>) {
-  const { isAuthenticated } = loaderData;
+export default function Layout() {
+  const { isAuthenticated, user } = useLoaderData<typeof loader>();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [userMenuAnchor, setUserMenuAnchor] = useState<null | HTMLElement>(
     null
   );
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, loading, signOut } = useAuth();
+  const { signOut, loading } = useAuth();
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);

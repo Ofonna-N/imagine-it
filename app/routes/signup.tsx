@@ -19,8 +19,16 @@ import {
   useSignupMutation,
   type SignupFormValues,
 } from "~/features/auth/hooks/useAuthMutations";
+import { checkAuthAndRedirect } from "~/features/auth/utils/auth-redirects";
+import type { Route } from "./+types/layout";
 
-export default function SignUp() {
+// Add loader function that checks if user is already authenticated
+export async function loader({ request }: Route.LoaderArgs) {
+  // Redirect to home if already authenticated
+  return await checkAuthAndRedirect(request, "/");
+}
+
+export default function SignupPage() {
   const [success, setSuccess] = useState<string | null>(null);
   const navigate = useNavigate();
   const signup = useSignupMutation();
