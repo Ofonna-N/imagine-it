@@ -6,31 +6,21 @@ import {
   FiShoppingCart,
   FiFileText,
 } from "react-icons/fi";
-
-// Define path constants for use throughout the application
-export const PATHS = {
-  HOME: "/",
-  PRODUCTS: "/products",
-  DESIGN_PLAYGROUND: "/design-playground",
-  MY_DESIGNS: "/my-designs",
-  CART: "/cart",
-  ORDERS: "/orders",
-  CHECKOUT: "/checkout",
-  PRODUCT_DETAIL: (id: string) => `/products/${id}`,
-  LOGIN: "/login",
-  SIGNUP: "/signup",
-};
+import { APP_ROUTES } from "./route_paths";
 
 // Navigation items for the main menu/drawer
 export const NAV_ITEMS = [
-  { text: "Home", path: PATHS.HOME, icon: <FiHome /> },
-  { text: "Products", path: PATHS.PRODUCTS, icon: <FiShoppingBag /> },
+  { text: "Home", path: APP_ROUTES.HOME, icon: <FiHome /> },
+  { text: "Products", path: APP_ROUTES.PRODUCTS, icon: <FiShoppingBag /> },
   {
     text: "Design Playground",
-    path: PATHS.DESIGN_PLAYGROUND,
+    path: APP_ROUTES.DESIGN_PLAYGROUND,
     icon: <FiEdit />,
   },
-  { text: "My Designs", path: PATHS.MY_DESIGNS, icon: <FiImage /> },
-  { text: "Cart", path: PATHS.CART, icon: <FiShoppingCart /> },
-  { text: "Orders", path: PATHS.ORDERS, icon: <FiFileText /> },
+  { text: "My Designs", path: APP_ROUTES.MY_DESIGNS, icon: <FiImage /> },
+  { text: "Cart", path: APP_ROUTES.CART, icon: <FiShoppingCart /> },
+  { text: "Orders", path: APP_ROUTES.ORDERS, icon: <FiFileText /> },
 ];
+
+// Re-export route constants for backward compatibility
+export { APP_ROUTES as PATHS } from "./route_paths";
