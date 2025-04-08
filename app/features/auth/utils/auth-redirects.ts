@@ -33,7 +33,13 @@ export async function checkAuthAndRedirect(
 
     return {
       isAuthenticated,
-      user: user ?? null,
+      user: {
+        id: user?.id ?? null,
+        email: user?.email ?? null,
+        user_metadata: user?.user_metadata || null,
+        created_at: user?.user_metadata?.created_at || null,
+        // Add any other user properties you need
+      },
     };
   } catch (error) {
     // If the error is a redirect, let it bubble up

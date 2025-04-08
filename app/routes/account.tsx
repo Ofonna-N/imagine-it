@@ -1,50 +1,58 @@
-import { useState, useEffect } from "react";
 import {
   Box,
   Typography,
   Paper,
+  Avatar,
+  List,
+  ListItem,
+  ListItemText,
   Divider,
-  Grid,
   Button,
+  Grid,
   TextField,
-  Alert,
-  CircularProgress,
-  Card,
-  CardContent,
+  Badge,
+  IconButton,
 } from "@mui/material";
+import { useState } from "react";
+import { FiEdit, FiCamera } from "react-icons/fi";
 import { useAuth } from "~/context/auth_provider";
-import { FiUser, FiMail, FiCalendar, FiSave } from "react-icons/fi";
+import { useNavigate, useLoaderData } from "react-router";
+import { checkAuthAndRedirect } from "~/features/auth/utils/auth-redirects";
+import type { Route } from "./+types/layout";
 
-export default function Account() {
-  const { user } = useAuth();
-  const [displayName, setDisplayName] = useState("");
+// Add loader to get authenticated user data
+export async function loader({ request }: Route.LoaderArgs) {
+  // Redirect to login if not authenticated
+  return await checkAuthAndRedirect(request, null, "/login");
+}
+
+export default function AccountPage() {
+  const { signOut } = useAuth();
+  const navigate = useNavigate();
+  const { user } = useLoaderData<typeof loader>();
   const [isEditing, setIsEditing] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [success, setSuccess] = useState(false);
 
-  useEffect(() => {
-    // Initialize display name from user metadata if available
-    if (user?.user_metadata?.display_name) {
-      setDisplayName(user.user_metadata.display_name);
-    }
-  }, [user]);
+  // Example user details - replace with actual user data in a real implementation
+  const userDetails = {
+    name: user?.user_metadata?.name || user?.email?.split("@")[0] || "User",
+    email: user?.email || "user@example.com",
+    memberSince: new Date(user?.created_at || Date.now()).toLocaleDateString(),
+    shippingAddress: user?.user_metadata?.shipping_address || "None added yet",
+    paymentMethods: user?.user_metadata?.payment_methods || [],
+  };
 
-  const handleSaveProfile = async () => {
-    setIsSaving(true);
-    setSuccess(false);
+  const handleLogout = async () => {
+    await signOut();
+    navigate("/login");
+  };
 
-    // In a real app, this would update the user profile in Supabase
-    // For now, we'll just simulate a save
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+  const toggleEdit = () => {
+    setIsEditing(!isEditing);
+  };
 
-    setIsSaving(false);
+  const handleSaveProfile = () => {
+    // In a real app, implement profile update logic here
     setIsEditing(false);
-    setSuccess(true);
-
-    // Remove success message after 3 seconds
-    setTimeout(() => {
-      setSuccess(false);
-    }, 3000);
   };
 
   return (
@@ -53,140 +61,195 @@ export default function Account() {
         My Account
       </Typography>
 
-      {success && (
-        <Alert severity="success" sx={{ mb: 3 }}>
-          Profile updated successfully
-        </Alert>
-      )}
-
       <Grid container spacing={4}>
-        <Grid size={{ xs: 12, md: 6 }}>
-          <Paper sx={{ p: 3, mb: 4 }}>
-            <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-              <FiUser size={24} style={{ marginRight: 8 }} />
-              <Typography variant="h6">Profile Information</Typography>
+        {/* Left column - Account overview */}
+        <Grid size={{ xs: 12, md: 4 }}>
+          <Paper sx={{ p: 3, mb: 3 }}>
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                mb: 3,
+              }}
+            >
+              <Badge
+                overlap="circular"
+                anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+                badgeContent={
+                  <IconButton
+                    sx={{
+                      bgcolor: "primary.main",
+                      color: "white",
+                      width: 28,
+                      height: 28,
+                      "&:hover": { bgcolor: "primary.dark" },
+                    }}
+                    aria-label="change profile picture"
+                  >
+                    <FiCamera size={14} />
+                  </IconButton>
+                }
+              >
+                <Avatar
+                  sx={{ width: 100, height: 100, mb: 2 }}
+                  alt={userDetails.name}
+                  src={user?.user_metadata?.avatar_url}
+                >
+                  {userDetails.name.charAt(0).toUpperCase()}
+                </Avatar>
+              </Badge>
+              <Typography variant="h6">{userDetails.name}</Typography>
+              <Typography variant="body2" color="text.secondary">
+                {userDetails.email}
+              </Typography>
             </Box>
+
+            <List disablePadding>
+              <ListItem disablePadding>
+                <ListItemText
+                  primary="Member Since"
+                  secondary={userDetails.memberSince}
+                />
+              </ListItem>
+              <Divider sx={{ my: 1.5 }} />
+              <ListItem disablePadding>
+                <ListItemText
+                  primary="Default Shipping Address"
+                  secondary={userDetails.shippingAddress}
+                />
+              </ListItem>
+              <Divider sx={{ my: 1.5 }} />
+              <ListItem disablePadding>
+                <ListItemText
+                  primary="Payment Methods"
+                  secondary={
+                    userDetails.paymentMethods.length > 0
+                      ? `${userDetails.paymentMethods.length} saved`
+                      : "None added yet"
+                  }
+                />
+              </ListItem>
+            </List>
+
+            <Box sx={{ mt: 3, textAlign: "center" }}>
+              <Button
+                variant="outlined"
+                color="error"
+                onClick={handleLogout}
+                sx={{ width: "100%" }}
+              >
+                Sign Out
+              </Button>
+            </Box>
+          </Paper>
+        </Grid>
+
+        {/* Right column - Account details */}
+        <Grid size={{ xs: 12, md: 8 }}>
+          <Paper sx={{ p: 3, mb: 3 }}>
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                mb: 2,
+              }}
+            >
+              <Typography variant="h6">Profile Information</Typography>
+              <Button
+                startIcon={<FiEdit />}
+                onClick={toggleEdit}
+                size="small"
+                variant={isEditing ? "contained" : "outlined"}
+              >
+                {isEditing ? "Cancel" : "Edit"}
+              </Button>
+            </Box>
+
             <Divider sx={{ mb: 3 }} />
 
             {isEditing ? (
-              <Box
-                component="form"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  handleSaveProfile();
-                }}
-              >
-                <TextField
-                  fullWidth
-                  label="Display Name"
-                  value={displayName}
-                  onChange={(e) => setDisplayName(e.target.value)}
-                  margin="normal"
-                  disabled={isSaving}
-                />
-
-                <Box
-                  sx={{ mt: 3, display: "flex", justifyContent: "flex-end" }}
-                >
-                  <Button
-                    onClick={() => setIsEditing(false)}
-                    sx={{ mr: 2 }}
-                    disabled={isSaving}
-                  >
-                    Cancel
-                  </Button>
+              // Editable profile form
+              <Box component="form" noValidate>
+                <Grid container spacing={2}>
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <TextField
+                      fullWidth
+                      label="Full Name"
+                      defaultValue={userDetails.name}
+                      variant="outlined"
+                      margin="normal"
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <TextField
+                      fullWidth
+                      label="Email"
+                      defaultValue={userDetails.email}
+                      variant="outlined"
+                      margin="normal"
+                      disabled
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12 }}>
+                    <TextField
+                      fullWidth
+                      label="Shipping Address"
+                      defaultValue={userDetails.shippingAddress}
+                      variant="outlined"
+                      margin="normal"
+                      multiline
+                      rows={3}
+                    />
+                  </Grid>
+                </Grid>
+                <Box sx={{ mt: 3, textAlign: "right" }}>
                   <Button
                     variant="contained"
-                    type="submit"
-                    disabled={isSaving}
-                    startIcon={
-                      isSaving ? <CircularProgress size={20} /> : <FiSave />
-                    }
+                    onClick={handleSaveProfile}
+                    sx={{ minWidth: 120 }}
                   >
-                    {isSaving ? "Saving..." : "Save Changes"}
+                    Save Changes
                   </Button>
                 </Box>
               </Box>
             ) : (
-              <>
-                <Grid container spacing={2}>
-                  <Grid size={{ xs: 6 }}>
-                    <Typography variant="body2" color="text.secondary">
-                      Display Name
-                    </Typography>
-                    <Typography variant="body1">
-                      {displayName || "Not set"}
-                    </Typography>
-                  </Grid>
-                  <Grid size={{ xs: 6 }}>
-                    <Typography variant="body2" color="text.secondary">
-                      Email
-                    </Typography>
-                    <Typography variant="body1">{user?.email}</Typography>
-                  </Grid>
-                </Grid>
-
-                <Button
-                  variant="outlined"
-                  sx={{ mt: 3 }}
-                  onClick={() => setIsEditing(true)}
-                >
-                  Edit Profile
-                </Button>
-              </>
+              // Profile information display
+              <List>
+                <ListItem>
+                  <ListItemText
+                    primary="Full Name"
+                    secondary={userDetails.name}
+                  />
+                </ListItem>
+                <Divider variant="inset" component="li" />
+                <ListItem>
+                  <ListItemText primary="Email" secondary={userDetails.email} />
+                </ListItem>
+                <Divider variant="inset" component="li" />
+                <ListItem>
+                  <ListItemText
+                    primary="Shipping Address"
+                    secondary={userDetails.shippingAddress}
+                  />
+                </ListItem>
+              </List>
             )}
           </Paper>
 
           <Paper sx={{ p: 3 }}>
-            <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-              <FiMail size={24} style={{ marginRight: 8 }} />
-              <Typography variant="h6">Email Preferences</Typography>
-            </Box>
-            <Divider sx={{ mb: 3 }} />
-
-            <Typography variant="body2">
-              Manage your email notification preferences here.
+            <Typography variant="h6" gutterBottom>
+              Recent Orders
             </Typography>
+            <Divider sx={{ mb: 2 }} />
 
-            <Typography variant="body2" color="text.secondary">
-              This feature is coming soon.
+            <Typography
+              color="text.secondary"
+              sx={{ py: 4, textAlign: "center" }}
+            >
+              No recent orders found.
             </Typography>
-          </Paper>
-        </Grid>
-
-        <Grid size={{ xs: 12, md: 6 }}>
-          <Paper sx={{ p: 3, mb: 4 }}>
-            <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-              <FiCalendar size={24} style={{ marginRight: 8 }} />
-              <Typography variant="h6">Account Activity</Typography>
-            </Box>
-            <Divider sx={{ mb: 3 }} />
-
-            <Card variant="outlined" sx={{ mb: 2 }}>
-              <CardContent>
-                <Typography variant="body2" color="text.secondary">
-                  Last Sign In
-                </Typography>
-                <Typography variant="body1">
-                  {user?.last_sign_in_at
-                    ? new Date(user.last_sign_in_at).toLocaleString()
-                    : "No recent activity"}
-                </Typography>
-              </CardContent>
-            </Card>
-
-            <Card variant="outlined">
-              <CardContent>
-                <Typography variant="body2" color="text.secondary">
-                  Account Created
-                </Typography>
-                <Typography variant="body1">
-                  {user?.created_at
-                    ? new Date(user.created_at).toLocaleString()
-                    : "Unknown"}
-                </Typography>
-              </CardContent>
-            </Card>
           </Paper>
         </Grid>
       </Grid>

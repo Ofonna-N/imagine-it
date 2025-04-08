@@ -9,14 +9,11 @@ import {
   keyframes,
 } from "@mui/material";
 import { ProductGrid } from "~/features/product/components/ProductGrid";
-
 import { useQueryClient } from "@tanstack/react-query";
 import { FaStar, FaMagic } from "react-icons/fa";
 import { FiShoppingBag } from "react-icons/fi";
-import { Link, useRevalidator } from "react-router";
+import { Link, useRevalidator, useLoaderData } from "react-router";
 import { queryClient } from "~/context/query_provider";
-import type { Route } from "./+types/home";
-import { useAuth } from "~/context/auth_provider";
 
 // Define the pulse animation using MUI's keyframes
 const pulseAnimation = keyframes`
@@ -33,14 +30,6 @@ const pulseAnimation = keyframes`
     transform: scale(1);
   }
 `;
-
-// Define component props type
-interface HomeProps {
-  loaderData: {
-    products?: any[];
-    isAuthenticated?: boolean;
-  };
-}
 
 // React Router client loader using the Query Client
 export async function clientLoader() {
@@ -93,17 +82,11 @@ export function HydrateFallback() {
   );
 }
 
-export default function Home({ loaderData }: Readonly<HomeProps>) {
-  const { products } = loaderData;
+export default function Home() {
+  // Use loader data directly instead of props
+  const { products } = useLoaderData<typeof clientLoader>();
   const queryClient = useQueryClient();
   const revalidator = useRevalidator();
-  const isAuthenticated = !!useAuth()?.user;
-  console.log("isAuthenticated", isAuthenticated);
-  // If not authenticated, return null to let the Layout component handle rendering
-  // the LandingComponent instead through its own authentication check
-  if (isAuthenticated === false) {
-    return null;
-  }
 
   // Function to manually refresh products
   const handleRefresh = async () => {

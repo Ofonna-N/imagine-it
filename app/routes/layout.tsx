@@ -23,11 +23,19 @@ import {
   Menu,
   MenuItem,
   Avatar,
-  CircularProgress,
+  Tooltip,
 } from "@mui/material";
-import { FiMenu, FiUser, FiLogOut, FiShoppingCart } from "react-icons/fi";
+import {
+  FiMenu,
+  FiUser,
+  FiLogOut,
+  FiShoppingCart,
+  FiSun,
+  FiMoon,
+} from "react-icons/fi";
 import { NAV_ITEMS, PATHS } from "~/constants/navigation";
 import { useAuth } from "~/context/auth_provider";
+import { useColorScheme } from "~/context/theme_provider";
 import { LandingComponent } from "~/components/LandingComponent";
 import { checkAuthAndRedirect } from "~/features/auth/utils/auth-redirects";
 import type { Route } from "./+types/layout";
@@ -40,6 +48,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 }
 
 export default function Layout() {
+  // Get authentication status from loader data
   const { isAuthenticated, user } = useLoaderData<typeof loader>();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [userMenuAnchor, setUserMenuAnchor] = useState<null | HTMLElement>(
@@ -47,7 +56,9 @@ export default function Layout() {
   );
   const location = useLocation();
   const navigate = useNavigate();
-  const { signOut, loading } = useAuth();
+  // Only signOut is needed from auth context now
+  const { signOut } = useAuth();
+  const { mode, setMode } = useColorScheme();
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
@@ -67,23 +78,12 @@ export default function Layout() {
     navigate("/");
   };
 
-  // If still loading auth state, show loading spinner
-  if (loading) {
-    return (
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          minHeight: "100vh",
-        }}
-      >
-        <CircularProgress />
-      </Box>
-    );
-  }
+  const toggleColorMode = () => {
+    setMode(mode === "light" ? "dark" : "light");
+  };
 
   // If not authenticated, show landing page
+  // No need to check loading state anymore as we rely on server authentication
   if (!isAuthenticated) {
     return <LandingComponent />;
   }
@@ -138,6 +138,20 @@ export default function Layout() {
           <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
             Imagine It
           </Typography>
+
+          {/* Theme Toggle Button */}
+          <Tooltip
+            title={`Switch to ${mode === "light" ? "dark" : "light"} mode`}
+          >
+            <IconButton
+              color="inherit"
+              onClick={toggleColorMode}
+              sx={{ mr: 1 }}
+              aria-label="toggle theme"
+            >
+              {mode === "light" ? <FiMoon /> : <FiSun />}
+            </IconButton>
+          </Tooltip>
 
           {/* Shopping Cart Button */}
           <IconButton

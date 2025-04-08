@@ -5,15 +5,9 @@ import {
   useSignupMutation,
   useSignoutMutation,
 } from "~/features/auth/hooks/useAuthMutations";
-import { useQueryUser } from "~/features/auth/hooks/useQueryUser";
-import type { User } from "@supabase/supabase-js";
 
-type CompactUserProfile = Partial<User>;
-
-// Enhanced types for our auth context to include auth methods
+// Enhanced types for our auth context to include auth methods (without user property and loading)
 type AuthContextType = {
-  user: CompactUserProfile | null;
-  loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (
     email: string,
@@ -28,9 +22,6 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // Auth provider component
 export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
-  const { data, isLoading: loading } = useQueryUser();
-  const user = data?.user ?? null;
-
   // Get authentication mutations within the provider
   const loginMutation = useLoginMutation();
   const signupMutation = useSignupMutation();
@@ -73,16 +64,14 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     }
   };
 
-  // Memoize the context value including auth methods
+  // Memoize the context value including auth methods (without loading)
   const value: AuthContextType = useMemo(
     () => ({
-      user,
-      loading,
       signIn,
       signUp,
       signOut,
     }),
-    [user, loading, signIn, signUp, signOut]
+    [signIn, signUp, signOut]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
