@@ -25,6 +25,7 @@ import {
   Avatar,
   Tooltip,
   Stack,
+  alpha,
 } from "@mui/material";
 import {
   FiMenu,
@@ -128,7 +129,7 @@ export default function Layout() {
           Imagine It
         </Typography>
       </Toolbar>
-      <Divider />
+
       <List sx={{ px: 2, py: 1 }}>
         {NAV_ITEMS.map((item) => (
           <ListItem key={item.text} disablePadding sx={{ mb: 0.5 }}>
@@ -140,27 +141,82 @@ export default function Layout() {
                 (item.path !== "/" && location.pathname.startsWith(item.path))
               }
               sx={{
-                borderRadius: "12px",
-                py: 1.5,
-                "&.Mui-selected": {
-                  backgroundColor: "primary.light",
-                  "&:hover": {
-                    backgroundColor: "primary.light",
+                borderRadius: 0,
+                py: 1.75,
+                borderLeft: "3px solid transparent",
+                transition: "all 0.2s ease",
+                position: "relative",
+                "&::before": {
+                  content: '""',
+                  position: "absolute",
+                  left: 0,
+                  top: 0,
+                  bottom: 0,
+                  width: 0,
+                  backgroundColor: "primary.main",
+                  transition: "width 0.2s ease",
+                },
+                "&:hover": {
+                  backgroundColor: (theme) =>
+                    theme.palette.mode === "light"
+                      ? "rgba(0,0,0,0.04)"
+                      : "rgba(255,255,255,0.08)",
+                  "&::before": {
+                    width: "3px",
                   },
                   "& .MuiListItemIcon-root": {
-                    color: "primary.dark",
+                    color: "primary.light",
+                    transform: "translateX(2px)",
+                  },
+                },
+                "&.Mui-selected": {
+                  backgroundColor: (theme) =>
+                    theme.palette.mode === "light"
+                      ? alpha(theme.palette.primary.main, 0.08)
+                      : alpha(theme.palette.primary.main, 0.16),
+                  borderLeft: "none",
+                  "&::before": {
+                    width: "3px",
+                  },
+                  "&:hover": {
+                    backgroundColor: (theme) =>
+                      theme.palette.mode === "light"
+                        ? alpha(theme.palette.primary.main, 0.12)
+                        : alpha(theme.palette.primary.main, 0.24),
+                  },
+                  "& .MuiListItemIcon-root": {
+                    color: "primary.main",
+                    transform: "translateX(2px) scale(1.1)",
                   },
                   "& .MuiListItemText-primary": {
                     fontWeight: 600,
-                    color: "primary.dark",
+                    color: "primary.main",
                   },
                 },
               }}
             >
-              <ListItemIcon sx={{ minWidth: 40, color: "text.secondary" }}>
+              <ListItemIcon
+                sx={{
+                  minWidth: 40,
+                  color: "text.secondary",
+                  transition: "all 0.2s ease",
+                  fontSize: "1.25rem",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
                 {item.icon}
               </ListItemIcon>
-              <ListItemText primary={item.text} />
+              <ListItemText
+                primary={item.text}
+                sx={{
+                  "& .MuiTypography-root": {
+                    fontSize: "0.95rem",
+                    transition: "font-weight 0.2s ease, color 0.2s ease",
+                  },
+                }}
+              />
             </ListItemButton>
           </ListItem>
         ))}
@@ -252,7 +308,11 @@ export default function Layout() {
             </IconButton>
 
             {/* User menu button */}
-            <IconButton size="small" onClick={handleUserMenuOpen}>
+            <IconButton
+              className="navigation-action" // Add this class
+              size="small"
+              onClick={handleUserMenuOpen}
+            >
               <Avatar
                 sx={{ width: 32, height: 32 }}
                 alt={user?.email?.charAt(0).toUpperCase() ?? "U"}

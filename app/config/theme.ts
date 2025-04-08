@@ -318,9 +318,107 @@ export const getTheme = (mode: PaletteMode) => {
       MuiListItemButton: {
         styleOverrides: {
           root: {
-            borderRadius: "6px",
+            borderRadius: 0, // Remove rounded corners completely for menu items
+            borderLeft: "3px solid transparent", // Add left border for selected indicator
+            paddingTop: 10,
+            paddingBottom: 10,
+            transition: "all 0.2s ease",
             "&.Mui-selected": {
-              backgroundColor: alpha(primaryMain, mode === "light" ? 0.1 : 0.2),
+              backgroundColor:
+                mode === "light"
+                  ? "rgba(0,0,0,0.04)"
+                  : "rgba(255,255,255,0.08)",
+              borderLeftColor: primaryMain, // Show colored border when selected
+              "&:hover": {
+                backgroundColor:
+                  mode === "light"
+                    ? "rgba(0,0,0,0.08)"
+                    : "rgba(255,255,255,0.12)",
+              },
+            },
+            "&:hover": {
+              backgroundColor:
+                mode === "light"
+                  ? "rgba(0,0,0,0.04)"
+                  : "rgba(255,255,255,0.08)",
+              borderLeftColor: alpha(primaryMain, 0.5), // Subtle indication on hover
+            },
+          },
+        },
+      },
+      MuiListItem: {
+        styleOverrides: {
+          root: {
+            borderRadius: 0, // Ensure list items have no rounded corners
+          },
+        },
+      },
+      MuiMenuItem: {
+        styleOverrides: {
+          root: {
+            borderRadius: 0, // Make menu items completely rectangular
+            "&:hover": {
+              backgroundColor:
+                mode === "light"
+                  ? "rgba(0,0,0,0.04)"
+                  : "rgba(255,255,255,0.08)",
+            },
+            "&.Mui-selected": {
+              backgroundColor: alpha(
+                primaryMain,
+                mode === "light" ? 0.08 : 0.16
+              ),
+              "&:hover": {
+                backgroundColor: alpha(
+                  primaryMain,
+                  mode === "light" ? 0.12 : 0.24
+                ),
+              },
+            },
+          },
+        },
+      },
+      MuiDrawer: {
+        styleOverrides: {
+          paper: {
+            borderRadius: 0, // Ensure drawer has no rounded corners
+          },
+        },
+      },
+      MuiButtonBase: {
+        styleOverrides: {
+          root: {
+            "&.menu-button": {
+              borderRadius: 0, // Apply to button variants used in navigation
+            },
+          },
+        },
+      },
+      MuiIconButton: {
+        styleOverrides: {
+          root: {
+            // Make icon buttons slightly larger in navigation
+            padding: 8, // Increased from default
+            // Add these sizes for IconButtons in navigation
+            "&.navigation-action": {
+              width: 42, // Larger click target
+              height: 42, // Larger click target
+              color:
+                mode === "light"
+                  ? "rgba(0, 0, 0, 0.7)"
+                  : "rgba(255, 255, 255, 0.7)",
+              "&:hover": {
+                backgroundColor: alpha(primaryMain, 0.08),
+                color: primaryMain,
+              },
+            },
+          },
+          sizeSmall: {
+            // When used with size="small" prop
+            padding: 6, // Increased from default
+            "&.navigation-action": {
+              width: 36, // Smaller but still large enough
+              height: 36,
             },
           },
         },
