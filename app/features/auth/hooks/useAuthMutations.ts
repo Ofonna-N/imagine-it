@@ -108,3 +108,38 @@ export function useMutateAuthSignout() {
 
 // Keep backward compatibility
 export const useSignoutMutation = useMutateAuthSignout;
+
+// Type for OAuth providers
+export type OAuthProvider = "google" | "github" | "facebook" | "twitter";
+
+/**
+ * Hook for handling OAuth sign-in with various providers
+ */
+export function useMutateAuthOAuth() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (provider: OAuthProvider) => {
+      const response = await fetch(`/api/auth/oauth/${provider}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include", // Critical for cookie handling
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error);
+      }
+
+      return result;
+    },
+    onSuccess: () => {
+      // Invalidate relevant queries when login is successful
+      queryClient.invalidateQueries({ queryKey: ["user"] });
+    },
+  });
+}
+
+// Keep backward compatibility with existing naming conventions
+export const useOAuthMutation = useMutateAuthOAuth;

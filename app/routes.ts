@@ -36,4 +36,6 @@ export default [
   route("api/auth/signup", "routes_api/api.auth.signup.ts"),
   route("api/auth/signout", "routes_api/api.auth.signout.ts"),
   route("api/auth/session", "routes_api/api.auth.session.ts"),
+  route("api/auth/oauth/:provider", "routes_api/api.auth.oauth.$provider.ts"),
+  route("api/auth/oauth/callback", "routes_api/api.auth.oauth.callback.ts"),
 ] satisfies RouteConfig;
