@@ -11,13 +11,25 @@ import {
   Stack,
   useTheme,
   Paper,
+  AppBar,
+  Toolbar,
+  IconButton,
+  Tooltip,
 } from "@mui/material";
 import { useNavigate } from "react-router";
-import { FiArrowRight, FiLogIn, FiUserPlus } from "react-icons/fi";
+import {
+  FiArrowRight,
+  FiLogIn,
+  FiUserPlus,
+  FiSun,
+  FiMoon,
+} from "react-icons/fi";
+import { useColorScheme } from "~/context/theme_provider";
 
 export function LandingComponent() {
   const theme = useTheme();
   const navigate = useNavigate();
+  const { mode, setMode } = useColorScheme();
 
   const handleLogin = () => {
     navigate("/login");
@@ -27,8 +39,56 @@ export function LandingComponent() {
     navigate("/signup");
   };
 
+  const toggleColorMode = () => {
+    setMode(mode === "light" ? "dark" : "light");
+  };
+
   return (
     <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
+      {/* Add AppBar with theme toggle */}
+      <AppBar
+        position="static"
+        color="transparent"
+        elevation={0}
+        sx={{ borderBottom: `1px solid ${theme.palette.divider}` }}
+      >
+        <Toolbar>
+          <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: 700 }}>
+            Imagine It
+          </Typography>
+
+          {/* Theme Toggle Button */}
+          <Tooltip
+            title={`Switch to ${mode === "light" ? "dark" : "light"} mode`}
+          >
+            <IconButton
+              color="inherit"
+              onClick={toggleColorMode}
+              sx={{ mr: 2 }}
+              aria-label="toggle theme"
+            >
+              {mode === "light" ? <FiMoon /> : <FiSun />}
+            </IconButton>
+          </Tooltip>
+
+          <Button
+            variant="outlined"
+            startIcon={<FiLogIn />}
+            onClick={handleLogin}
+            sx={{ mr: 2 }}
+          >
+            Log In
+          </Button>
+          <Button
+            variant="contained"
+            startIcon={<FiUserPlus />}
+            onClick={handleSignup}
+          >
+            Sign Up
+          </Button>
+        </Toolbar>
+      </AppBar>
+
       <Container maxWidth="lg" sx={{ flexGrow: 1 }}>
         {/* Hero Section */}
         <Box
