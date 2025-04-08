@@ -8,9 +8,11 @@ import {
   Alert,
   Link as MuiLink,
   CircularProgress,
+  keyframes,
+  Fade,
 } from "@mui/material";
 import { Link, useNavigate } from "react-router";
-import { FiUserPlus } from "react-icons/fi";
+import { FiUserPlus, FiArrowRight } from "react-icons/fi";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
@@ -21,6 +23,13 @@ import {
 } from "~/features/auth/hooks/use_auth_mutations";
 import { checkAuthAndRedirect } from "~/features/auth/utils/auth_redirects";
 import type { Route } from "./+types/layout";
+
+// Add animation for visual feedback
+const iconPulse = keyframes`
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+`;
 
 // Add loader function that checks if user is already authenticated
 export async function loader({ request }: Route.LoaderArgs) {
@@ -71,107 +80,206 @@ export default function SignupPage() {
   return (
     <Container maxWidth="sm">
       <Box sx={{ mt: 8, mb: 8 }}>
-        <Paper
-          elevation={3}
-          sx={{
-            p: 4,
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            borderRadius: 2,
-          }}
-        >
-          <FiUserPlus size={36} color="#1976d2" style={{ marginBottom: 16 }} />
-
-          <Typography component="h1" variant="h4" gutterBottom>
-            Create an Account
-          </Typography>
-
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-            Join us to create and customize your own designs
-          </Typography>
-
-          {signup.error && (
-            <Alert severity="error" sx={{ width: "100%", mb: 3 }}>
-              {signup.error.message}
-            </Alert>
-          )}
-
-          {success && (
-            <Alert severity="success" sx={{ width: "100%", mb: 3 }}>
-              {success}
-            </Alert>
-          )}
-
-          <Box
-            component="form"
-            onSubmit={handleSubmit(onSubmit)}
-            sx={{ width: "100%" }}
+        <Fade in={true} timeout={800}>
+          <Paper
+            elevation={2}
+            sx={{
+              p: 5,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              borderRadius: 3,
+              boxShadow: "0 6px 20px rgba(0, 0, 0, 0.07)",
+            }}
           >
-            <TextField
-              margin="normal"
-              required
-              fullWidth
-              id="email"
-              label="Email Address"
-              autoComplete="email"
-              autoFocus
-              disabled={signup.isPending || !!success}
-              {...register("email")}
-              error={!!errors.email}
-              helperText={errors.email?.message}
-            />
-            <TextField
-              margin="normal"
-              required
-              fullWidth
-              label="Password"
-              type="password"
-              id="password"
-              autoComplete="new-password"
-              disabled={signup.isPending || !!success}
-              {...register("password")}
-              error={!!errors.password}
-              helperText={
-                errors.password?.message ?? "Must be at least 6 characters"
-              }
-            />
-            <TextField
-              margin="normal"
-              required
-              fullWidth
-              label="Confirm Password"
-              type="password"
-              id="confirmPassword"
-              autoComplete="new-password"
-              disabled={signup.isPending || !!success}
-              {...register("confirmPassword")}
-              error={!!errors.confirmPassword}
-              helperText={errors.confirmPassword?.message}
-            />
-            <Button
-              type="submit"
-              fullWidth
-              variant="contained"
-              sx={{ mt: 3, mb: 2, py: 1.5 }}
-              disabled={signup.isPending || !!success}
-              startIcon={
-                signup.isPending ? <CircularProgress size={20} /> : null
-              }
+            <Box
+              sx={{
+                bgcolor: "primary.main",
+                color: "white",
+                width: 70,
+                height: 70,
+                borderRadius: "50%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                mb: 3,
+                animation: !success ? `${iconPulse} 2s infinite` : "none",
+                boxShadow: "0 8px 16px rgba(94, 106, 210, 0.3)",
+              }}
             >
-              {signup.isPending ? "Creating Account..." : "Sign Up"}
-            </Button>
-
-            <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
-              <Typography variant="body2">
-                Already have an account?{" "}
-                <MuiLink component={Link} to="/login">
-                  Log in
-                </MuiLink>
-              </Typography>
+              <FiUserPlus size={32} />
             </Box>
-          </Box>
-        </Paper>
+
+            <Typography
+              component="h1"
+              variant="h4"
+              gutterBottom
+              sx={{
+                fontWeight: 700,
+                color: "text.primary",
+                textAlign: "center",
+              }}
+            >
+              Join Imagine It
+            </Typography>
+
+            <Typography
+              variant="body1"
+              color="text.secondary"
+              sx={{ mb: 4, textAlign: "center" }}
+            >
+              Create an account to start designing your own custom products
+            </Typography>
+
+            {signup.error && (
+              <Alert
+                severity="error"
+                sx={{
+                  width: "100%",
+                  mb: 3,
+                  borderRadius: 2,
+                }}
+              >
+                {signup.error.message}
+              </Alert>
+            )}
+
+            {success && (
+              <Alert
+                severity="success"
+                sx={{
+                  width: "100%",
+                  mb: 3,
+                  borderRadius: 2,
+                  "& .MuiAlert-icon": {
+                    animation: `${iconPulse} 2s infinite`,
+                  },
+                }}
+              >
+                {success}
+              </Alert>
+            )}
+
+            <Box
+              component="form"
+              onSubmit={handleSubmit(onSubmit)}
+              sx={{ width: "100%" }}
+            >
+              <TextField
+                margin="normal"
+                required
+                fullWidth
+                id="email"
+                label="Email Address"
+                autoComplete="email"
+                autoFocus
+                disabled={signup.isPending || !!success}
+                {...register("email")}
+                error={!!errors.email}
+                helperText={errors.email?.message}
+                sx={{
+                  borderRadius: 2,
+                  "& .MuiOutlinedInput-root": {
+                    borderRadius: 2,
+                    "&.Mui-focused": {
+                      boxShadow: "0 0 0 3px rgba(94, 106, 210, 0.2)",
+                    },
+                  },
+                }}
+              />
+              <TextField
+                margin="normal"
+                required
+                fullWidth
+                label="Password"
+                type="password"
+                id="password"
+                autoComplete="new-password"
+                disabled={signup.isPending || !!success}
+                {...register("password")}
+                error={!!errors.password}
+                helperText={
+                  errors.password?.message ?? "Must be at least 6 characters"
+                }
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    borderRadius: 2,
+                    "&.Mui-focused": {
+                      boxShadow: "0 0 0 3px rgba(94, 106, 210, 0.2)",
+                    },
+                  },
+                }}
+              />
+              <TextField
+                margin="normal"
+                required
+                fullWidth
+                label="Confirm Password"
+                type="password"
+                id="confirmPassword"
+                autoComplete="new-password"
+                disabled={signup.isPending || !!success}
+                {...register("confirmPassword")}
+                error={!!errors.confirmPassword}
+                helperText={errors.confirmPassword?.message}
+                sx={{
+                  mb: 3,
+                  "& .MuiOutlinedInput-root": {
+                    borderRadius: 2,
+                    "&.Mui-focused": {
+                      boxShadow: "0 0 0 3px rgba(94, 106, 210, 0.2)",
+                    },
+                  },
+                }}
+              />
+              <Button
+                type="submit"
+                fullWidth
+                variant="contained"
+                sx={{
+                  mt: 2,
+                  mb: 3,
+                  py: 1.5,
+                  borderRadius: 2,
+                  fontSize: "1rem",
+                  fontWeight: 600,
+                  boxShadow: "0 4px 14px rgba(94, 106, 210, 0.4)",
+                  "&:hover": {
+                    boxShadow: "0 6px 16px rgba(94, 106, 210, 0.6)",
+                  },
+                }}
+                disabled={signup.isPending || !!success}
+                startIcon={
+                  signup.isPending ? (
+                    <CircularProgress size={20} />
+                  ) : (
+                    <FiArrowRight />
+                  )
+                }
+              >
+                {signup.isPending ? "Creating Account..." : "Create Account"}
+              </Button>
+
+              <Box sx={{ display: "flex", justifyContent: "center", mt: 3 }}>
+                <Typography variant="body2">
+                  Already have an account?{" "}
+                  <MuiLink
+                    component={Link}
+                    to="/login"
+                    sx={{
+                      fontWeight: 600,
+                      "&:hover": {
+                        textDecoration: "none",
+                      },
+                    }}
+                  >
+                    Log in
+                  </MuiLink>
+                </Typography>
+              </Box>
+            </Box>
+          </Paper>
+        </Fade>
       </Box>
     </Container>
   );

@@ -1,52 +1,56 @@
-import { useState } from "react";
-import { Button, Divider, Typography, Box } from "@mui/material";
+import { Button, Typography, Box, Divider } from "@mui/material";
 import { FcGoogle } from "react-icons/fc";
-import { useOAuthMutation } from "../hooks/use_auth_mutations";
-import type { OAuthProvider } from "../hooks/use_auth_mutations";
 
-/**
- * Component that provides social sign-in options
- */
 export function SocialSignIn() {
-  const [isLoading, setIsLoading] = useState(false);
-  const oauthMutation = useOAuthMutation();
-
-  const handleSocialSignIn = async (provider: OAuthProvider) => {
-    setIsLoading(true);
-    try {
-      const result = await oauthMutation.mutateAsync(provider);
-      // Redirect to the OAuth provider's consent screen
-      if (result.url) {
-        window.location.href = result.url;
-      }
-    } catch (error) {
-      console.error("Social sign-in error:", error);
-      setIsLoading(false);
-    }
+  const handleGoogleSignIn = () => {
+    // Implement Google sign-in functionality
+    console.log("Google sign-in clicked");
   };
 
   return (
-    <Box sx={{ width: "100%", mt: 2, mb: 3 }}>
-      <Divider sx={{ mb: 2 }}>
-        <Typography variant="body2" color="text.secondary">
-          OR
-        </Typography>
-      </Divider>
+    <Box sx={{ width: "100%", mt: 3 }}>
+      <Divider
+        sx={{
+          my: 2,
+          position: "relative",
+          "&::before": {
+            content: '"or"',
+            display: "inline-block",
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            padding: "0 16px",
+            bgcolor: "background.paper",
+            color: "text.secondary",
+            fontSize: "0.875rem",
+          },
+        }}
+      />
+
+      <Typography
+        variant="body2"
+        color="text.secondary"
+        sx={{ textAlign: "center", mb: 2 }}
+      >
+        Continue with social accounts
+      </Typography>
 
       <Button
         fullWidth
         variant="outlined"
         startIcon={<FcGoogle />}
-        onClick={() => handleSocialSignIn("google")}
-        disabled={isLoading}
+        onClick={handleGoogleSignIn}
         sx={{
-          borderColor: "rgba(0,0,0,0.23)",
-          "&:hover": {
-            borderColor: "rgba(0,0,0,0.87)",
-          },
+          py: 1.5,
+          borderRadius: 2,
+          borderColor: "divider",
           color: "text.primary",
-          textTransform: "none",
-          py: 1,
+          fontWeight: 600,
+          "&:hover": {
+            borderColor: "primary.main",
+            bgcolor: "rgba(94, 106, 210, 0.04)",
+          },
         }}
       >
         Continue with Google
