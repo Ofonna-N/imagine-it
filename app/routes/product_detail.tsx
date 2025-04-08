@@ -366,6 +366,10 @@ export default function ProductDetail() {
                         size === selectedVariant.size ? "primary" : "default"
                       }
                       sx={{
+                        backgroundColor:
+                          size === selectedVariant.size
+                            ? "primary.main"
+                            : "transparent",
                         cursor: "pointer",
                         mb: 1,
                         borderRadius: 2,
