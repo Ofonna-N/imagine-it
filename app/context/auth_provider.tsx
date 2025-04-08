@@ -8,7 +8,7 @@ import {
 import { useQueryUser } from "~/features/auth/hooks/useQueryUser";
 import type { User } from "@supabase/supabase-js";
 
-type CompactUserProfile = Pick<User, "id" | "email" | "user_metadata">;
+type CompactUserProfile = Partial<User>;
 
 // Enhanced types for our auth context to include auth methods
 type AuthContextType = {

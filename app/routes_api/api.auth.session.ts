@@ -38,6 +38,8 @@ export async function loader({ request }: { request: Request }) {
           id: user.id,
           email: user.email,
           user_metadata: user.user_metadata,
+          last_sign_in_at: user.last_sign_in_at,
+          created_at: user.created_at,
         },
       }),
       {
