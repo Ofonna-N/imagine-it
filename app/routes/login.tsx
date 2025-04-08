@@ -9,7 +9,7 @@ import {
   CircularProgress,
   Avatar,
 } from "@mui/material";
-import { useNavigate, Link, useLoaderData } from "react-router";
+import { useNavigate, Link } from "react-router";
 import { FiLogIn } from "react-icons/fi";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
