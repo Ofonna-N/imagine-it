@@ -28,8 +28,8 @@ export default [
   ]),
 
   // API routes
-  route("api/products/featured", "routes_api/api.featured-products.ts"),
-  route("api/catalog-products", "routes_api/api.catalog-products.ts"),
+  route("api/products/featured", "routes_api/api.featured_products.ts"),
+  route("api/catalog-products", "routes_api/api.catalog_products.ts"),
 
   // Auth resource routes
   route("api/auth/login", "routes_api/api.auth.login.ts"),
