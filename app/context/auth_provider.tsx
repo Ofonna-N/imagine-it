@@ -1,7 +1,5 @@
 import { createContext, useContext, useMemo } from "react";
 import type { ReactNode } from "react";
-import { redirect } from "react-router";
-import createSupabaseServerClient from "~/services/supabase/supabase-client";
 import {
   useLoginMutation,
   useSignupMutation,
