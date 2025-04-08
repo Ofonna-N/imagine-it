@@ -1,5 +1,5 @@
 import { Box } from "@mui/material";
-import { ProductCard } from "./Product_card";
+import { ProductCard } from "./product_card";
 import type { PrintfulCatalogProductsList } from "~/types/printful";
 import { motion } from "framer-motion";
 
