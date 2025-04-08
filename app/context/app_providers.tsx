@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { MuiProvider } from "./mui_provider";
 import { QueryProvider } from "./query_provider";
 import { AuthProvider } from "./auth_provider";
+import { SnackbarProvider } from "notistack";
 
 interface AppProvidersProps {
   children: ReactNode;
@@ -16,8 +17,16 @@ export function AppProviders({ children }: Readonly<AppProvidersProps>) {
     <QueryProvider>
       <AuthProvider>
         <MuiProvider>
-          {/* Add additional providers here as needed */}
-          {children}
+          <SnackbarProvider
+            maxSnack={3}
+            autoHideDuration={3000}
+            anchorOrigin={{
+              vertical: "bottom",
+              horizontal: "right",
+            }}
+          >
+            {children}
+          </SnackbarProvider>
         </MuiProvider>
       </AuthProvider>
     </QueryProvider>

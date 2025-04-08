@@ -24,6 +24,8 @@ import {
   MenuItem,
   Avatar,
   Tooltip,
+  Stack,
+  alpha,
 } from "@mui/material";
 import {
   FiMenu,
@@ -32,6 +34,7 @@ import {
   FiShoppingCart,
   FiSun,
   FiMoon,
+  FiImage,
 } from "react-icons/fi";
 import { NAV_ITEMS, PATHS } from "~/constants/navigation";
 import { useAuth } from "~/context/auth_provider";
@@ -59,6 +62,7 @@ export default function Layout() {
   // Only signOut is needed from auth context now
   const { signOut } = useAuth();
   const { mode, setMode } = useColorScheme();
+  const cartItemsCount = 0; // Placeholder for cart items count
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
@@ -90,15 +94,45 @@ export default function Layout() {
 
   const drawer = (
     <div>
-      <Toolbar>
-        <Typography variant="h6" noWrap component="div">
+      <Toolbar
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          py: 2,
+        }}
+      >
+        <Typography
+          variant="h6"
+          noWrap
+          component="div"
+          sx={{
+            fontWeight: 700,
+            fontSize: "1.5rem",
+            color: "primary.main",
+            display: "flex",
+            alignItems: "center",
+            gap: 1,
+          }}
+        >
+          <Box
+            component="span"
+            sx={{
+              display: "inline-flex",
+              p: 1,
+              bgcolor: "primary.main",
+              color: "white",
+              borderRadius: "12px",
+            }}
+          >
+            <FiImage />
+          </Box>
           Imagine It
         </Typography>
       </Toolbar>
-      <Divider />
-      <List>
+
+      <List sx={{ px: 2, py: 1 }}>
         {NAV_ITEMS.map((item) => (
-          <ListItem key={item.text} disablePadding>
+          <ListItem key={item.text} disablePadding sx={{ mb: 0.5 }}>
             <ListItemButton
               component={Link}
               to={item.path}
@@ -106,9 +140,83 @@ export default function Layout() {
                 location.pathname === item.path ||
                 (item.path !== "/" && location.pathname.startsWith(item.path))
               }
+              sx={{
+                borderRadius: 0,
+                py: 1.75,
+                borderLeft: "3px solid transparent",
+                transition: "all 0.2s ease",
+                position: "relative",
+                "&::before": {
+                  content: '""',
+                  position: "absolute",
+                  left: 0,
+                  top: 0,
+                  bottom: 0,
+                  width: 0,
+                  backgroundColor: "primary.main",
+                  transition: "width 0.2s ease",
+                },
+                "&:hover": {
+                  backgroundColor: (theme) =>
+                    theme.palette.mode === "light"
+                      ? "rgba(0,0,0,0.04)"
+                      : "rgba(255,255,255,0.08)",
+                  "&::before": {
+                    width: "3px",
+                  },
+                  "& .MuiListItemIcon-root": {
+                    color: "primary.light",
+                    transform: "translateX(2px)",
+                  },
+                },
+                "&.Mui-selected": {
+                  backgroundColor: (theme) =>
+                    theme.palette.mode === "light"
+                      ? alpha(theme.palette.primary.main, 0.08)
+                      : alpha(theme.palette.primary.main, 0.16),
+                  borderLeft: "none",
+                  "&::before": {
+                    width: "3px",
+                  },
+                  "&:hover": {
+                    backgroundColor: (theme) =>
+                      theme.palette.mode === "light"
+                        ? alpha(theme.palette.primary.main, 0.12)
+                        : alpha(theme.palette.primary.main, 0.24),
+                  },
+                  "& .MuiListItemIcon-root": {
+                    color: "primary.main",
+                    transform: "translateX(2px) scale(1.1)",
+                  },
+                  "& .MuiListItemText-primary": {
+                    fontWeight: 600,
+                    color: "primary.main",
+                  },
+                },
+              }}
             >
-              <ListItemIcon>{item.icon}</ListItemIcon>
-              <ListItemText primary={item.text} />
+              <ListItemIcon
+                sx={{
+                  minWidth: 40,
+                  color: "text.secondary",
+                  transition: "all 0.2s ease",
+                  fontSize: "1.25rem",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                {item.icon}
+              </ListItemIcon>
+              <ListItemText
+                primary={item.text}
+                sx={{
+                  "& .MuiTypography-root": {
+                    fontSize: "0.95rem",
+                    transition: "font-weight 0.2s ease, color 0.2s ease",
+                  },
+                }}
+              />
             </ListItemButton>
           </ListItem>
         ))}
@@ -120,9 +228,13 @@ export default function Layout() {
     <Box sx={{ display: "flex" }}>
       <AppBar
         position="fixed"
+        elevation={0}
         sx={{
           width: { sm: `calc(100% - ${drawerWidth}px)` },
           ml: { sm: `${drawerWidth}px` },
+          backgroundColor: "background.paper",
+          borderBottom: "1px solid",
+          borderColor: "divider",
         }}
       >
         <Toolbar>
@@ -131,52 +243,85 @@ export default function Layout() {
             aria-label="open drawer"
             edge="start"
             onClick={handleDrawerToggle}
-            sx={{ mr: 2, display: { sm: "none" } }}
+            sx={{ mr: 2, display: { sm: "none" }, color: "text.primary" }}
           >
             <FiMenu />
           </IconButton>
-          <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
+          <Typography
+            variant="h6"
+            noWrap
+            component="div"
+            sx={{
+              flexGrow: 1,
+              color: "text.primary",
+              display: { sm: "none" },
+              fontWeight: 600,
+            }}
+          >
             Imagine It
           </Typography>
 
-          {/* Theme Toggle Button */}
-          <Tooltip
-            title={`Switch to ${mode === "light" ? "dark" : "light"} mode`}
+          {/* Action Buttons - Right-aligned */}
+          <Stack
+            direction="row"
+            spacing={1}
+            sx={{
+              marginLeft: "auto",
+              display: "flex",
+              alignItems: "center",
+            }}
           >
-            <IconButton
-              color="inherit"
-              onClick={toggleColorMode}
-              sx={{ mr: 1 }}
-              aria-label="toggle theme"
-            >
+            {/* Theme toggle button */}
+            <IconButton onClick={toggleColorMode} size="small" sx={{ ml: 1 }}>
               {mode === "light" ? <FiMoon /> : <FiSun />}
             </IconButton>
-          </Tooltip>
 
-          {/* Shopping Cart Button */}
-          <IconButton
-            color="inherit"
-            component={Link}
-            to={PATHS.CART}
-            sx={{ mr: 1 }}
-          >
-            <FiShoppingCart />
-          </IconButton>
-
-          {/* User Menu */}
-          <IconButton
-            color="inherit"
-            onClick={handleUserMenuOpen}
-            sx={{ p: 0, ml: 1 }}
-          >
-            <Avatar
-              alt={user?.email?.charAt(0).toUpperCase() ?? "U"}
-              src={user?.user_metadata?.avatar_url}
-              sx={{ width: 32, height: 32, bgcolor: "secondary.main" }}
+            {/* Shopping cart button */}
+            <IconButton
+              component={Link}
+              to={PATHS.CART}
+              size="small"
+              sx={{ position: "relative" }}
             >
-              {user?.email?.charAt(0).toUpperCase() ?? "U"}
-            </Avatar>
-          </IconButton>
+              <FiShoppingCart />
+              {cartItemsCount > 0 && (
+                <Box
+                  sx={{
+                    position: "absolute",
+                    top: -2,
+                    right: -2,
+                    bgcolor: "secondary.main",
+                    width: 16,
+                    height: 16,
+                    borderRadius: "50%",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: "0.6rem",
+                    fontWeight: "bold",
+                    color: "white",
+                  }}
+                >
+                  {cartItemsCount}
+                </Box>
+              )}
+            </IconButton>
+
+            {/* User menu button */}
+            <IconButton
+              className="navigation-action" // Add this class
+              size="small"
+              onClick={handleUserMenuOpen}
+            >
+              <Avatar
+                sx={{ width: 32, height: 32 }}
+                alt={user?.email?.charAt(0).toUpperCase() ?? "U"}
+                src={user?.user_metadata?.avatar_url}
+              >
+                {user?.email?.charAt(0).toUpperCase() ?? "U"}
+              </Avatar>
+            </IconButton>
+          </Stack>
 
           <Menu
             anchorEl={userMenuAnchor}
