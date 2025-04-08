@@ -1,4 +1,4 @@
-import { fetchCatalogProducts } from "~/services/printful/printful-api";
+import { fetchCatalogProducts } from "~/services/printful/printful_api";
 import type { PrintfulPagination } from "~/types/printful";
 
 /**

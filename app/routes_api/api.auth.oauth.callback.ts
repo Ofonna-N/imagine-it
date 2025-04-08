@@ -1,5 +1,5 @@
 import { redirect } from "react-router";
-import createSupabaseServerClient from "~/services/supabase/supabase-client";
+import createSupabaseServerClient from "~/services/supabase/supabase_client";
 
 /**
  * OAuth callback handler

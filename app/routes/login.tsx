@@ -17,9 +17,9 @@ import {
   loginSchema,
   useLoginMutation,
   type LoginFormValues,
-} from "~/features/auth/hooks/useAuthMutations";
-import { SocialSignIn } from "~/features/auth/components/SocialSignIn";
-import { checkAuthAndRedirect } from "~/features/auth/utils/auth-redirects";
+} from "~/features/auth/hooks/use_auth_mutations";
+import { SocialSignIn } from "~/features/auth/components/social_signin";
+import { checkAuthAndRedirect } from "~/features/auth/utils/auth_redirects";
 import type { Route } from "./+types/layout";
 
 // Add loader function that checks if user is already authenticated

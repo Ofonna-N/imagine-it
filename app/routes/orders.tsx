@@ -1,5 +1,5 @@
 import { Box, Typography, Paper, CircularProgress } from "@mui/material";
-import { useOrders } from "../features/order/hooks/useOrders";
+import { useOrders } from "../features/order/hooks/use_orders";
 
 export default function Orders() {
   const { orders, loading } = useOrders();

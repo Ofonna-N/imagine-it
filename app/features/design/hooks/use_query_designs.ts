@@ -4,7 +4,7 @@ import {
   getDesignById,
   getDesignsByProductId,
   getPublicDesigns,
-} from "../api/mockData";
+} from "../api/mock_data";
 import type { Design } from "../types";
 
 /**

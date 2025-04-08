@@ -36,8 +36,8 @@ import {
 import { NAV_ITEMS, PATHS } from "~/constants/navigation";
 import { useAuth } from "~/context/auth_provider";
 import { useColorScheme } from "~/context/theme_provider";
-import { LandingComponent } from "~/components/LandingComponent";
-import { checkAuthAndRedirect } from "~/features/auth/utils/auth-redirects";
+import { LandingComponent } from "~/components/landing_component";
+import { checkAuthAndRedirect } from "~/features/auth/utils/auth_redirects";
 import type { Route } from "./+types/layout";
 
 const drawerWidth = 240;

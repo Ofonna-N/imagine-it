@@ -1,5 +1,5 @@
 import { Box, Typography, Button } from "@mui/material";
-import { CartItem } from "./CartItem";
+import { CartItem } from "./cart_item";
 import type { Cart } from "../types";
 
 interface CartListProps {

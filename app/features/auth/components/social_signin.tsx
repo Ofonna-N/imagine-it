@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Button, Divider, Typography, Box } from "@mui/material";
 import { FcGoogle } from "react-icons/fc";
-import { useOAuthMutation } from "../hooks/useAuthMutations";
-import type { OAuthProvider } from "../hooks/useAuthMutations";
+import { useOAuthMutation } from "../hooks/use_auth_mutations";
+import type { OAuthProvider } from "../hooks/use_auth_mutations";
 
 /**
  * Component that provides social sign-in options

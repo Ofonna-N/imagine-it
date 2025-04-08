@@ -1,4 +1,4 @@
-import { mockCartItems } from "../../cart/api/mockData";
+import { mockCartItems } from "../../cart/api/mock_data";
 import type { Order, OrderStatus } from "../types";
 
 // Mock orders for demonstration

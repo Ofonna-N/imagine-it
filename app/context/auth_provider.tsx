@@ -4,7 +4,7 @@ import {
   useLoginMutation,
   useSignupMutation,
   useSignoutMutation,
-} from "~/features/auth/hooks/useAuthMutations";
+} from "~/features/auth/hooks/use_auth_mutations";
 
 // Enhanced types for our auth context to include auth methods (without user property and loading)
 type AuthContextType = {

@@ -8,7 +8,7 @@ import {
   Fade,
   keyframes,
 } from "@mui/material";
-import { ProductGrid } from "~/features/product/components/ProductGrid";
+import { ProductGrid } from "~/features/product/components/Product_grid";
 import { useQueryClient } from "@tanstack/react-query";
 import { FaStar, FaMagic } from "react-icons/fa";
 import { FiShoppingBag } from "react-icons/fi";

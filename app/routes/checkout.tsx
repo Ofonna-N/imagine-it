@@ -16,7 +16,7 @@ import {
 import { z } from "zod";
 import { useForm, FormProvider, useFormContext } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useCart } from "../features/cart/hooks/useCart";
+import { useCart } from "../features/cart/hooks/use_cart";
 
 const checkoutSchema = z.object({
   shipping: z.object({

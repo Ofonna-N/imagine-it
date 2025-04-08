@@ -1,5 +1,5 @@
-import createSupabaseServerClient from "~/services/supabase/supabase-client";
-import type { OAuthProvider } from "~/features/auth/hooks/useAuthMutations";
+import createSupabaseServerClient from "~/services/supabase/supabase_client";
+import type { OAuthProvider } from "~/features/auth/hooks/use_auth_mutations";
 
 /**
  * Resource route for initiating OAuth sign-in flow
@@ -37,7 +37,6 @@ export async function action({
 
     // Get the redirect URL from the request or use a default
     const redirectTo = `${new URL(request.url).origin}/api/auth/oauth/callback`;
-    // const redirectTo = `https://bnrdhpyasurtcrananic.supabase.co/auth/v1/callback`;
 
     // Initiate the OAuth sign-in process
     const { data, error } = await supabase.auth.signInWithOAuth({

@@ -1,4 +1,4 @@
-import createSupabaseServerClient from "~/services/supabase/supabase-client";
+import createSupabaseServerClient from "~/services/supabase/supabase_client";
 
 /**
  * Resource route for user logout

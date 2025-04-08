@@ -1,5 +1,5 @@
 import { useQuery, type UseQueryOptions } from "@tanstack/react-query";
-import { getOrdersByCustomerId, getOrderById } from "../api/mockData";
+import { getOrdersByCustomerId, getOrderById } from "../api/mock_data";
 import type { Order } from "../types";
 
 /**
