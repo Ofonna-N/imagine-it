@@ -7,14 +7,11 @@ import {
   Alert,
   Link as MuiLink,
   CircularProgress,
-  Avatar,
   Paper,
   Fade,
-  Divider,
 } from "@mui/material";
 import { useNavigate, Link } from "react-router";
 import { FiLogIn, FiArrowRight } from "react-icons/fi";
-import { FcGoogle } from "react-icons/fc";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -22,10 +19,8 @@ import {
   useLoginMutation,
   type LoginFormValues,
 } from "~/features/auth/hooks/use_auth_mutations";
-import { useOAuthMutation } from "~/features/auth/hooks/use_auth_mutations";
 import { SocialSignIn } from "~/features/auth/components/social_signin";
 import { checkAuthAndRedirect } from "~/features/auth/utils/auth_redirects";
-import { useSnackbar } from "notistack";
 import type { Route } from "./+types/layout";
 
 // Add loader function that checks if user is already authenticated
@@ -37,27 +32,6 @@ export async function loader({ request }: Route.LoaderArgs) {
 export default function LoginPage() {
   const navigate = useNavigate();
   const login = useLoginMutation();
-  const oauthMutation = useOAuthMutation();
-  const { enqueueSnackbar } = useSnackbar();
-
-  // Handle form submission
-  const handleGoogleSignIn = () => {
-    oauthMutation.mutate("google", {
-      // Use the built-in callbacks for side effects
-      onSuccess: (data) => {
-        enqueueSnackbar("Redirecting to Google authentication...", {
-          variant: "info",
-          autoHideDuration: 3000,
-        });
-        // No need to manually redirect as Supabase handles this via the URL in data
-      },
-      onError: (error) => {
-        enqueueSnackbar(error.message || "Failed to connect with Google", {
-          variant: "error",
-        });
-      },
-    });
-  };
 
   // Initialize react-hook-form with zod resolver
   const {
@@ -78,25 +52,6 @@ export default function LoginPage() {
         navigate("/");
       },
     });
-  };
-
-  // Helper functions to determine button state based on mutation state
-  const getGoogleButtonText = () => {
-    if (oauthMutation.isPending) {
-      return oauthMutation.data
-        ? "Redirecting to Google..."
-        : "Preparing authentication...";
-    }
-    if (oauthMutation.isError) return "Retry with Google";
-    return "Continue with Google";
-  };
-
-  const getGoogleButtonIcon = () => {
-    return oauthMutation.isPending ? (
-      <CircularProgress size={20} color="inherit" />
-    ) : (
-      <FcGoogle />
-    );
   };
 
   return (
@@ -238,64 +193,8 @@ export default function LoginPage() {
               </Button>
             </Box>
 
-            <Divider sx={{ my: 3 }}>
-              <Typography variant="body2" color="text.secondary">
-                OR
-              </Typography>
-            </Divider>
-
-            {/* Social login buttons with enhanced state feedback */}
-            <Button
-              variant="outlined"
-              fullWidth
-              size="large"
-              startIcon={getGoogleButtonIcon()}
-              onClick={handleGoogleSignIn}
-              disabled={oauthMutation.isPending}
-              sx={{
-                mb: 2,
-                py: 1.5,
-                color: "text.primary",
-                borderColor: "divider",
-                position: "relative",
-                "&:hover": {
-                  borderColor: "primary.main",
-                  bgcolor: "background.paper",
-                },
-                ...(oauthMutation.data && {
-                  background: (theme) =>
-                    `linear-gradient(45deg, ${theme.palette.primary.main} 25%, transparent 25%, transparent 50%, ${theme.palette.primary.main} 50%, ${theme.palette.primary.main} 75%, transparent 75%, transparent)`,
-                  backgroundSize: "40px 40px",
-                  animation: "progress-bar-stripes 2s linear infinite",
-                }),
-              }}
-            >
-              {getGoogleButtonText()}
-            </Button>
-
-            {/* Show specific error messages for OAuth */}
-            {oauthMutation.isError && (
-              <Alert
-                severity="error"
-                sx={{
-                  mt: 2,
-                  display: "flex",
-                  alignItems: "center",
-                }}
-                action={
-                  <Button
-                    color="inherit"
-                    size="small"
-                    onClick={handleGoogleSignIn}
-                  >
-                    Retry
-                  </Button>
-                }
-              >
-                {oauthMutation.error.message ||
-                  "Failed to connect with Google. Please try again."}
-              </Alert>
-            )}
+            {/* Use the SocialSignIn component for OAuth functionality */}
+            <SocialSignIn />
 
             {/* Links */}
             <Box sx={{ display: "flex", justifyContent: "center", mt: 3 }}>

@@ -1,10 +1,31 @@
 import { Button, Typography, Box, Divider } from "@mui/material";
 import { FcGoogle } from "react-icons/fc";
+import { useOAuthMutation } from "../hooks/use_auth_mutations";
+import { enqueueSnackbar } from "notistack";
 
 export function SocialSignIn() {
+  const oauthMutation = useOAuthMutation();
+
   const handleGoogleSignIn = () => {
     // Implement Google sign-in functionality
-    console.log("Google sign-in clicked");
+    oauthMutation.mutate("google", {
+      // Use the built-in callbacks for side effects
+      onSuccess: (data) => {
+        enqueueSnackbar("Redirecting to Google authentication...", {
+          variant: "info",
+          autoHideDuration: 3000,
+        });
+        // No need to manually redirect as Supabase handles this via the URL in data
+        if (data.url) {
+          window.location.href = data.url;
+        }
+      },
+      onError: (error) => {
+        enqueueSnackbar(error.message || "Failed to connect with Google", {
+          variant: "error",
+        });
+      },
+    });
   };
 
   return (
