@@ -37,6 +37,7 @@ export default [
   // API routes
   route(API_ROUTES.FEATURED_PRODUCTS, "routes_api/api.featured_products.ts"),
   route(API_ROUTES.CATALOG_PRODUCTS, "routes_api/api.catalog_products.ts"),
+  route(API_ROUTES.USER_PROFILE, "routes_api/api.user.profile.ts"),
 
   // Auth resource routes
   route(API_ROUTES.AUTH.LOGIN, "routes_api/api.auth.login.ts"),

@@ -35,7 +35,7 @@ export default function AccountPage() {
   // Example user details - replace with actual user data in a real implementation
   const userDetails = {
     name: user?.user_metadata?.name || user?.email?.split("@")[0] || "User",
-    email: user?.email || "user@example.com",
+    email: user?.email ?? "user@example.com",
     memberSince: new Date(user?.created_at || Date.now()).toLocaleDateString(),
     shippingAddress: user?.user_metadata?.shipping_address || "None added yet",
     paymentMethods: user?.user_metadata?.payment_methods || [],
