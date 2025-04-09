@@ -1,3 +1,4 @@
+import { insertOrCreateUserProfile } from "~/db/queries/user_profiles_queries";
 import createSupabaseServerClient from "~/services/supabase/supabase_client";
 
 /**
@@ -43,6 +44,11 @@ export async function action({ request }: { request: Request }) {
           ...Object.fromEntries(headers),
         },
       });
+    }
+
+    // After successful login
+    if (data.user) {
+      await insertOrCreateUserProfile(data.user);
     }
 
     // Return minimal user data (no sensitive information)

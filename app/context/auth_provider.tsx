@@ -59,6 +59,7 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
   const signOut = async () => {
     try {
       await signoutMutation.mutateAsync();
+      window.location.href = "/";
     } catch (error) {
       console.error("Error during sign out:", error);
     }

@@ -1,5 +1,6 @@
 import { redirect } from "react-router";
 import createSupabaseServerClient from "~/services/supabase/supabase_client";
+import { insertOrCreateUserProfile } from "~/db/queries/user_profiles_queries";
 
 /**
  * OAuth callback handler
@@ -13,8 +14,12 @@ export async function loader({ request }: { request: Request }) {
 
     if (code) {
       const { supabase, headers } = createSupabaseServerClient({ request });
-      const { error } = await supabase.auth.exchangeCodeForSession(code);
-      if (!error) {
+      const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+
+      if (!error && data?.user) {
+        // Create profile for OAuth users
+        await insertOrCreateUserProfile(data.user);
+
         return redirect(next, { headers });
       }
     }

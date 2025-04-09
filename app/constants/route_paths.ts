@@ -27,6 +27,7 @@ export const APP_ROUTES = {
 export const API_ROUTES = {
   FEATURED_PRODUCTS: "/api/products/featured",
   CATALOG_PRODUCTS: "/api/catalog-products",
+  USER_PROFILE: "/api/user/profile",
   AUTH: {
     LOGIN: "/api/auth/login",
     SIGNUP: "/api/auth/signup",

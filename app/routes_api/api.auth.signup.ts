@@ -1,3 +1,4 @@
+import { insertOrCreateUserProfile } from "~/db/queries/user_profiles_queries";
 import createSupabaseServerClient from "~/services/supabase/supabase_client";
 
 /**
@@ -46,6 +47,17 @@ export async function action({ request }: { request: Request }) {
           ...Object.fromEntries(headers),
         },
       });
+    }
+
+    // After successful signup
+    if (data.user) {
+      try {
+        // Create user profile with data from signup
+        await insertOrCreateUserProfile(data.user);
+      } catch (error) {
+        console.error("Error creating profile:", error);
+        // Continue with signup response - don't fail the signup if profile creation fails
+      }
     }
 
     // Handle email confirmation if needed
