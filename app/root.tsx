@@ -21,6 +21,7 @@ export const links: Route.LinksFunction = () => [
     rel: "stylesheet",
     href: "https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap",
   },
+  { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
 ];
 
 export function Layout({ children }: Readonly<{ children: React.ReactNode }>) {
