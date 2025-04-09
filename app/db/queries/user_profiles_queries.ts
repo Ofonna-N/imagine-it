@@ -1,9 +1,7 @@
 import type { User } from "@supabase/supabase-js";
 import { db } from "..";
-import { profilesTable } from "../schema/profiles";
+import { profilesTable, type UserProfile } from "../schema/profiles";
 import { eq } from "drizzle-orm";
-
-export type UserProfile = (typeof profilesTable)["$inferSelect"];
 
 export async function insertOrCreateUserProfile(user: User): Promise<void> {
   try {
