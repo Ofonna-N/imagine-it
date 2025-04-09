@@ -6,7 +6,7 @@ import { resolve } from "path";
 dotenv.config({ path: resolve(__dirname, ".env") });
 
 // Make sure DATABASE_URL exists in environment
-const databaseUrl = process.env.DATABASE_URL;
+const databaseUrl = process.env.DATABASE_URL ?? "";
 
 export default defineConfig({
   dialect: "postgresql",
@@ -18,5 +18,4 @@ export default defineConfig({
   },
   verbose: true, // Provides more detailed logs during migration generation
   strict: true, // Enable strict mode for better type safety
-  migrationsFolder: "./app/db/migrations",
 });
