@@ -182,75 +182,7 @@ export default function ProductDetail() {
                 />
               </Paper>
 
-              {/* Mockup Examples */}
-              <Typography
-                variant="h6"
-                gutterBottom
-                sx={{
-                  fontWeight: 600,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 1,
-                }}
-              >
-                <Box
-                  component="span"
-                  sx={{
-                    p: 1,
-                    borderRadius: "8px",
-                    bgcolor: "primary.light",
-                    color: "primary.dark",
-                    display: "flex",
-                  }}
-                >
-                  <FiZap size={16} />
-                </Box>
-                See Your Art on This Product
-              </Typography>
-              <Grid container spacing={2}>
-                {[1, 2, 3].map((item) => (
-                  <Grid size={{ xs: 4 }} key={item}>
-                    <Card
-                      elevation={1}
-                      sx={{
-                        borderRadius: 3,
-                        overflow: "hidden",
-                        transition: "all 0.2s ease",
-                        "&:hover": {
-                          transform: "translateY(-4px)",
-                          boxShadow: "0 8px 16px rgba(0, 0, 0, 0.1)",
-                        },
-                      }}
-                    >
-                      <Box sx={{ position: "relative" }}>
-                        <CardMedia
-                          component="img"
-                          height="140"
-                          image={`https://placehold.co/300x300/eee/999?text=Mockup+${item}`}
-                          alt={`Product mockup ${item}`}
-                          sx={{ bgcolor: "background.default" }}
-                        />
-                        <Box
-                          sx={{
-                            position: "absolute",
-                            top: 0,
-                            left: 0,
-                            width: "100%",
-                            height: "100%",
-                            background:
-                              "linear-gradient(0deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0) 40%)",
-                            opacity: 0,
-                            transition: "opacity 0.2s ease",
-                            "&:hover": {
-                              opacity: 1,
-                            },
-                          }}
-                        />
-                      </Box>
-                    </Card>
-                  </Grid>
-                ))}
-              </Grid>
+              {/* Removed mockup examples section */}
             </Box>
           </Zoom>
         </Grid>
@@ -415,7 +347,7 @@ export default function ProductDetail() {
                   >
                     <FiShoppingBag size={16} />
                   </Box>
-                  Create Your Custom Product
+                  Purchase Options
                 </Typography>
 
                 <Stack spacing={2}>
@@ -424,7 +356,7 @@ export default function ProductDetail() {
                     size="large"
                     startIcon={<FiZap />}
                     component={Link}
-                    to={`/design-playground?productId=${product.id}&variantId=${selectedVariant.id}`}
+                    to={`${APP_ROUTES.DESIGN_PLAYGROUND}?productId=${product.id}&variantId=${selectedVariant.id}`}
                     fullWidth
                     sx={{
                       py: 1.8,
@@ -437,48 +369,12 @@ export default function ProductDetail() {
                       },
                     }}
                   >
-                    Design with AI & Purchase
-                  </Button>
-
-                  <Button
-                    variant="outlined"
-                    startIcon={<FiUpload />}
-                    component={Link}
-                    to={`/design-playground?productId=${product.id}&variantId=${selectedVariant.id}&upload=true`}
-                    fullWidth
-                    sx={{
-                      py: 1.8,
-                      borderRadius: 2,
-                      borderWidth: 2,
-                      fontWeight: 600,
-                      "&:hover": {
-                        borderWidth: 2,
-                        transform: "translateY(-3px)",
-                        boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
-                      },
-                    }}
-                  >
-                    Upload Your Design & Purchase
+                    Customize with AI Designer
                   </Button>
 
                   {/* Add a new direct purchase button */}
                   <Box sx={{ position: "relative", mt: 1 }}>
-                    <Divider
-                      sx={{
-                        my: 2,
-                        "&::before": {
-                          content: '"or"',
-                          position: "absolute",
-                          top: "-12px",
-                          left: "50%",
-                          transform: "translateX(-50%)",
-                          bgcolor: "background.paper",
-                          px: 2,
-                          color: "text.secondary",
-                          fontSize: "0.875rem",
-                        },
-                      }}
-                    />
+                    <Divider />
 
                     <Button
                       variant="contained"
