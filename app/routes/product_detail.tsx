@@ -243,10 +243,13 @@ export default function ProductDetail() {
                 <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
                   Color: {selectedVariant.color}
                 </Typography>
-                <Stack
-                  direction="row"
-                  spacing={1}
-                  sx={{ mb: 3, flexWrap: "wrap", gap: 1 }}
+                <Box
+                  sx={{
+                    display: "flex",
+                    flexWrap: "wrap",
+                    gap: 1.5,
+                    mb: 3,
+                  }}
                 >
                   {uniqueColorsWithCodes.map(({ color, colorCode }) => (
                     <Box
@@ -255,6 +258,9 @@ export default function ProductDetail() {
                       sx={{
                         width: 36,
                         height: 36,
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "center",
                         backgroundColor:
                           color === "White"
                             ? "#ffffff"
@@ -281,12 +287,18 @@ export default function ProductDetail() {
                       }}
                     />
                   ))}
-                </Stack>
+                </Box>
 
                 <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
                   Size: {selectedVariant.size}
                 </Typography>
-                <Stack direction="row" spacing={1} flexWrap="wrap" gap={1}>
+                <Box
+                  sx={{
+                    display: "flex",
+                    flexWrap: "wrap",
+                    gap: 1.5,
+                  }}
+                >
                   {uniqueSizes.map((size) => (
                     <Chip
                       key={size}
@@ -299,14 +311,9 @@ export default function ProductDetail() {
                         size === selectedVariant.size ? "primary" : "default"
                       }
                       sx={{
-                        backgroundColor:
-                          size === selectedVariant.size
-                            ? "primary.main"
-                            : "transparent",
                         cursor: "pointer",
-                        mb: 1,
                         borderRadius: 2,
-                        fontWeight: 600,
+                        fontWeight: size === selectedVariant.size ? 600 : 400,
                         transition: "transform 0.2s, box-shadow 0.2s",
                         "&:hover": {
                           transform: "translateY(-2px)",
@@ -315,7 +322,7 @@ export default function ProductDetail() {
                       }}
                     />
                   ))}
-                </Stack>
+                </Box>
               </Paper>
 
               {/* Region Availability Section */}
