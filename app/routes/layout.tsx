@@ -129,6 +129,12 @@ export default function Layout() {
           Imagine It
         </Typography>
       </Toolbar>
+      <Divider
+        sx={{
+          my: -1,
+          backgroundColor: "divider",
+        }}
+      />
 
       <List sx={{ px: 2, py: 1 }}>
         {NAV_ITEMS.map((item) => (
