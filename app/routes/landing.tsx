@@ -16,6 +16,7 @@ import {
   Zoom,
   Fade,
   keyframes,
+  CardMedia, // Import CardMedia
 } from "@mui/material";
 import { Link, useNavigate } from "react-router";
 import {
@@ -25,7 +26,18 @@ import {
   FiStar,
   FiPackage,
   FiTruck,
+  FiCpu, // Added for AI step
 } from "react-icons/fi";
+// Import Swiper React components
+import { Swiper, SwiperSlide } from "swiper/react";
+// Import Swiper styles
+import "swiper/css";
+import "swiper/css/pagination";
+import "swiper/css/navigation";
+import "swiper/css/effect-fade";
+// Import required Swiper modules
+import { Autoplay, Pagination, Navigation, EffectFade } from "swiper/modules";
+import heroImg1 from "~/assets/hero-img-1.jpg";
 
 // Define animations
 const floatAnimation = keyframes`
@@ -149,68 +161,174 @@ export default function LandingPage() {
             </Typography>
           </Fade>
 
-          {/* Vibrant Hero Visual */}
+          {/* Hero Swiper Slider */}
           <Fade in={true} style={{ transitionDelay: "500ms" }}>
             <Box
               sx={{
                 width: "100%",
-                height: { xs: "250px", md: "350px" },
-                bgcolor: "primary.light",
+                maxWidth: "1000px", // Increased width for more presence
+                height: { xs: "400px", md: "550px" }, // Increased height
                 mb: 5,
                 borderRadius: 4,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
                 overflow: "hidden",
                 position: "relative",
-                boxShadow: "0 10px 30px rgba(94, 106, 210, 0.2)",
+                boxShadow: "0 15px 40px rgba(94, 106, 210, 0.3)",
               }}
             >
-              {/* Animated elements */}
-              <Box
-                sx={{
-                  position: "absolute",
-                  top: "20%",
-                  left: "10%",
-                  width: "120px",
-                  height: "120px",
-                  bgcolor: "secondary.main",
-                  borderRadius: "20px",
-                  animation: `${floatAnimation} 4s ease-in-out infinite`,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "white",
-                  fontSize: "32px",
+              <Swiper
+                effect={"fade"}
+                slidesPerView={1}
+                spaceBetween={0}
+                centeredSlides={true}
+                loop={true}
+                autoplay={{
+                  delay: 5000,
+                  disableOnInteraction: false,
                 }}
-              >
-                <FiStar />
-              </Box>
-
-              <Box
-                sx={{
-                  position: "absolute",
-                  bottom: "15%",
-                  right: "15%",
-                  width: "100px",
-                  height: "100px",
-                  bgcolor: "primary.dark",
-                  borderRadius: "50%",
-                  animation: `${floatAnimation} 5s ease-in-out infinite`,
-                  animationDelay: "1s",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "white",
-                  fontSize: "28px",
+                pagination={{
+                  clickable: true,
                 }}
+                navigation={true}
+                modules={[Autoplay, Pagination, Navigation, EffectFade]}
+                style={{ width: "100%", height: "100%" }}
               >
-                <FiPackage />
-              </Box>
+                {/* Slide 1: Using the actual image from assets */}
+                <SwiperSlide>
+                  <Box
+                    sx={{
+                      width: "100%",
+                      height: "100%",
+                      position: "relative",
+                      bgcolor: "background.paper",
+                    }}
+                  >
+                    <CardMedia
+                      component="img"
+                      image={heroImg1}
+                      alt="Hero Image 1"
+                      sx={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                      }}
+                    />
+                    <Box
+                      sx={{
+                        position: "absolute",
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        p: 3,
+                        bgcolor: "rgba(0,0,0,0.5)",
+                        color: "white",
+                        textAlign: "left",
+                      }}
+                    >
+                      <Typography variant="h5" fontWeight="bold">
+                        Think It
+                      </Typography>
+                      <Typography variant="body1">
+                        From imagination to reality
+                      </Typography>
+                    </Box>
+                  </Box>
+                </SwiperSlide>
 
-              <Typography variant="h3" color="white" fontWeight="bold">
-                Create Something Amazing
-              </Typography>
+                {/* Slide 2: Placeholder for AI Generation */}
+                <SwiperSlide>
+                  <Box
+                    sx={{
+                      width: "100%",
+                      height: "100%",
+                      position: "relative",
+                      bgcolor: theme.palette.primary.dark,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <Box sx={{ textAlign: "center", color: "white", p: 4 }}>
+                      <Typography
+                        variant="h3"
+                        sx={{ mb: 2, fontWeight: "bold" }}
+                      >
+                        Create It
+                      </Typography>
+                      <Typography variant="h5">
+                        AI transforms your ideas into stunning designs
+                      </Typography>
+                      <Box
+                        sx={{
+                          width: "80%",
+                          height: "280px",
+                          bgcolor: "rgba(255,255,255,0.1)",
+                          borderRadius: 2,
+                          mt: 3,
+                          mx: "auto",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        <Typography variant="body1">
+                          AI-Generated Design Preview
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </Box>
+                </SwiperSlide>
+
+                {/* Slide 3: Placeholder for Products */}
+                <SwiperSlide>
+                  <Box
+                    sx={{
+                      width: "100%",
+                      height: "100%",
+                      position: "relative",
+                      bgcolor: theme.palette.secondary.dark,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <Box sx={{ textAlign: "center", color: "white", p: 4 }}>
+                      <Typography
+                        variant="h3"
+                        sx={{ mb: 2, fontWeight: "bold" }}
+                      >
+                        Buy It
+                      </Typography>
+                      <Typography variant="h5">
+                        Get your custom designs printed on premium products
+                      </Typography>
+                      <Grid
+                        container
+                        spacing={2}
+                        sx={{ mt: 3, justifyContent: "center" }}
+                      >
+                        {["T-Shirt", "Mug", "Hoodie", "Tote"].map((item) => (
+                          <Grid size={{ xs: 6, sm: 3 }} key={item}>
+                            <Box
+                              sx={{
+                                height: 120,
+                                bgcolor: "rgba(255,255,255,0.1)",
+                                borderRadius: 2,
+                                p: 1,
+                                display: "flex",
+                                flexDirection: "column",
+                                alignItems: "center",
+                                justifyContent: "center",
+                              }}
+                            >
+                              <Typography variant="body2">{item}</Typography>
+                            </Box>
+                          </Grid>
+                        ))}
+                      </Grid>
+                    </Box>
+                  </Box>
+                </SwiperSlide>
+              </Swiper>
             </Box>
           </Fade>
 
@@ -261,7 +379,7 @@ export default function LandingPage() {
           </Typography>
 
           <Grid container spacing={4}>
-            {/* Step 1 */}
+            {/* Step 1: Imagine */}
             <Grid size={{ xs: 12, md: 4 }}>
               <Paper
                 elevation={2}
@@ -281,38 +399,37 @@ export default function LandingPage() {
                   },
                 }}
               >
-                <Box
+                <CardMedia
+                  component="div" // Use div for placeholder background
                   sx={{
-                    width: 80,
-                    height: 80,
-                    bgcolor: "primary.main",
-                    borderRadius: "50%",
+                    width: "100%",
+                    height: 180, // Placeholder height
+                    bgcolor: "primary.light", // Placeholder color
+                    borderRadius: 2,
+                    mb: 3,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    mb: 3,
-                    boxShadow: "0 8px 16px rgba(94, 106, 210, 0.3)",
+                    color: "primary.contrastText",
                   }}
                 >
-                  <FiPackage style={{ fontSize: "32px", color: "white" }} />
-                </Box>
-
+                  [Step 1 Image: Brainstorm/Idea]
+                </CardMedia>
                 <Typography
                   variant="h5"
                   component="h3"
                   sx={{ mb: 2, color: "primary.dark", fontWeight: 700 }}
                 >
-                  Choose Your Item
+                  1. Imagine It
                 </Typography>
-
                 <Typography variant="body1">
-                  Select from our range of high-quality products like t-shirts,
-                  mugs, and more.
+                  Describe your unique idea using simple text prompts. Let your
+                  imagination run wild!
                 </Typography>
               </Paper>
             </Grid>
 
-            {/* Step 2 */}
+            {/* Step 2: Create */}
             <Grid size={{ xs: 12, md: 4 }}>
               <Paper
                 elevation={2}
@@ -332,38 +449,37 @@ export default function LandingPage() {
                   },
                 }}
               >
-                <Box
+                <CardMedia
+                  component="div"
                   sx={{
-                    width: 80,
-                    height: 80,
-                    bgcolor: "secondary.main",
-                    borderRadius: "50%",
+                    width: "100%",
+                    height: 180,
+                    bgcolor: "secondary.light", // Placeholder color
+                    borderRadius: 2,
+                    mb: 3,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    mb: 3,
-                    boxShadow: "0 8px 16px rgba(255, 138, 71, 0.3)",
+                    color: "secondary.contrastText",
                   }}
                 >
-                  <FiStar style={{ fontSize: "32px", color: "white" }} />
-                </Box>
-
+                  [Step 2 Image: AI Generation]
+                </CardMedia>
                 <Typography
                   variant="h5"
                   component="h3"
                   sx={{ mb: 2, color: "secondary.dark", fontWeight: 700 }}
                 >
-                  Create Your Design
+                  2. Create with AI
                 </Typography>
-
                 <Typography variant="body1">
-                  Generate amazing AI artwork with a simple text prompt. See
-                  results instantly!
+                  Our AI instantly generates stunning artwork based on your
+                  description. Choose your favorite!
                 </Typography>
               </Paper>
             </Grid>
 
-            {/* Step 3 */}
+            {/* Step 3: Receive */}
             <Grid size={{ xs: 12, md: 4 }}>
               <Paper
                 elevation={2}
@@ -383,33 +499,32 @@ export default function LandingPage() {
                   },
                 }}
               >
-                <Box
+                <CardMedia
+                  component="div"
                   sx={{
-                    width: 80,
-                    height: 80,
-                    bgcolor: "success.main",
-                    borderRadius: "50%",
+                    width: "100%",
+                    height: 180,
+                    bgcolor: "success.light", // Placeholder color
+                    borderRadius: 2,
+                    mb: 3,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    mb: 3,
-                    boxShadow: "0 8px 16px rgba(76, 175, 80, 0.3)",
+                    color: "success.contrastText",
                   }}
                 >
-                  <FiTruck style={{ fontSize: "32px", color: "white" }} />
-                </Box>
-
+                  [Step 3 Image: Product/Shipping]
+                </CardMedia>
                 <Typography
                   variant="h5"
                   component="h3"
                   sx={{ mb: 2, color: "success.dark", fontWeight: 700 }}
                 >
-                  Receive Your Creation
+                  3. Get Your Product
                 </Typography>
-
                 <Typography variant="body1">
-                  We'll print and ship your custom item directly to you with
-                  care and quality.
+                  Apply your design to a product and we'll print and ship it
+                  directly to you.
                 </Typography>
               </Paper>
             </Grid>
@@ -439,17 +554,19 @@ export default function LandingPage() {
                   },
                 }}
               >
-                <Box
+                <CardMedia
+                  component="div" // Use div for placeholder
                   sx={{
                     height: 200,
-                    bgcolor: "grey.300",
+                    bgcolor: "grey.300", // Placeholder background
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
+                    color: "text.secondary",
                   }}
                 >
-                  Image Placeholder
-                </Box>
+                  [T-Shirt Mockup Placeholder]
+                </CardMedia>
                 <CardContent>
                   <Typography variant="h6" component="div">
                     T-Shirt
@@ -472,17 +589,19 @@ export default function LandingPage() {
                   },
                 }}
               >
-                <Box
+                <CardMedia
+                  component="div"
                   sx={{
                     height: 200,
                     bgcolor: "grey.300",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
+                    color: "text.secondary",
                   }}
                 >
-                  Image Placeholder
-                </Box>
+                  [Mug Mockup Placeholder]
+                </CardMedia>
                 <CardContent>
                   <Typography variant="h6" component="div">
                     Mug
@@ -505,17 +624,19 @@ export default function LandingPage() {
                   },
                 }}
               >
-                <Box
+                <CardMedia
+                  component="div"
                   sx={{
                     height: 200,
                     bgcolor: "grey.300",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
+                    color: "text.secondary",
                   }}
                 >
-                  Image Placeholder
-                </Box>
+                  [Hoodie Mockup Placeholder]
+                </CardMedia>
                 <CardContent>
                   <Typography variant="h6" component="div">
                     Hoodie
@@ -538,17 +659,19 @@ export default function LandingPage() {
                   },
                 }}
               >
-                <Box
+                <CardMedia
+                  component="div"
                   sx={{
                     height: 200,
                     bgcolor: "grey.300",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
+                    color: "text.secondary",
                   }}
                 >
-                  Image Placeholder
-                </Box>
+                  [Tote Bag Mockup Placeholder]
+                </CardMedia>
                 <CardContent>
                   <Typography variant="h6" component="div">
                     Tote Bag

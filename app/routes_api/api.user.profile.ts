@@ -10,12 +10,12 @@ export async function loader({ request }: { request: Request }) {
     // Get authenticated session
     const { supabase, headers } = createSupabaseServerClient({ request });
     const {
-      data: { session },
+      data: { user },
       error: sessionError,
-    } = await supabase.auth.getSession();
+    } = await supabase.auth.getUser();
 
     // Check authentication
-    if (sessionError || !session?.user) {
+    if (sessionError || !user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: {
@@ -26,7 +26,7 @@ export async function loader({ request }: { request: Request }) {
     }
 
     // Get user profile from database
-    const profile = await getUserProfileById(session.user.id);
+    const profile = await getUserProfileById(user.id);
 
     if (!profile) {
       return new Response(JSON.stringify({ error: "Profile not found" }), {

@@ -10,7 +10,7 @@ const databaseUrl = process.env.DATABASE_URL ?? "";
 
 export default defineConfig({
   dialect: "postgresql",
-  schema: "./app/db/schema/*.ts", // Path to schema files in app/db/schema directory
+  schema: "./app/db/schema", // Path to schema files in app/db/schema directory
   out: "./app/db/migrations", // Output migrations to app/db/migrations
   dbCredentials: {
     // Use direct URL format

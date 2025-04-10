@@ -1,9 +1,7 @@
 import type { User } from "@supabase/supabase-js";
 import { db } from "..";
-import { profilesTable } from "../schema/profiles";
+import { profilesTable, type UserProfile } from "../schema/profiles";
 import { eq } from "drizzle-orm";
-
-export type UserProfile = (typeof profilesTable)["$inferSelect"];
 
 export async function insertOrCreateUserProfile(user: User): Promise<void> {
   try {
@@ -19,7 +17,9 @@ export async function insertOrCreateUserProfile(user: User): Promise<void> {
         id: user.id,
         firstName:
           user.user_metadata?.first_name || user.email?.split("@")[0] || "User",
+        avatarUrl: user.user_metadata?.avatar_url || "",
         lastName: user.user_metadata?.last_name || "",
+        phone: user.user_metadata?.phone || "",
         email: user.email ?? "",
         createdAt: new Date(),
         updatedAt: new Date(),
