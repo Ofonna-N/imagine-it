@@ -348,7 +348,77 @@ export default function ProductDetail() {
                 </Box>
               </Paper>
 
-              {/* Region Availability Section */}
+              {/* Call to Action Buttons - MOVED BEFORE shipping availability */}
+              <Box sx={{ mb: 4 }}>
+                <Typography
+                  variant="h6"
+                  gutterBottom
+                  sx={{
+                    fontWeight: 600,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1,
+                  }}
+                >
+                  <Box
+                    component="span"
+                    sx={{
+                      p: 1,
+                      borderRadius: "8px",
+                      bgcolor: "secondary.light",
+                      color: "secondary.dark",
+                      display: "flex",
+                    }}
+                  >
+                    <FiShoppingBag size={16} />
+                  </Box>
+                  Purchase Options
+                </Typography>
+
+                <Stack spacing={2}>
+                  <Button
+                    variant="contained"
+                    size="large"
+                    startIcon={<FiZap />}
+                    component={Link}
+                    to={`${APP_ROUTES.DESIGN_PLAYGROUND}?productId=${product.id}&variantId=${selectedVariant.id}`}
+                    fullWidth
+                    sx={{
+                      py: 1.8,
+                      borderRadius: 2,
+                      fontWeight: 600,
+                      boxShadow: "0 6px 16px rgba(94, 106, 210, 0.4)",
+                      "&:hover": {
+                        transform: "translateY(-3px)",
+                        boxShadow: "0 8px 20px rgba(94, 106, 210, 0.5)",
+                      },
+                    }}
+                  >
+                    Customize with AI Designer
+                  </Button>
+
+                  {/* Add a new direct purchase button */}
+                  <Box sx={{ position: "relative", mt: 1 }}>
+                    <Divider sx={{ my: 2 }} />
+
+                    <Button
+                      variant="contained"
+                      color="secondary"
+                      startIcon={<FiShoppingBag />}
+                      fullWidth
+                      sx={{
+                        py: 1.5,
+                        borderRadius: 2,
+                        fontWeight: 600,
+                      }}
+                    >
+                      Add to Cart (Standard Design)
+                    </Button>
+                  </Box>
+                </Stack>
+              </Box>
+
+              {/* Region Availability Section - MOVED AFTER action buttons */}
               <Accordion
                 elevation={1}
                 sx={{
@@ -499,76 +569,6 @@ export default function ProductDetail() {
                   </Box>
                 </AccordionDetails>
               </Accordion>
-
-              {/* Call to Action Buttons */}
-              <Box sx={{ mb: 4 }}>
-                <Typography
-                  variant="h6"
-                  gutterBottom
-                  sx={{
-                    fontWeight: 600,
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 1,
-                  }}
-                >
-                  <Box
-                    component="span"
-                    sx={{
-                      p: 1,
-                      borderRadius: "8px",
-                      bgcolor: "secondary.light",
-                      color: "secondary.dark",
-                      display: "flex",
-                    }}
-                  >
-                    <FiShoppingBag size={16} />
-                  </Box>
-                  Purchase Options
-                </Typography>
-
-                <Stack spacing={2}>
-                  <Button
-                    variant="contained"
-                    size="large"
-                    startIcon={<FiZap />}
-                    component={Link}
-                    to={`${APP_ROUTES.DESIGN_PLAYGROUND}?productId=${product.id}&variantId=${selectedVariant.id}`}
-                    fullWidth
-                    sx={{
-                      py: 1.8,
-                      borderRadius: 2,
-                      fontWeight: 600,
-                      boxShadow: "0 6px 16px rgba(94, 106, 210, 0.4)",
-                      "&:hover": {
-                        transform: "translateY(-3px)",
-                        boxShadow: "0 8px 20px rgba(94, 106, 210, 0.5)",
-                      },
-                    }}
-                  >
-                    Customize with AI Designer
-                  </Button>
-
-                  {/* Add a new direct purchase button */}
-                  <Box sx={{ position: "relative", mt: 1 }}>
-                    <Divider sx={{ my: 2 }} />
-
-                    <Button
-                      variant="contained"
-                      color="secondary"
-                      startIcon={<FiShoppingBag />}
-                      fullWidth
-                      sx={{
-                        py: 1.5,
-                        borderRadius: 2,
-                        fontWeight: 600,
-                      }}
-                    >
-                      Add to Cart (Standard Design)
-                    </Button>
-                  </Box>
-                </Stack>
-              </Box>
 
               {/* Product Details Accordion */}
               <Accordion
