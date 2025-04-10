@@ -313,11 +313,34 @@ export default function ProductDetail() {
                       sx={{
                         cursor: "pointer",
                         borderRadius: 2,
-                        fontWeight: size === selectedVariant.size ? 600 : 400,
-                        transition: "transform 0.2s, box-shadow 0.2s",
+                        fontWeight: size === selectedVariant.size ? 700 : 400,
+                        padding:
+                          size === selectedVariant.size ? "4px 8px" : "3px 6px",
+                        backgroundColor:
+                          size === selectedVariant.size
+                            ? "primary.main"
+                            : "transparent",
+                        color:
+                          size === selectedVariant.size
+                            ? "white"
+                            : "text.primary",
+                        border: "2px solid",
+                        borderColor:
+                          size === selectedVariant.size
+                            ? "primary.main"
+                            : "grey.300",
+                        boxShadow:
+                          size === selectedVariant.size
+                            ? "0 4px 8px rgba(94, 106, 210, 0.4)"
+                            : "none",
+                        transition: "all 0.2s ease",
                         "&:hover": {
                           transform: "translateY(-2px)",
-                          boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
+                          boxShadow: "0 4px 8px rgba(0, 0, 0, 0.15)",
+                          backgroundColor:
+                            size === selectedVariant.size
+                              ? "primary.main"
+                              : "rgba(0, 0, 0, 0.04)",
                         },
                       }}
                     />
