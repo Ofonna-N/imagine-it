@@ -5,8 +5,6 @@ import {
   Typography,
   Button,
   Stack,
-  Card,
-  CardMedia,
   Chip,
   Accordion,
   AccordionSummary,
@@ -18,7 +16,7 @@ import {
   Divider,
   Alert,
 } from "@mui/material";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLoaderData, Link, isRouteErrorResponse } from "react-router";
 import { fetchCatalogProductById } from "../services/printful/printful_api";
 import type {
@@ -26,8 +24,6 @@ import type {
   PrintfulErrorResponse,
 } from "../types/printful";
 import {
-  FiEdit,
-  FiUpload,
   FiZap,
   FiInfo,
   FiChevronDown,
@@ -61,6 +57,7 @@ export default function ProductDetail() {
 
   const { product, variants } = catalogProductResponse.result;
   const [selectedVariantIndex, setSelectedVariantIndex] = useState(0);
+  const [userRegion, setUserRegion] = useState<string | null>(null);
 
   const selectedVariant = variants[selectedVariantIndex];
 
@@ -80,6 +77,144 @@ export default function ProductDetail() {
   const uniqueSizes = Array.from(
     new Set(variants.map((variant) => variant.size))
   );
+
+  // Try to detect user's region based on browser locale
+  useEffect(() => {
+    const detectUserRegion = () => {
+      if (typeof navigator === "undefined") return; // Skip on server-side
+
+      // Get browser language (e.g., "en-US", "en-GB")
+      const locale = navigator.language;
+
+      // Map common locales to Printful's 9 shipping regions
+      const regionMap: Record<string, string[]> = {
+        US: ["en-US", "es-US"],
+        UK: ["en-GB"],
+        CA: ["en-CA", "fr-CA"],
+        AU: ["en-AU", "en-NZ"],
+        JP: ["ja", "ja-JP"],
+        BR: ["pt-BR"],
+        EU: [
+          "de",
+          "fr",
+          "it",
+          "es",
+          "nl",
+          "pt",
+          "sv",
+          "fi",
+          "da",
+          "no",
+          "el",
+          "cs",
+          "hu",
+          "pl",
+          "ro",
+          "sk",
+          "sl",
+          "bg",
+          "hr",
+          "et",
+          "lv",
+          "lt",
+          "mt",
+        ],
+        EFTA: ["is", "no", "li", "de-CH", "fr-CH", "it-CH"],
+      };
+
+      // Find the region that matches the user's locale
+      for (const [region, locales] of Object.entries(regionMap)) {
+        if (locales.some((l) => locale.startsWith(l) || locale === l)) {
+          setUserRegion(region);
+          return;
+        }
+      }
+
+      // If we can't match precisely, try to match just the country code
+      const countryCode = locale.split("-")[1];
+      if (countryCode) {
+        // US
+        if (countryCode === "US") setUserRegion("US");
+        // UK
+        else if (["GB", "UK"].includes(countryCode)) setUserRegion("UK");
+        // Canada
+        else if (countryCode === "CA") setUserRegion("CA");
+        // Australia/New Zealand
+        else if (["AU", "NZ"].includes(countryCode)) setUserRegion("AU");
+        // Japan
+        else if (countryCode === "JP") setUserRegion("JP");
+        // Brazil
+        else if (countryCode === "BR") setUserRegion("BR");
+        // EFTA states
+        else if (["IS", "LI", "NO", "CH"].includes(countryCode))
+          setUserRegion("EFTA");
+        // European countries
+        else if (
+          [
+            "AT",
+            "BE",
+            "BG",
+            "HR",
+            "CY",
+            "CZ",
+            "DK",
+            "EE",
+            "FI",
+            "FR",
+            "DE",
+            "GR",
+            "HU",
+            "IE",
+            "IT",
+            "LV",
+            "LT",
+            "LU",
+            "MT",
+            "NL",
+            "PL",
+            "PT",
+            "RO",
+            "SK",
+            "SI",
+            "ES",
+            "SE",
+            "AL",
+            "AD",
+            "AZ",
+            "BA",
+            "FO",
+            "GE",
+            "GI",
+            "GG",
+            "VA",
+            "HU",
+            "IM",
+            "JE",
+            "KZ",
+            "XK",
+            "MK",
+            "MD",
+            "MC",
+            "ME",
+            "SM",
+            "RS",
+            "SJ",
+            "UA",
+          ].includes(countryCode)
+        ) {
+          setUserRegion("EU");
+        } else {
+          // Any other country is considered "Worldwide"
+          setUserRegion("WW");
+        }
+      } else {
+        // If no country code can be determined, default to Worldwide
+        setUserRegion("WW");
+      }
+    };
+
+    detectUserRegion();
+  }, []);
 
   // Handle color selection
   const handleColorSelect = (color: string) => {
@@ -322,6 +457,207 @@ export default function ProductDetail() {
                   ))}
                 </Stack>
               </Paper>
+
+              {/* Region Availability Section */}
+              <Accordion
+                elevation={1}
+                sx={{
+                  mb: 4,
+                  borderRadius: "12px !important",
+                  overflow: "hidden",
+                  "&:before": {
+                    display: "none",
+                  },
+                }}
+              >
+                <AccordionSummary
+                  expandIcon={<FiChevronDown />}
+                  sx={{
+                    "&.Mui-expanded": {
+                      borderBottom: "1px solid",
+                      borderColor: "divider",
+                    },
+                  }}
+                >
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      width: "100%",
+                      justifyContent: "space-between",
+                    }}
+                  >
+                    <Box sx={{ display: "flex", alignItems: "center" }}>
+                      <FiInfo style={{ marginRight: 12, color: "#5E6AD2" }} />
+                      <Typography
+                        variant="subtitle1"
+                        fontWeight="medium"
+                        color="text.primary"
+                      >
+                        Shipping Availability
+                      </Typography>
+                    </Box>
+
+                    {/* Show user's region status directly in the summary */}
+                    {userRegion &&
+                      selectedVariant.availability_status.some(
+                        (status) => status.region === userRegion
+                      ) && (
+                        <Box sx={{ display: "flex", alignItems: "center" }}>
+                          <Typography variant="body2" sx={{ mr: 1 }}>
+                            Your region:
+                          </Typography>
+                          <Chip
+                            label={
+                              selectedVariant.availability_status.find(
+                                (status) => status.region === userRegion
+                              )?.status === "in_stock"
+                                ? "In Stock"
+                                : "Limited Stock"
+                            }
+                            size="small"
+                            color={
+                              selectedVariant.availability_status.find(
+                                (status) => status.region === userRegion
+                              )?.status === "in_stock"
+                                ? "success"
+                                : "warning"
+                            }
+                            sx={{ height: 24 }}
+                          />
+                        </Box>
+                      )}
+                  </Box>
+                </AccordionSummary>
+                <AccordionDetails>
+                  {/* Display availability message */}
+                  <Box sx={{ mb: 2 }}>
+                    <Typography variant="body2" sx={{ mb: 1 }}>
+                      {selectedVariant.in_stock
+                        ? "This item is available for purchase in the following regions:"
+                        : "This item has limited availability in the following regions:"}
+                    </Typography>
+                  </Box>
+
+                  {/* Region status list */}
+                  <Box
+                    sx={{ display: "flex", flexDirection: "column", gap: 1 }}
+                  >
+                    {Object.entries(selectedVariant.availability_regions).map(
+                      ([regionCode, regionName]) => {
+                        // Find the status for this region
+                        const regionStatus =
+                          selectedVariant.availability_status.find(
+                            (status) => status.region === regionCode
+                          );
+
+                        // Determine if this is the user's region
+                        const isUserRegion = userRegion === regionCode;
+
+                        // Get the display status
+                        const status = regionStatus?.status ?? "unknown";
+                        const isInStock = status === "in_stock";
+
+                        // Get a readable region code equivalent
+                        const readableRegion = (() => {
+                          switch (regionCode) {
+                            case "US":
+                              return "United States";
+                            case "UK":
+                              return "United Kingdom";
+                            case "EU":
+                              return "Europe";
+                            case "CA":
+                              return "Canada";
+                            case "AU":
+                              return "Australia/New Zealand";
+                            case "JP":
+                              return "Japan";
+                            case "BR":
+                              return "Brazil";
+                            case "EFTA":
+                              return "EFTA States";
+                            case "WW":
+                              return "Worldwide";
+                            default:
+                              return regionName;
+                          }
+                        })();
+
+                        return (
+                          <Box
+                            key={regionCode}
+                            sx={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                              p: 1,
+                              borderRadius: 1,
+                              bgcolor: isUserRegion
+                                ? "rgba(94, 106, 210, 0.08)"
+                                : "transparent",
+                              border: isUserRegion ? "1px dashed" : "none",
+                              borderColor: "primary.light",
+                            }}
+                          >
+                            <Typography
+                              variant="body2"
+                              sx={{
+                                fontWeight: isUserRegion ? 600 : 400,
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 0.5,
+                              }}
+                            >
+                              {readableRegion}
+                              {isUserRegion && (
+                                <Chip
+                                  label="Your region"
+                                  size="small"
+                                  color="primary"
+                                  variant="outlined"
+                                  sx={{
+                                    height: 20,
+                                    fontSize: "0.625rem",
+                                    ml: 0.5,
+                                  }}
+                                />
+                              )}
+                            </Typography>
+                            <Chip
+                              label={isInStock ? "In Stock" : "Limited Stock"}
+                              size="small"
+                              color={isInStock ? "success" : "warning"}
+                              variant={isUserRegion ? "filled" : "outlined"}
+                              sx={{
+                                height: 24,
+                                fontWeight: isUserRegion ? 600 : 400,
+                                fontSize: "0.75rem",
+                              }}
+                            />
+                          </Box>
+                        );
+                      }
+                    )}
+                  </Box>
+
+                  {/* Printful shipping regions explanation */}
+                  <Box
+                    sx={{
+                      mt: 3,
+                      pt: 2,
+                      borderTop: "1px dashed",
+                      borderColor: "divider",
+                    }}
+                  >
+                    <Typography variant="caption" color="text.secondary">
+                      Imagine it has 9 shipping regions: United States, Europe,
+                      United Kingdom, EFTA states (Iceland, Liechtenstein,
+                      Norway, Switzerland), Canada, Australia/New Zealand,
+                      Japan, Brazil, and Worldwide.
+                    </Typography>
+                  </Box>
+                </AccordionDetails>
+              </Accordion>
 
               {/* Call to Action Buttons */}
               <Box sx={{ mb: 4 }}>
