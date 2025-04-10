@@ -16,7 +16,7 @@ import {
   Divider,
   Alert,
 } from "@mui/material";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useLoaderData, Link, isRouteErrorResponse } from "react-router";
 import { fetchCatalogProductById } from "../services/printful/printful_api";
 import type {
@@ -57,8 +57,6 @@ export default function ProductDetail() {
 
   const { product, variants } = catalogProductResponse.result;
   const [selectedVariantIndex, setSelectedVariantIndex] = useState(0);
-  const [userRegion, setUserRegion] = useState<string | null>(null);
-
   const selectedVariant = variants[selectedVariantIndex];
 
   // Extract unique colors and their color codes for the color selector
@@ -77,144 +75,6 @@ export default function ProductDetail() {
   const uniqueSizes = Array.from(
     new Set(variants.map((variant) => variant.size))
   );
-
-  // Try to detect user's region based on browser locale
-  useEffect(() => {
-    const detectUserRegion = () => {
-      if (typeof navigator === "undefined") return; // Skip on server-side
-
-      // Get browser language (e.g., "en-US", "en-GB")
-      const locale = navigator.language;
-
-      // Map common locales to Printful's 9 shipping regions
-      const regionMap: Record<string, string[]> = {
-        US: ["en-US", "es-US"],
-        UK: ["en-GB"],
-        CA: ["en-CA", "fr-CA"],
-        AU: ["en-AU", "en-NZ"],
-        JP: ["ja", "ja-JP"],
-        BR: ["pt-BR"],
-        EU: [
-          "de",
-          "fr",
-          "it",
-          "es",
-          "nl",
-          "pt",
-          "sv",
-          "fi",
-          "da",
-          "no",
-          "el",
-          "cs",
-          "hu",
-          "pl",
-          "ro",
-          "sk",
-          "sl",
-          "bg",
-          "hr",
-          "et",
-          "lv",
-          "lt",
-          "mt",
-        ],
-        EFTA: ["is", "no", "li", "de-CH", "fr-CH", "it-CH"],
-      };
-
-      // Find the region that matches the user's locale
-      for (const [region, locales] of Object.entries(regionMap)) {
-        if (locales.some((l) => locale.startsWith(l) || locale === l)) {
-          setUserRegion(region);
-          return;
-        }
-      }
-
-      // If we can't match precisely, try to match just the country code
-      const countryCode = locale.split("-")[1];
-      if (countryCode) {
-        // US
-        if (countryCode === "US") setUserRegion("US");
-        // UK
-        else if (["GB", "UK"].includes(countryCode)) setUserRegion("UK");
-        // Canada
-        else if (countryCode === "CA") setUserRegion("CA");
-        // Australia/New Zealand
-        else if (["AU", "NZ"].includes(countryCode)) setUserRegion("AU");
-        // Japan
-        else if (countryCode === "JP") setUserRegion("JP");
-        // Brazil
-        else if (countryCode === "BR") setUserRegion("BR");
-        // EFTA states
-        else if (["IS", "LI", "NO", "CH"].includes(countryCode))
-          setUserRegion("EFTA");
-        // European countries
-        else if (
-          [
-            "AT",
-            "BE",
-            "BG",
-            "HR",
-            "CY",
-            "CZ",
-            "DK",
-            "EE",
-            "FI",
-            "FR",
-            "DE",
-            "GR",
-            "HU",
-            "IE",
-            "IT",
-            "LV",
-            "LT",
-            "LU",
-            "MT",
-            "NL",
-            "PL",
-            "PT",
-            "RO",
-            "SK",
-            "SI",
-            "ES",
-            "SE",
-            "AL",
-            "AD",
-            "AZ",
-            "BA",
-            "FO",
-            "GE",
-            "GI",
-            "GG",
-            "VA",
-            "HU",
-            "IM",
-            "JE",
-            "KZ",
-            "XK",
-            "MK",
-            "MD",
-            "MC",
-            "ME",
-            "SM",
-            "RS",
-            "SJ",
-            "UA",
-          ].includes(countryCode)
-        ) {
-          setUserRegion("EU");
-        } else {
-          // Any other country is considered "Worldwide"
-          setUserRegion("WW");
-        }
-      } else {
-        // If no country code can be determined, default to Worldwide
-        setUserRegion("WW");
-      }
-    };
-
-    detectUserRegion();
-  }, []);
 
   // Handle color selection
   const handleColorSelect = (color: string) => {
@@ -497,36 +357,6 @@ export default function ProductDetail() {
                         Shipping Availability
                       </Typography>
                     </Box>
-
-                    {/* Show user's region status directly in the summary */}
-                    {userRegion &&
-                      selectedVariant.availability_status.some(
-                        (status) => status.region === userRegion
-                      ) && (
-                        <Box sx={{ display: "flex", alignItems: "center" }}>
-                          <Typography variant="body2" sx={{ mr: 1 }}>
-                            Your region:
-                          </Typography>
-                          <Chip
-                            label={
-                              selectedVariant.availability_status.find(
-                                (status) => status.region === userRegion
-                              )?.status === "in_stock"
-                                ? "In Stock"
-                                : "Limited Stock"
-                            }
-                            size="small"
-                            color={
-                              selectedVariant.availability_status.find(
-                                (status) => status.region === userRegion
-                              )?.status === "in_stock"
-                                ? "success"
-                                : "warning"
-                            }
-                            sx={{ height: 24 }}
-                          />
-                        </Box>
-                      )}
                   </Box>
                 </AccordionSummary>
                 <AccordionDetails>
@@ -550,9 +380,6 @@ export default function ProductDetail() {
                           selectedVariant.availability_status.find(
                             (status) => status.region === regionCode
                           );
-
-                        // Determine if this is the user's region
-                        const isUserRegion = userRegion === regionCode;
 
                         // Get the display status
                         const status = regionStatus?.status ?? "unknown";
@@ -592,45 +419,29 @@ export default function ProductDetail() {
                               justifyContent: "space-between",
                               p: 1,
                               borderRadius: 1,
-                              bgcolor: isUserRegion
-                                ? "rgba(94, 106, 210, 0.08)"
-                                : "transparent",
-                              border: isUserRegion ? "1px dashed" : "none",
-                              borderColor: "primary.light",
+                              bgcolor: "transparent",
+                              border: "none",
                             }}
                           >
                             <Typography
                               variant="body2"
                               sx={{
-                                fontWeight: isUserRegion ? 600 : 400,
+                                fontWeight: 400,
                                 display: "flex",
                                 alignItems: "center",
                                 gap: 0.5,
                               }}
                             >
                               {readableRegion}
-                              {isUserRegion && (
-                                <Chip
-                                  label="Your region"
-                                  size="small"
-                                  color="primary"
-                                  variant="outlined"
-                                  sx={{
-                                    height: 20,
-                                    fontSize: "0.625rem",
-                                    ml: 0.5,
-                                  }}
-                                />
-                              )}
                             </Typography>
                             <Chip
                               label={isInStock ? "In Stock" : "Limited Stock"}
                               size="small"
                               color={isInStock ? "success" : "warning"}
-                              variant={isUserRegion ? "filled" : "outlined"}
+                              variant="outlined"
                               sx={{
                                 height: 24,
-                                fontWeight: isUserRegion ? 600 : 400,
+                                fontWeight: 400,
                                 fontSize: "0.75rem",
                               }}
                             />
@@ -710,7 +521,7 @@ export default function ProductDetail() {
 
                   {/* Add a new direct purchase button */}
                   <Box sx={{ position: "relative", mt: 1 }}>
-                    <Divider />
+                    <Divider sx={{ my: 2 }} />
 
                     <Button
                       variant="contained"
