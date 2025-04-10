@@ -16,11 +16,15 @@ import {
   Link as MuiLink,
   Zoom,
   Divider,
+  Alert,
 } from "@mui/material";
 import { useState } from "react";
-import { useLoaderData, Link } from "react-router";
+import { useLoaderData, Link, isRouteErrorResponse } from "react-router";
 import { fetchCatalogProductById } from "../services/printful/printful_api";
-import type { PrintfulCatalogProductResponse } from "../types/printful";
+import type {
+  PrintfulCatalogProductResponse,
+  PrintfulErrorResponse,
+} from "../types/printful";
 import {
   FiEdit,
   FiUpload,
@@ -31,6 +35,8 @@ import {
   FiShoppingBag,
 } from "react-icons/fi";
 import { motion } from "framer-motion";
+import { APP_ROUTES } from "../constants/route_paths";
+import type { Route } from "./+types/product_detail";
 
 export async function loader({ params }: { params: { productId: string } }) {
   if (!params.productId) {
@@ -575,6 +581,151 @@ export default function ProductDetail() {
           </Fade>
         </Grid>
       </Grid>
+    </Box>
+  );
+}
+
+/**
+ * Error boundary component for product detail page
+ * Handles different types of errors that may occur during data loading
+ */
+export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
+  // Check if it's a route error response (including thrown Response objects)
+  if (isRouteErrorResponse(error)) {
+    return (
+      <Box sx={{ p: 4, maxWidth: "800px", mx: "auto" }}>
+        <Alert severity="error" variant="filled" sx={{ mb: 3 }}>
+          <Typography variant="h6" component="div" sx={{ mb: 1 }}>
+            {error.status} {error.statusText || "Error"}
+          </Typography>
+          <Typography>{error.data}</Typography>
+        </Alert>
+
+        <Button
+          component={Link}
+          to={APP_ROUTES.PRODUCTS}
+          startIcon={<FiArrowLeft />}
+          variant="contained"
+          color="primary"
+          sx={{ mt: 2 }}
+        >
+          Back to Products
+        </Button>
+      </Box>
+    );
+  }
+
+  // Check if it's a Printful API error response
+  if (
+    error &&
+    typeof error === "object" &&
+    "code" in error &&
+    "error" in error
+  ) {
+    const printfulError = error as unknown as PrintfulErrorResponse;
+    return (
+      <Box sx={{ p: 4, maxWidth: "800px", mx: "auto" }}>
+        <Alert severity="error" variant="filled" sx={{ mb: 3 }}>
+          <Typography variant="h6" component="div" sx={{ mb: 1 }}>
+            Product API Error (Code: {printfulError.code})
+          </Typography>
+          <Typography sx={{ mb: 2 }}>{printfulError.result}</Typography>
+          {printfulError.error && (
+            <Box
+              component="div"
+              sx={{ mt: 2, p: 2, bgcolor: "rgba(0,0,0,0.1)", borderRadius: 1 }}
+            >
+              <Typography variant="body2" sx={{ fontWeight: "bold" }}>
+                Reason: {printfulError.error.reason}
+              </Typography>
+              <Typography variant="body2">
+                {printfulError.error.message}
+              </Typography>
+            </Box>
+          )}
+        </Alert>
+
+        <Button
+          component={Link}
+          to={APP_ROUTES.PRODUCTS}
+          startIcon={<FiArrowLeft />}
+          variant="contained"
+          color="primary"
+          sx={{ mt: 2 }}
+        >
+          Back to Products
+        </Button>
+      </Box>
+    );
+  }
+
+  // Handle standard JS Error objects
+  if (error instanceof Error) {
+    return (
+      <Box sx={{ p: 4, maxWidth: "800px", mx: "auto" }}>
+        <Alert severity="error" variant="filled" sx={{ mb: 3 }}>
+          <Typography variant="h6" component="div" sx={{ mb: 1 }}>
+            Unexpected Error
+          </Typography>
+          <Typography sx={{ mb: 2 }}>{error.message}</Typography>
+          {process.env.NODE_ENV === "development" && (
+            <Box
+              component="pre"
+              sx={{
+                p: 2,
+                mt: 2,
+                bgcolor: "rgba(0,0,0,0.1)",
+                color: "error.contrastText",
+                borderRadius: 1,
+                fontSize: "0.75rem",
+                whiteSpace: "pre-wrap",
+                wordBreak: "break-word",
+                maxHeight: "200px",
+                overflow: "auto",
+              }}
+            >
+              {error.stack}
+            </Box>
+          )}
+        </Alert>
+
+        <Button
+          component={Link}
+          to={APP_ROUTES.PRODUCTS}
+          startIcon={<FiArrowLeft />}
+          variant="contained"
+          color="primary"
+          sx={{ mt: 2 }}
+        >
+          Back to Products
+        </Button>
+      </Box>
+    );
+  }
+
+  // Handle unknown errors
+  return (
+    <Box sx={{ p: 4, maxWidth: "800px", mx: "auto" }}>
+      <Alert severity="error" variant="filled" sx={{ mb: 3 }}>
+        <Typography variant="h6" component="div" sx={{ mb: 1 }}>
+          Unknown Error
+        </Typography>
+        <Typography>
+          An unexpected error occurred while loading the product. Please try
+          again later.
+        </Typography>
+      </Alert>
+
+      <Button
+        component={Link}
+        to={APP_ROUTES.PRODUCTS}
+        startIcon={<FiArrowLeft />}
+        variant="contained"
+        color="primary"
+        sx={{ mt: 2 }}
+      >
+        Back to Products
+      </Button>
     </Box>
   );
 }

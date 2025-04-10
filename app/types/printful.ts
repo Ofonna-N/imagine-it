@@ -154,3 +154,13 @@ export type PrintfulCatalogProductsList = {
   techniques: PrintfulTechnique[];
   origin_country: string;
 }[];
+
+// Error response type from Printful
+export interface PrintfulErrorResponse {
+  code: number;
+  result: string;
+  error: {
+    reason: string;
+    message: string;
+  };
+}
