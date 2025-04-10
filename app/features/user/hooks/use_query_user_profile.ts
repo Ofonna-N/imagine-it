@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import type { UserProfile } from "~/db/queries/user_profiles_queries";
+import type { UserProfile } from "~/db/schema/profiles";
 
 /**
  * Custom hook to fetch the user's profile
