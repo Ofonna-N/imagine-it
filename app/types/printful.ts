@@ -72,6 +72,18 @@ export interface PrintfulV2RegionAvailability {
   }[];
 }
 
+// Product availability in v2 API
+export interface PrintfulV2ProductAvailabilityItem {
+  catalog_variant_id: number;
+  techniques: {
+    technique: string;
+    selling_regions: PrintfulV2RegionAvailability[];
+  }[];
+}
+
+export interface PrintfulV2ProductAvailabilityResponse
+  extends PrintfulV2BaseResponse<PrintfulV2ProductAvailabilityItem[]> {}
+
 // Catalog product in v2 API
 export interface PrintfulV2CatalogProduct {
   id: number;

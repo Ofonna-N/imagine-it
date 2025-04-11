@@ -7,6 +7,7 @@ import type {
   PrintfulV2CatalogProductsResponse,
   PrintfulV2CatalogProduct,
   PrintfulV2CatalogVariantsResponse,
+  PrintfulV2ProductAvailabilityResponse,
 } from "../../types/printful";
 
 /**
@@ -94,6 +95,15 @@ export async function fetchCatalogProductById(productId: string) {
 export async function fetchCatalogVariantsByProductId(productId: string) {
   return fetchFromPrintful<PrintfulV2CatalogVariantsResponse>(
     `/v2/catalog-products/${productId}/catalog-variants`
+  );
+}
+
+/**
+ * Fetches availability information for a specific product using API v2
+ */
+export async function fetchProductAvailability(productId: string) {
+  return fetchFromPrintful<PrintfulV2ProductAvailabilityResponse>(
+    `/v2/catalog-products/${productId}/availability`
   );
 }
 

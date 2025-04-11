@@ -15,6 +15,7 @@ import {
   Zoom,
   Divider,
   Alert,
+  CircularProgress,
 } from "@mui/material";
 import { useState } from "react";
 import { useLoaderData, Link, isRouteErrorResponse } from "react-router";
@@ -35,10 +36,14 @@ import {
   FiTag,
   FiBox,
   FiUser,
+  FiGlobe,
+  FiAlertCircle,
+  FiCheck,
 } from "react-icons/fi";
 import { motion } from "framer-motion";
 import { APP_ROUTES } from "../constants/route_paths";
 import type { Route } from "./+types/product_detail";
+import useQueryProductAvailability from "~/features/product/hooks/use_query_product_availability";
 
 export async function loader({ params }: { params: { productId: string } }) {
   if (!params.productId) {
@@ -46,12 +51,14 @@ export async function loader({ params }: { params: { productId: string } }) {
   }
 
   try {
-    // Fetch product details
-    const productResponse = await fetchCatalogProductById(params.productId);
+    // Fetch product details - convert productId to string to match expected parameter type
+    const productResponse = await fetchCatalogProductById(
+      String(params.productId)
+    );
 
-    // Fetch variants for this product
+    // Fetch variants for this product - convert productId to string to match expected parameter type
     const variantsResponse = await fetchCatalogVariantsByProductId(
-      params.productId
+      String(params.productId)
     );
 
     // Return both responses to be used in the component
@@ -76,6 +83,13 @@ export default function ProductDetail() {
 
   const [selectedVariantIndex, setSelectedVariantIndex] = useState(0);
   const selectedVariant = variants[selectedVariantIndex];
+
+  // Get product availability data using our custom hook
+  const {
+    data: availabilityData,
+    isLoading: availabilityLoading,
+    error: availabilityError,
+  } = useQueryProductAvailability(product.id.toString());
 
   // Extract unique colors and their color codes for the color selector
   const uniqueColorsWithCodes = Array.from(
@@ -137,11 +151,25 @@ export default function ProductDetail() {
     }
   };
 
-  // Function to determine if a variant is in stock (simplified implementation)
+  // Function to determine if a variant is in stock based on availability data
   const isInStock = (variant: PrintfulV2CatalogVariant) => {
-    // With v2 API, we would need to fetch availability separately using another API call
-    // For now, we'll just assume all variants are in stock
-    return true;
+    if (!availabilityData?.data || availabilityData.data.length === 0) {
+      return true; // Default to true if we don't have availability data yet
+    }
+
+    // Find the availability data for this variant
+    const variantAvailability = availabilityData.data.find(
+      (item) => item.catalog_variant_id === variant.id
+    );
+
+    // Check if the variant is available in at least one region for any technique
+    return (
+      variantAvailability?.techniques.some((technique) =>
+        technique.selling_regions.some(
+          (region) => region.availability === "in stock"
+        )
+      ) ?? true
+    );
   };
 
   return (
@@ -539,7 +567,7 @@ export default function ProductDetail() {
                     }}
                   >
                     <Box sx={{ display: "flex", alignItems: "center" }}>
-                      <FiInfo style={{ marginRight: 12, color: "#5E6AD2" }} />
+                      <FiGlobe style={{ marginRight: 12, color: "#5E6AD2" }} />
                       <Typography
                         variant="subtitle1"
                         fontWeight="medium"
@@ -551,21 +579,151 @@ export default function ProductDetail() {
                   </Box>
                 </AccordionSummary>
                 <AccordionDetails>
-                  {/* Display availability message */}
-                  <Box sx={{ mb: 2 }}>
-                    <Typography variant="body2" sx={{ mb: 1 }}>
-                      {isInStock(selectedVariant)
-                        ? "This item is available for purchase in supported regions."
-                        : "This item has limited availability in some regions."}
-                    </Typography>
-                  </Box>
+                  {/* Display loading state */}
+                  {availabilityLoading && (
+                    <Box
+                      sx={{ display: "flex", justifyContent: "center", p: 2 }}
+                    >
+                      <CircularProgress
+                        size={24}
+                        sx={{ color: "secondary.main" }}
+                      />
+                    </Box>
+                  )}
 
-                  {/* In v2 API, we would need another API call to get availability details.
-                      This is a placeholder for now */}
-                  <Typography variant="body2">
-                    For detailed availability information, please contact
-                    customer service.
-                  </Typography>
+                  {/* Display error state */}
+                  {availabilityError && (
+                    <Alert severity="info" sx={{ mb: 2 }}>
+                      <Typography variant="body2">
+                        Could not fetch availability information. Please try
+                        again later or contact customer support.
+                      </Typography>
+                    </Alert>
+                  )}
+
+                  {/* Display availability data */}
+                  {!availabilityLoading &&
+                    !availabilityError &&
+                    availabilityData && (
+                      <>
+                        {/* Display general availability message */}
+                        <Box sx={{ mb: 2 }}>
+                          <Typography variant="body2" sx={{ mb: 1 }}>
+                            {isInStock(selectedVariant)
+                              ? "This item is available for purchase in supported regions."
+                              : "This item has limited availability in some regions."}
+                          </Typography>
+                        </Box>
+
+                        {/* Display region-specific availability */}
+                        <Box
+                          sx={{
+                            mt: 2,
+                            display: "grid",
+                            gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
+                            gap: 2,
+                          }}
+                        >
+                          {availabilityData.data.flatMap((item) =>
+                            item.techniques.flatMap((technique) =>
+                              technique.selling_regions.map((region) => (
+                                <Paper
+                                  key={`${item.catalog_variant_id}-${technique.technique}-${region.name}`}
+                                  variant="outlined"
+                                  sx={{
+                                    p: 2,
+                                    borderRadius: 2,
+                                    borderColor:
+                                      region.availability === "in stock"
+                                        ? "success.light"
+                                        : "warning.light",
+                                    backgroundColor:
+                                      region.availability === "in stock"
+                                        ? "success.lightest"
+                                        : "warning.lightest",
+                                  }}
+                                >
+                                  <Box
+                                    sx={{
+                                      display: "flex",
+                                      alignItems: "center",
+                                      mb: 1,
+                                    }}
+                                  >
+                                    <Box
+                                      sx={{
+                                        mr: 1,
+                                        color:
+                                          region.availability === "in stock"
+                                            ? "success.main"
+                                            : "warning.main",
+                                      }}
+                                    >
+                                      {region.availability === "in stock" ? (
+                                        <FiCheck size={16} />
+                                      ) : (
+                                        <FiAlertCircle size={16} />
+                                      )}
+                                    </Box>
+                                    <Typography
+                                      variant="subtitle2"
+                                      fontWeight="bold"
+                                    >
+                                      {region.name}
+                                    </Typography>
+                                  </Box>
+
+                                  {/* Added technique information */}
+                                  <Box
+                                    sx={{
+                                      display: "flex",
+                                      alignItems: "center",
+                                      mb: 1,
+                                      mt: 0.5,
+                                    }}
+                                  >
+                                    <Chip
+                                      label={technique.technique.toUpperCase()}
+                                      size="small"
+                                      color={
+                                        region.availability === "in stock"
+                                          ? "success"
+                                          : "default"
+                                      }
+                                      sx={{
+                                        height: 20,
+                                        fontSize: "0.7rem",
+                                        fontWeight: 600,
+                                        mr: 1,
+                                        borderRadius: 1,
+                                      }}
+                                    />
+                                    {/* Show technique display name if available in the data structure */}
+                                    {technique.technique && (
+                                      <Typography
+                                        variant="caption"
+                                        color="text.secondary"
+                                      >
+                                        {technique.technique}
+                                      </Typography>
+                                    )}
+                                  </Box>
+
+                                  <Typography
+                                    variant="body2"
+                                    color="text.secondary"
+                                  >
+                                    {region.availability === "in stock"
+                                      ? "Available for shipping"
+                                      : "Not available for shipping"}
+                                  </Typography>
+                                </Paper>
+                              ))
+                            )
+                          )}
+                        </Box>
+                      </>
+                    )}
 
                   {/* Printful shipping regions explanation */}
                   <Box
@@ -701,7 +859,7 @@ export function ErrorBoundary({ error }: Readonly<Route.ErrorBoundaryProps>) {
       <Box sx={{ p: 4, maxWidth: "800px", mx: "auto" }}>
         <Alert severity="error" variant="filled" sx={{ mb: 3 }}>
           <Typography variant="h6" component="div" sx={{ mb: 1 }}>
-            {error.status} {error.statusText || "Error"}
+            {error.status} {error.statusText ?? "Error"}
           </Typography>
           <Typography>{error.data}</Typography>
         </Alert>
