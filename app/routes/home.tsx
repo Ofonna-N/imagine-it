@@ -22,10 +22,12 @@ import {
   FiZap,
   FiDollarSign,
   FiTruck,
+  FiShuffle,
+  FiRefreshCw,
 } from "react-icons/fi";
 import { Link, useRevalidator, useLoaderData } from "react-router";
 import { queryClient } from "~/context/query_provider";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 
 // Define the pulse animation using MUI's keyframes
@@ -48,6 +50,11 @@ const floatAnimation = keyframes`
   0% { transform: translateY(0px); }
   50% { transform: translateY(-10px); }
   100% { transform: translateY(0px); }
+`;
+
+const rotateAnimation = keyframes`
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 `;
 
 // React Router client loader using the Query Client
@@ -319,22 +326,63 @@ export default function Home() {
               <Button
                 variant="outlined"
                 onClick={handleRefresh}
-                startIcon={<FaStar />}
+                startIcon={
+                  <Box
+                    component={motion.div}
+                    animate={
+                      isFetching
+                        ? {
+                            rotate: 360,
+                            transition: {
+                              duration: 2,
+                              repeat: Infinity,
+                              ease: "linear",
+                            },
+                          }
+                        : {}
+                    }
+                  >
+                    <FiShuffle size={18} />
+                  </Box>
+                }
                 sx={{
                   px: 3,
                   py: 1.2,
                   borderRadius: 2,
                   borderWidth: 2,
+                  position: "relative",
+                  overflow: "hidden",
                   "&:hover": {
                     borderWidth: 2,
                     "& svg": {
-                      animation: `${pulseAnimation} 1s`,
+                      transform: "rotate(45deg)",
+                      transition: "transform 0.3s ease",
                     },
                   },
+                  "&::after": isFetching
+                    ? {
+                        content: '""',
+                        position: "absolute",
+                        top: 0,
+                        left: 0,
+                        width: "100%",
+                        height: "100%",
+                        background: (theme) =>
+                          `linear-gradient(90deg, transparent, ${theme.palette.action.hover}, transparent)`,
+                        animation: `${keyframes`
+                      0% {
+                        transform: translateX(-100%);
+                      }
+                      100% {
+                        transform: translateX(100%);
+                      }
+                    `} 1.5s infinite`,
+                      }
+                    : {},
                 }}
                 disabled={isFetching}
               >
-                {isFetching ? "Refreshing..." : "Shuffle New Lucky Products"}
+                {isFetching ? "Shuffling Products..." : "Shuffle Products"}
               </Button>
               <Button
                 variant="contained"
@@ -355,37 +403,159 @@ export default function Home() {
 
         {/* Show loading state when fetching */}
         {isFetching ? (
-          <Grid container spacing={4}>
-            {Array.from(new Array(6)).map((_, index) => (
-              <Grid size={{ xs: 12, sm: 6, md: 4 }} key={index}>
-                <Paper
-                  elevation={1}
-                  sx={{
-                    borderRadius: 3,
-                    overflow: "hidden",
-                  }}
-                >
-                  <Skeleton
-                    variant="rectangular"
-                    width="100%"
-                    height={220}
-                    animation="wave"
-                  />
-                  <Box sx={{ p: 2 }}>
-                    <Skeleton
-                      variant="text"
-                      width="80%"
-                      height={32}
-                      sx={{ mb: 1 }}
-                    />
-                    <Skeleton variant="text" width="40%" />
+          <Box
+            component={motion.div}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            sx={{ width: "100%" }}
+          >
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "center",
+                mb: 4,
+              }}
+            >
+              <Box
+                component={motion.div}
+                animate={{
+                  rotate: 360,
+                  transition: {
+                    duration: 1.5,
+                    repeat: Infinity,
+                    ease: "linear",
+                  },
+                }}
+                sx={{
+                  color: "primary.main",
+                  fontSize: "2rem",
+                  display: "flex",
+                }}
+              >
+                <FiRefreshCw size={40} />
+              </Box>
+            </Box>
+
+            <Typography
+              variant="h6"
+              align="center"
+              color="primary"
+              sx={{ mb: 4 }}
+            >
+              Shuffling products for you...
+            </Typography>
+
+            <Grid container spacing={4}>
+              {Array.from(new Array(6)).map((_, index) => (
+                <Grid size={{ xs: 12, sm: 6, md: 4 }} key={index}>
+                  <Box
+                    component={motion.div}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{
+                      opacity: 1,
+                      y: 0,
+                      transition: {
+                        delay: index * 0.1,
+                        duration: 0.5,
+                      },
+                    }}
+                    sx={{ height: "100%" }}
+                  >
+                    <Paper
+                      elevation={1}
+                      sx={{
+                        borderRadius: 3,
+                        overflow: "hidden",
+                        height: "100%",
+                        position: "relative",
+                        background: (theme) =>
+                          `linear-gradient(135deg, ${theme.palette.background.paper} 0%, ${theme.palette.background.default} 100%)`,
+                      }}
+                    >
+                      <Box
+                        sx={{
+                          height: 220,
+                          width: "100%",
+                          display: "flex",
+                          justifyContent: "center",
+                          alignItems: "center",
+                          background: "rgba(94, 106, 210, 0.04)",
+                        }}
+                      >
+                        <Box
+                          component={motion.div}
+                          animate={{
+                            scale: [1, 1.05, 1],
+                            opacity: [0.7, 1, 0.7],
+                          }}
+                          transition={{
+                            duration: 2,
+                            repeat: Infinity,
+                            ease: "easeInOut",
+                          }}
+                        >
+                          <FiShuffle size={40} color="#5E6AD2" opacity={0.5} />
+                        </Box>
+                      </Box>
+                      <Box sx={{ p: 2 }}>
+                        <Box
+                          component={motion.div}
+                          animate={{
+                            opacity: [0.5, 0.8, 0.5],
+                          }}
+                          transition={{
+                            duration: 1.5,
+                            repeat: Infinity,
+                            ease: "easeInOut",
+                            delay: index * 0.2,
+                          }}
+                          sx={{
+                            height: 24,
+                            width: "70%",
+                            mb: 1,
+                            borderRadius: 1,
+                            background: "rgba(94, 106, 210, 0.1)",
+                          }}
+                        />
+                        <Box
+                          component={motion.div}
+                          animate={{
+                            opacity: [0.3, 0.6, 0.3],
+                          }}
+                          transition={{
+                            duration: 1.5,
+                            repeat: Infinity,
+                            ease: "easeInOut",
+                            delay: index * 0.2 + 0.2,
+                          }}
+                          sx={{
+                            height: 16,
+                            width: "40%",
+                            borderRadius: 1,
+                            background: "rgba(94, 106, 210, 0.1)",
+                          }}
+                        />
+                      </Box>
+                    </Paper>
                   </Box>
-                </Paper>
-              </Grid>
-            ))}
-          </Grid>
+                </Grid>
+              ))}
+            </Grid>
+          </Box>
         ) : products && products.length > 0 ? (
-          <ProductGrid catalogProducts={products} featured />
+          <AnimatePresence mode="wait">
+            <Box
+              component={motion.div}
+              key="product-grid"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.5 }}
+            >
+              <ProductGrid catalogProducts={products} featured />
+            </Box>
+          </AnimatePresence>
         ) : (
           <Alert
             severity="info"
