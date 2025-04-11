@@ -1,7 +1,7 @@
 import { fetchCatalogFeaturedProducts } from "~/services/printful/printful_api";
 
 /**
- * Resource route for featured products
+ * Resource route for featured products using Printful API
  * Returns proper Response objects with appropriate status codes
  */
 export async function loader({ request }: { request: Request }) {

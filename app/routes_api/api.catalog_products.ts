@@ -13,43 +13,39 @@ export async function loader({ request }: { request: Request }) {
     const search = url.searchParams.get("search") ?? null;
     const category = url.searchParams.get("category") ?? null;
 
-    // Get all catalog products
+    // Get catalog products
     const response = await fetchCatalogProducts({
-      categoryId: category ?? undefined, // Changed || to ??
+      categoryId: category ?? undefined,
+      limit,
+      offset,
     });
 
-    if (!response) {
+    if (!response || !response.data) {
       throw new Error("Failed to fetch catalog products");
     }
 
-    let products = response.result;
+    let products = response.data;
 
-    // Client-side search filtering
+    // Client-side search filtering if needed
     if (search) {
       const searchLower = search.toLowerCase();
       products = products.filter(
         (product) =>
-          product.title.toLowerCase().includes(searchLower) ||
-          product.type_name.toLowerCase().includes(searchLower)
+          product.name.toLowerCase().includes(searchLower) ||
+          product.type.toLowerCase().includes(searchLower)
       );
     }
 
-    // Calculate total for pagination
-    const total = products.length;
-
-    // Client-side pagination
-    const paginatedProducts = products.slice(offset, offset + limit);
-
-    // Return paginated products with pagination info
-    const paging: PrintfulPagination = {
-      total,
+    // Return products with pagination info from the response
+    const paging: PrintfulPagination = response.paging || {
+      total: products.length,
       offset,
       limit,
     };
 
     return new Response(
       JSON.stringify({
-        products: paginatedProducts,
+        products,
         paging,
       }),
       {

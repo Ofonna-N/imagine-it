@@ -1,6 +1,6 @@
 import { useQuery, type UseQueryOptions } from "@tanstack/react-query";
 import type {
-  PrintfulCatalogProductsList,
+  PrintfulV2CatalogProduct,
   PrintfulPagination,
 } from "~/types/printful";
 
@@ -12,7 +12,7 @@ interface CatalogProductsParams {
 }
 
 interface CatalogProductsResponse {
-  products: PrintfulCatalogProductsList;
+  products: PrintfulV2CatalogProduct[];
   paging: PrintfulPagination;
 }
 

@@ -1,5 +1,5 @@
 /**
- * Types for Printful API responses
+ * Types for Printful API v2 responses
  */
 
 // Pagination information
@@ -9,153 +9,134 @@ export interface PrintfulPagination {
   limit: number;
 }
 
-// Base response type from Printful
-export interface PrintfulBaseResponse<T> {
-  code: number;
-  result: T;
-  extra: any[];
+// Base response type for v2 API
+export interface PrintfulV2BaseResponse<T> {
+  data: T;
+  _links: PrintfulV2Links;
   paging?: PrintfulPagination;
 }
 
-// Product variant
-export interface PrintfulVariant {
-  id: number;
-  product_id: number;
+// HATEOAS Links structure (v2 API)
+export interface PrintfulV2Link {
+  href: string;
+}
+
+export interface PrintfulV2Links {
+  self: PrintfulV2Link;
+  first?: PrintfulV2Link;
+  last?: PrintfulV2Link;
+  next?: PrintfulV2Link;
+  previous?: PrintfulV2Link;
+  [key: string]: PrintfulV2Link | undefined;
+}
+
+// Product option - v2 API
+export interface PrintfulV2CatalogOption {
   name: string;
-  size: string;
-  color: string;
-  color_code: string;
-  image: string;
-  price: string;
-  in_stock: boolean;
-  availability_status: string;
-}
-
-// Catalog file option
-export interface PrintfulFileOption {
-  id: string;
+  techniques: string[];
   type: string;
-  title: string;
-  additional_price: string | number;
+  values: (string | boolean | number)[];
 }
 
-// Catalog file
-export interface PrintfulFile {
-  id: string;
-  type: string;
-  title: string;
-  additional_price: string;
-  options?: PrintfulFileOption[];
-}
-
-// Product option value breakdown
-export interface PrintfulOptionPriceBreakdown {
-  [key: string]: string;
-}
-
-// Product option
-export interface PrintfulProductOption {
-  id: string;
-  title: string;
-  type: string;
-  values: {
-    [key: string]: string;
-  };
-  additional_price: string;
-  additional_price_breakdown: PrintfulOptionPriceBreakdown;
-}
-
-// Printing technique
-export interface PrintfulTechnique {
+// Printing technique - v2 API
+export interface PrintfulV2Technique {
   key: string;
   display_name: string;
   is_default: boolean;
 }
 
-// Material composition
-export interface PrintfulMaterial {
+// V2 API Design Placement
+export interface PrintfulV2DesignPlacement {
+  placement: string;
+  technique: string;
+  print_area_width?: number;
+  print_area_height?: number;
+  layers: PrintfulV2Layer[];
+  placement_options?: PrintfulV2CatalogOption[];
+}
+
+// V2 API Layer
+export interface PrintfulV2Layer {
+  id: string;
+  type: string;
+  options?: PrintfulV2CatalogOption[];
+}
+
+// Region availability status for v2 API
+export interface PrintfulV2RegionAvailability {
   name: string;
-  percentage: number;
+  availability: string;
+  placement_option_availability: {
+    name: string;
+    availability: boolean;
+  }[];
 }
 
-// Region availability status
-export interface PrintfulRegionAvailability {
-  region: string;
-  status: string;
-}
-
-// Catalog product
-export interface PrintfulCatalogProduct {
+// Catalog product in v2 API
+export interface PrintfulV2CatalogProduct {
   id: number;
   main_category_id: number;
   type: string;
-  type_name: string;
-  title: string;
+  name: string;
   brand: string;
   model: string;
   image: string;
   variant_count: number;
-  currency: string;
-  files: PrintfulFile[];
-  options: PrintfulProductOption[];
   is_discontinued: boolean;
-  avg_fulfillment_time: number;
   description: string;
-  techniques: PrintfulTechnique[];
-  origin_country: string;
+  sizes: string[];
+  colors: string[];
+  techniques: PrintfulV2Technique[];
+  placements: PrintfulV2DesignPlacement[];
+  product_options: PrintfulV2CatalogOption[];
 }
 
-// Catalog variant
-export interface PrintfulCatalogVariant {
+// Catalog variant in v2 API
+export interface PrintfulV2CatalogVariant {
   id: number;
-  product_id: number;
+  catalog_product_id: number;
   name: string;
   size: string;
   color: string;
   color_code: string;
   color_code2?: string;
   image: string;
-  price: string;
-  in_stock: boolean;
-  availability_regions: {
-    [key: string]: string;
+  _links: {
+    self: PrintfulV2Link;
+    product_details: PrintfulV2Link;
+    variant_prices: PrintfulV2Link;
+    variant_images: PrintfulV2Link;
   };
-  availability_status: PrintfulRegionAvailability[];
-  material?: PrintfulMaterial[];
 }
 
-// Catalog product detail response (for single product with variants)
-export type PrintfulCatalogProductResponse = PrintfulBaseResponse<{
-  product: PrintfulCatalogProduct;
-  variants: PrintfulCatalogVariant[];
-}>;
-
-// Catalog products list response (for multiple products without variants)
-export type PrintfulCatalogProductsResponse =
-  PrintfulBaseResponse<PrintfulCatalogProductsList>;
-
-// Type for catalog products list with expanded result definition
-export type PrintfulCatalogProductsList = {
+// Catalog variant detail response with availability info
+export interface PrintfulV2CatalogVariantAvailability {
   id: number;
-  main_category_id: number;
-  type: string;
-  type_name: string;
-  title: string;
-  brand: string;
-  model: string;
-  image: string;
-  variant_count: number;
-  currency: string;
-  files: PrintfulFile[];
-  options: PrintfulProductOption[];
-  is_discontinued: boolean;
-  avg_fulfillment_time: number;
-  description: string;
-  techniques: PrintfulTechnique[];
-  origin_country: string;
-}[];
+  catalog_product_id: number;
+  selling_region_stock_availability: PrintfulV2RegionAvailability[];
+  technique_stock_availability: {
+    technique: string;
+    selling_region_stock_availability: PrintfulV2RegionAvailability[];
+  }[];
+  _links: {
+    variant: PrintfulV2Link;
+  };
+}
 
-// Error response type from Printful
+// Catalog product variants list response (v2)
+export interface PrintfulV2CatalogVariantsResponse
+  extends PrintfulV2BaseResponse<PrintfulV2CatalogVariant[]> {}
+
+// Catalog product detail response (v2)
+export type PrintfulV2CatalogProductResponse =
+  PrintfulV2BaseResponse<PrintfulV2CatalogProduct>;
+
+// Catalog products list response (v2)
+export type PrintfulV2CatalogProductsResponse = PrintfulV2BaseResponse<
+  PrintfulV2CatalogProduct[]
+>;
+
+// Error response type - keeping this as it might be used across both versions
 export interface PrintfulErrorResponse {
   code: number;
   result: string;
