@@ -15,7 +15,7 @@ import {
 } from "@mui/material";
 import { ProductGrid } from "~/features/product/components/product_grid";
 import { useQueryClient, useIsFetching } from "@tanstack/react-query";
-import { FaStar, FaMagic, FaShoppingCart } from "react-icons/fa";
+import { FaStar } from "react-icons/fa";
 import {
   FiShoppingBag,
   FiStar,
@@ -28,7 +28,6 @@ import {
 import { Link, useRevalidator, useLoaderData } from "react-router";
 import { queryClient } from "~/context/query_provider";
 import { motion, AnimatePresence } from "framer-motion";
-import { useState } from "react";
 
 // Define the pulse animation using MUI's keyframes
 const pulseAnimation = keyframes`

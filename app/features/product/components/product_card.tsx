@@ -5,7 +5,6 @@ import {
   CardMedia,
   Chip,
   Typography,
-  Stack,
   Box,
 } from "@mui/material";
 import { Link } from "react-router";

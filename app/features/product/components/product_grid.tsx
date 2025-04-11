@@ -1,4 +1,4 @@
-import { Box, Grid, Typography, Fade } from "@mui/material";
+import { Box, Grid, Typography } from "@mui/material";
 import { ProductCard } from "./product_card";
 import { motion } from "framer-motion";
 import type { PrintfulV2CatalogProduct } from "~/types/printful";
