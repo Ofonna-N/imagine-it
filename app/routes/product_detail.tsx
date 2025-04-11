@@ -615,113 +615,9 @@ export default function ProductDetail() {
                           </Typography>
                         </Box>
 
-                        {/* Display region-specific availability */}
-                        <Box
-                          sx={{
-                            mt: 2,
-                            display: "grid",
-                            gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
-                            gap: 2,
-                          }}
-                        >
-                          {availabilityData.data.flatMap((item) =>
-                            item.techniques.flatMap((technique) =>
-                              technique.selling_regions.map((region) => (
-                                <Paper
-                                  key={`${item.catalog_variant_id}-${technique.technique}-${region.name}`}
-                                  variant="outlined"
-                                  sx={{
-                                    p: 2,
-                                    borderRadius: 2,
-                                    borderColor:
-                                      region.availability === "in stock"
-                                        ? "success.light"
-                                        : "warning.light",
-                                    backgroundColor:
-                                      region.availability === "in stock"
-                                        ? "success.lightest"
-                                        : "warning.lightest",
-                                  }}
-                                >
-                                  <Box
-                                    sx={{
-                                      display: "flex",
-                                      alignItems: "center",
-                                      mb: 1,
-                                    }}
-                                  >
-                                    <Box
-                                      sx={{
-                                        mr: 1,
-                                        color:
-                                          region.availability === "in stock"
-                                            ? "success.main"
-                                            : "warning.main",
-                                      }}
-                                    >
-                                      {region.availability === "in stock" ? (
-                                        <FiCheck size={16} />
-                                      ) : (
-                                        <FiAlertCircle size={16} />
-                                      )}
-                                    </Box>
-                                    <Typography
-                                      variant="subtitle2"
-                                      fontWeight="bold"
-                                    >
-                                      {region.name}
-                                    </Typography>
-                                  </Box>
-
-                                  {/* Added technique information */}
-                                  <Box
-                                    sx={{
-                                      display: "flex",
-                                      alignItems: "center",
-                                      mb: 1,
-                                      mt: 0.5,
-                                    }}
-                                  >
-                                    <Chip
-                                      label={technique.technique.toUpperCase()}
-                                      size="small"
-                                      color={
-                                        region.availability === "in stock"
-                                          ? "success"
-                                          : "default"
-                                      }
-                                      sx={{
-                                        height: 20,
-                                        fontSize: "0.7rem",
-                                        fontWeight: 600,
-                                        mr: 1,
-                                        borderRadius: 1,
-                                      }}
-                                    />
-                                    {/* Show technique display name if available in the data structure */}
-                                    {technique.technique && (
-                                      <Typography
-                                        variant="caption"
-                                        color="text.secondary"
-                                      >
-                                        {technique.technique}
-                                      </Typography>
-                                    )}
-                                  </Box>
-
-                                  <Typography
-                                    variant="body2"
-                                    color="text.secondary"
-                                  >
-                                    {region.availability === "in stock"
-                                      ? "Available for shipping"
-                                      : "Not available for shipping"}
-                                  </Typography>
-                                </Paper>
-                              ))
-                            )
-                          )}
-                        </Box>
+                        <AvailabilitySection
+                          availabilityData={availabilityData}
+                        />
                       </>
                     )}
 
@@ -849,9 +745,162 @@ export default function ProductDetail() {
 }
 
 /**
- * Error boundary component for product detail page
- * Handles different types of errors that may occur during data loading
+ * Component to display product availability data with deduplication
  */
+const AvailabilitySection = ({
+  availabilityData,
+}: {
+  availabilityData: any;
+}) => {
+  // Create a unique key for each availability item to prevent duplicates
+  const getUniqueKey = (
+    region: string,
+    technique: string,
+    availability: string
+  ) => {
+    return `${region}-${technique}-${availability}`;
+  };
+
+  // Process and deduplicate availability data
+  const processAvailabilityData = () => {
+    if (!availabilityData?.data || availabilityData.data.length === 0) {
+      return [];
+    }
+
+    // Map to store unique region-technique-availability combinations
+    const uniqueAvailability = new Map();
+
+    availabilityData.data.forEach((item: any) => {
+      item.techniques.forEach((tech: any) => {
+        tech.selling_regions.forEach((region: any) => {
+          const key = getUniqueKey(
+            region.name,
+            tech.technique,
+            region.availability
+          );
+
+          if (!uniqueAvailability.has(key)) {
+            uniqueAvailability.set(key, {
+              regionName: region.name,
+              technique: tech.technique,
+              availability: region.availability,
+            });
+          }
+        });
+      });
+    });
+
+    return Array.from(uniqueAvailability.values());
+  };
+
+  const uniqueAvailabilityItems = processAvailabilityData();
+
+  // Group by region for better UI organization
+  const availabilityByRegion = uniqueAvailabilityItems.reduce(
+    (acc: any, item) => {
+      if (!acc[item.regionName]) {
+        acc[item.regionName] = [];
+      }
+      acc[item.regionName].push(item);
+      return acc;
+    },
+    {}
+  );
+
+  return (
+    <Box>
+      {Object.keys(availabilityByRegion).length > 0 ? (
+        Object.entries(availabilityByRegion).map(
+          ([region, items]: [string, any]) => (
+            <Box key={region} sx={{ mb: 3 }}>
+              <Typography
+                variant="subtitle2"
+                sx={{
+                  fontWeight: 600,
+                  mb: 1,
+                  color: "text.primary",
+                  display: "flex",
+                  alignItems: "center",
+                }}
+              >
+                <FiGlobe style={{ marginRight: 8, fontSize: 14 }} />
+                {region}
+              </Typography>
+
+              <Box sx={{ pl: 2 }}>
+                {items.map((item: any, idx: number) => (
+                  <Box
+                    key={idx}
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      mb: 0.5,
+                    }}
+                  >
+                    {item.availability === "in stock" ? (
+                      <Box
+                        component={FiCheck}
+                        sx={{
+                          mr: 1,
+                          color: "success.main",
+                          fontSize: "1rem",
+                        }}
+                      />
+                    ) : (
+                      <Box
+                        component={FiAlertCircle}
+                        sx={{
+                          mr: 1,
+                          color: "warning.main",
+                          fontSize: "1rem",
+                        }}
+                      />
+                    )}
+                    <Box>
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          display: "flex",
+                          flexWrap: "wrap",
+                          alignItems: "center",
+                          color:
+                            item.availability === "in stock"
+                              ? "text.primary"
+                              : "text.secondary",
+                        }}
+                      >
+                        <Box component={"span"} style={{ fontWeight: 500 }}>
+                          {item.technique === "dtg"
+                            ? "DTG printing"
+                            : item.technique === "embroidery"
+                            ? "Embroidery"
+                            : item.technique}
+                        </Box>
+                        <Box component={"span"} sx={{ mx: 1 }}>
+                          —
+                        </Box>
+                        <Box component={"span"}>
+                          {item.availability === "in stock"
+                            ? "In Stock"
+                            : "Limited Stock"}
+                        </Box>
+                      </Typography>
+                    </Box>
+                  </Box>
+                ))}
+              </Box>
+            </Box>
+          )
+        )
+      ) : (
+        <Typography variant="body2" color="text.secondary">
+          No availability information found for this product.
+        </Typography>
+      )}
+    </Box>
+  );
+};
+
 export function ErrorBoundary({ error }: Readonly<Route.ErrorBoundaryProps>) {
   // Check if it's a route error response (including thrown Response objects)
   if (isRouteErrorResponse(error)) {
