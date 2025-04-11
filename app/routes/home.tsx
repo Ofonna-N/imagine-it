@@ -14,7 +14,7 @@ import {
   Divider,
 } from "@mui/material";
 import { ProductGrid } from "~/features/product/components/product_grid";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useIsFetching } from "@tanstack/react-query";
 import { FaStar, FaMagic, FaShoppingCart } from "react-icons/fa";
 import {
   FiShoppingBag,
@@ -26,6 +26,7 @@ import {
 import { Link, useRevalidator, useLoaderData } from "react-router";
 import { queryClient } from "~/context/query_provider";
 import { motion } from "framer-motion";
+import { useState } from "react";
 
 // Define the pulse animation using MUI's keyframes
 const pulseAnimation = keyframes`
@@ -138,6 +139,9 @@ export default function Home() {
   const { products } = useLoaderData<typeof clientLoader>();
   const queryClient = useQueryClient();
   const revalidator = useRevalidator();
+
+  // Use TanStack Query's useIsFetching to accurately track the loading state
+  const isFetching = useIsFetching({ queryKey: ["featuredProducts"] }) > 0;
 
   // Function to manually refresh products
   const handleRefresh = async () => {
@@ -328,8 +332,9 @@ export default function Home() {
                     },
                   },
                 }}
+                disabled={isFetching}
               >
-                Shuffle New Lucky Products
+                {isFetching ? "Refreshing..." : "Shuffle New Lucky Products"}
               </Button>
               <Button
                 variant="contained"
@@ -348,7 +353,38 @@ export default function Home() {
           </Box>
         </Fade>
 
-        {products && products.length > 0 ? (
+        {/* Show loading state when fetching */}
+        {isFetching ? (
+          <Grid container spacing={4}>
+            {Array.from(new Array(6)).map((_, index) => (
+              <Grid size={{ xs: 12, sm: 6, md: 4 }} key={index}>
+                <Paper
+                  elevation={1}
+                  sx={{
+                    borderRadius: 3,
+                    overflow: "hidden",
+                  }}
+                >
+                  <Skeleton
+                    variant="rectangular"
+                    width="100%"
+                    height={220}
+                    animation="wave"
+                  />
+                  <Box sx={{ p: 2 }}>
+                    <Skeleton
+                      variant="text"
+                      width="80%"
+                      height={32}
+                      sx={{ mb: 1 }}
+                    />
+                    <Skeleton variant="text" width="40%" />
+                  </Box>
+                </Paper>
+              </Grid>
+            ))}
+          </Grid>
+        ) : products && products.length > 0 ? (
           <ProductGrid catalogProducts={products} featured />
         ) : (
           <Alert

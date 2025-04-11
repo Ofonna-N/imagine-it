@@ -98,45 +98,46 @@ export async function fetchCatalogVariantsByProductId(productId: string) {
 }
 
 /**
- * Fetches featured products using the v2 API
+ * Fetches featured products using the v2 API with random pagination
  */
 export async function fetchCatalogFeaturedProducts(
   limit: number = 6
 ): Promise<PrintfulV2CatalogProduct[]> {
   try {
-    const response = await fetchCatalogProducts({
-      limit: Math.max(limit * 2, 20),
+    // First, get the total count of products without fetching all products
+    const countResponse = await fetchCatalogProducts({
+      limit: 1, // Just need minimal data to get total count
     });
 
-    // Make sure we have a valid response with data
-    if (!response || !response.data) {
-      console.error("Unexpected API response format:", response);
+    // Make sure we have a valid response with paging data
+    if (!countResponse || !countResponse.paging) {
+      console.error("Unexpected API response format:", countResponse);
       throw new Error("Unexpected API response format");
     }
 
-    const productsArray = response.data;
+    const totalProducts = countResponse.paging.total;
 
-    // Ensure limit doesn't exceed array length
-    const actualLimit = Math.min(limit, productsArray.length);
-
-    // Create an array of featured products by selecting random indices
-    const featured: PrintfulV2CatalogProduct[] = [];
-    const usedIndices = new Set<number>();
-
-    while (
-      featured.length < actualLimit &&
-      usedIndices.size < productsArray.length
-    ) {
-      const randomIndex = Math.floor(Math.random() * productsArray.length);
-
-      // Avoid duplicates
-      if (!usedIndices.has(randomIndex)) {
-        usedIndices.add(randomIndex);
-        featured.push(productsArray[randomIndex]);
-      }
+    // If there are fewer products than the limit, just return them all
+    if (totalProducts <= limit) {
+      const response = await fetchCatalogProducts({
+        limit: totalProducts,
+      });
+      return response.data;
     }
 
-    return featured;
+    // Generate a random offset to get a random page of products
+    // Ensure we don't go beyond available products considering our limit
+    const maxOffset = totalProducts - limit;
+    const randomOffset = Math.floor(Math.random() * maxOffset);
+
+    // Fetch random products using pagination
+    const response = await fetchCatalogProducts({
+      limit,
+      offset: randomOffset,
+    });
+
+    // Return the randomly offset products
+    return response.data;
   } catch (error) {
     console.error("Error fetching featured products from Printful:", error);
     throw error;
