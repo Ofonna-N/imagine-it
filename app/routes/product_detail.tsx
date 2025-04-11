@@ -16,7 +16,7 @@ import {
   Divider,
   Alert,
 } from "@mui/material";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useLoaderData, Link, isRouteErrorResponse } from "react-router";
 import {
   fetchCatalogProductById,
@@ -24,8 +24,6 @@ import {
 } from "../services/printful/printful_api";
 import type {
   PrintfulErrorResponse,
-  PrintfulV2CatalogProductResponse,
-  PrintfulV2CatalogVariantsResponse,
   PrintfulV2CatalogVariant,
 } from "../types/printful";
 import {
@@ -91,18 +89,40 @@ export default function ProductDetail() {
     };
   });
 
-  // Extract unique sizes for the size selector
-  const uniqueSizes = Array.from(
-    new Set(variants.map((variant) => variant.size))
+  // Get available sizes for the currently selected color
+  const getAvailableSizesForColor = (color: string) => {
+    return Array.from(
+      new Set(
+        variants
+          .filter((variant) => variant.color === color)
+          .map((variant) => variant.size)
+      )
+    );
+  };
+
+  // Get sizes available for the current color
+  const availableSizesForSelectedColor = getAvailableSizesForColor(
+    selectedVariant.color
   );
 
   // Handle color selection
   const handleColorSelect = (color: string) => {
-    const variantIndex = variants.findIndex(
+    // First check if the current size is available in the new color
+    const variantWithCurrentSize = variants.findIndex(
       (v) => v.color === color && v.size === selectedVariant.size
     );
-    if (variantIndex >= 0) {
-      setSelectedVariantIndex(variantIndex);
+
+    if (variantWithCurrentSize >= 0) {
+      // Current size is available in the new color
+      setSelectedVariantIndex(variantWithCurrentSize);
+    } else {
+      // Current size is not available in the new color, select the first available size
+      const firstVariantWithColor = variants.findIndex(
+        (v) => v.color === color
+      );
+      if (firstVariantWithColor >= 0) {
+        setSelectedVariantIndex(firstVariantWithColor);
+      }
     }
   };
 
@@ -111,6 +131,7 @@ export default function ProductDetail() {
     const variantIndex = variants.findIndex(
       (v) => v.size === size && v.color === selectedVariant.color
     );
+
     if (variantIndex >= 0) {
       setSelectedVariantIndex(variantIndex);
     }
@@ -369,7 +390,7 @@ export default function ProductDetail() {
                     gap: 1.5,
                   }}
                 >
-                  {uniqueSizes.map((size) => (
+                  {availableSizesForSelectedColor.map((size) => (
                     <Chip
                       key={size}
                       label={size}
@@ -673,7 +694,7 @@ export default function ProductDetail() {
  * Error boundary component for product detail page
  * Handles different types of errors that may occur during data loading
  */
-export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
+export function ErrorBoundary({ error }: Readonly<Route.ErrorBoundaryProps>) {
   // Check if it's a route error response (including thrown Response objects)
   if (isRouteErrorResponse(error)) {
     return (
