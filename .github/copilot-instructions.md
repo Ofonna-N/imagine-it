@@ -435,7 +435,44 @@ Ensuring accessibility in your application broadens your user base and enhances 
 
 ### MUI Component Examples
 
-- **Basic Grid**: For layout structures using the Grid component. [View Example](https://mui.com/material-ui/react-grid/?srsltid=AfmBOopCCRw16ORE_It2PuF8ZLxL7groYkkvcgBbewc18mmVRep5VXMB#system-BasicGrid.tsx)
+- **Basic Grid**
+  import \* as React from 'react';
+  import { styled } from '@mui/material/styles';
+  import Box from '@mui/material/Box';
+  import Paper from '@mui/material/Paper';
+  import Grid from '@mui/material/Grid';
+
+const Item = styled(Paper)(({ theme }) => ({
+backgroundColor: '#fff',
+...theme.typography.body2,
+padding: theme.spacing(1),
+textAlign: 'center',
+color: (theme.vars ?? theme).palette.text.secondary,
+...theme.applyStyles('dark', {
+backgroundColor: '#1A2027',
+}),
+}));
+
+export default function BasicGrid() {
+return (
+<Box sx={{ flexGrow: 1 }}>
+<Grid container spacing={2}>
+<Grid item xs={8}>
+<Item>size=8</Item>
+</Grid>
+<Grid item xs={4}>
+<Item>size=4</Item>
+</Grid>
+<Grid item xs={4}>
+<Item>size=4</Item>
+</Grid>
+<Grid item xs={8}>
+<Item>size=8</Item>
+</Grid>
+</Grid>
+</Box>
+);
+}
 
 ## 4. Conclusion
 
