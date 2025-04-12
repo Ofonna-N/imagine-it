@@ -2,34 +2,6 @@
 
 This document provides comprehensive guidelines and best practices for utilizing React Router v7, along with foundational software development principles, design patterns, and functional programming practices pertinent to React development.
 
-## Table of Contents
-
-1.  [Introduction to React Router v7](#1-introduction-to-react-router-v7)
-2.  [Installation and Setup](#2-installation-and-setup)
-3.  [Routing Configuration](#3-routing-configuration)
-    - [Basic Routing](#31-basic-routing)
-    - [Nested Routes and Layouts](#32-nested-routes-and-layouts)
-    - [File-based Routing](#33-file-based-routing)
-4.  [Data Handling](#4-data-handling)
-    - [Loaders and Actions](#41-loaders-and-actions)
-    - [Resource Routes](#42-resource-routes)
-5.  [Navigation and Links](#5-navigation-and-links)
-6.  [Error Handling](#6-error-handling)
-7.  [Code Splitting and Lazy Loading](#7-code-splitting-and-lazy-loading)
-8.  [Software Development Principles](#8-software-development-principles)
-    - [DRY (Don't Repeat Yourself)](#81-dry-dont-repeat-yourself)
-    - [KISS (Keep It Simple, Stupid)](#82-kiss-keep-it-simple-stupid)
-    - [SOLID Principles](#83-solid-principles)
-9.  [Design Patterns in React](#9-design-patterns-in-react)
-    - [Higher-Order Components (HOCs)](#91-higher-order-components-hocs)
-    - [Render Props](#92-render-props)
-    - [Custom Hooks](#93-custom-hooks)
-10. [Functional Programming Best Practices](#10-functional-programming-best-practices)
-    - [Immutability](#101-immutability)
-    - [Pure Functions](#102-pure-functions)
-    - [Composition](#103-composition)
-11. [Conclusion](#11-conclusion)
-
 ## 1. Introduction to React Router v7
 
 React Router v7 introduces significant enhancements, including:
@@ -72,24 +44,6 @@ export default [
 ];
 ```
 
-### 3.3 File-based Routing
-
-Implement file-based routing using the `@react-router/fs-routes` package:
-
-```bash
-npm install @react-router/fs-routes
-```
-
-Configure routes in `app/routes.ts`:
-
-```jsx
-import { flatRoutes } from "@react-router/fs-routes";
-
-export default flatRoutes();
-```
-
-This setup automatically maps files in the `app/routes` directory to routes. [File Route Conventions](https://reactrouter.com/start/framework/file-based-routing#file-route-conventions)
-
 ## 4. Data Handling
 
 ### 4.1 Loaders and Actions
@@ -114,6 +68,39 @@ export async function loader() {
 
 Serve data directly from route modules without rendering a React component, facilitating API-like endpoints within your application. [Resource Routes](https://reactrouter.com/start/framework/resource-routes)
 
+### 4.3 API Hooks and Client-Side Requests
+
+Client-side API requests should be made using custom API hooks built on top of TanStack Query hooks (`useQuery`, `useMutation`).
+
+**API Hook Naming Convention:**
+
+- Query hooks: `use_query_<resource_name>` (e.g., `use_query_products`)
+- Mutation hooks: `use_mutate_<resource_name>` (e.g., `use_mutate_update_product`)
+
+**Example Query Hook:**
+
+```typescript
+import { useQuery, UseQueryOptions } from "@tanstack/react-query";
+// Assume Product, ProductQueryParams, and fetchProducts are defined elsewhere
+
+// Query hook example
+export const useQueryProducts = (
+  params: ProductQueryParams = {},
+  options?: UseQueryOptions<
+    Product[],
+    Error,
+    Product[],
+    ["products", ProductQueryParams]
+  >
+) => {
+  return useQuery({
+    queryKey: ["products", params],
+    queryFn: () => fetchProducts(params),
+    ...options,
+  });
+};
+```
+
 ## 5. Navigation and Links
 
 Use the `<Link>` component for client-side navigation:
@@ -137,24 +124,30 @@ For active link styling, utilize the `<NavLink>` component. [NavLink API](https:
 Implement error boundaries to gracefully handle errors in your application:
 
 ```jsx
-import { ErrorBoundary } from "react-error-boundary";
-import { Routes } from "react-router"; // Assuming Routes is imported
+import { Route } from "./+types/root";
 
-function ErrorFallback({ error }) {
-  return (
-    <div role="alert">
-      <p>Something went wrong:</p>
-      <pre>{error.message}</pre>
-    </div>
-  );
-}
-
-function App() {
-  return (
-    <ErrorBoundary FallbackComponent={ErrorFallback}>
-      <Routes>{/* Your routes here */}</Routes>
-    </ErrorBoundary>
-  );
+export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
+  if (isRouteErrorResponse(error)) {
+    return (
+      <>
+        <h1>
+          {error.status} {error.statusText}
+        </h1>
+        <p>{error.data}</p>
+      </>
+    );
+  } else if (error instanceof Error) {
+    return (
+      <div>
+        <h1>Error</h1>
+        <p>{error.message}</p>
+        <p>The stack trace is:</p>
+        <pre>{error.stack}</pre>
+      </div>
+    );
+  } else {
+    return <h1>Unknown Error</h1>;
+  }
 }
 ```
 
@@ -248,46 +241,22 @@ function DataProvider({ render }) {
 
 ### 9.3 Custom Hooks
 
-Functions starting with `use` that allow you to extract component logic into reusable functions. Custom hooks let you share stateful logic without changing your component hierarchy.
+Custom Hooks are JavaScript functions whose names start with `use` and that may call other hooks. They enable you to extract component logic into reusable functions.
 
-```jsx
+```javascript
 import { useState, useEffect } from "react";
 
-function useFetchData(url) {
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+function useWindowWidth() {
+  const [width, setWidth] = useState(window.innerWidth);
 
   useEffect(() => {
-    const fetchDataAsync = async () => {
-      try {
-        setLoading(true);
-        const response = await fetch(url);
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const result = await response.json();
-        setData(result);
-      } catch (e) {
-        setError(e);
-      } finally {
-        setLoading(false);
-      }
-    };
+    const handleResize = () => setWidth(window.innerWidth);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
-    fetchDataAsync();
-  }, [url]); // Re-run effect if url changes
-
-  return { data, loading, error };
+  return width;
 }
-
-// Usage in a component:
-// function MyComponent() {
-//   const { data, loading, error } = useFetchData('/api/mydata');
-//   if (loading) return <p>Loading...</p>;
-//   if (error) return <p>Error loading data: {error.message}</p>;
-//   return <div>{JSON.stringify(data)}</div>;
-// }
 ```
 
 ## 10. Functional Programming Best Practices
@@ -304,23 +273,19 @@ Components and functions should ideally be pure: given the same inputs (props, s
 
 Build complex UIs and logic by combining smaller, reusable functions and components. Favor composition over inheritance. Custom hooks and HOCs are examples of composition patterns in React.
 
+## 11. Project Conventions
+
+### 11.1 File Naming Convention
+
+Use snake casing for file names (e.g., `user_profile.tsx`, `api_service.ts`).
+
+## 12. Conclusion
+
+_(Content for Conclusion needs to be added here)_
+
 # MUI (Material-UI) v7 Updates and Best Practices
 
 This document provides an overview of the latest updates in MUI v7 and outlines best practices for effectively utilizing the library in your projects.
-
-## Table of Contents
-
-1. [Introduction to MUI v7](#introduction-to-mui-v7)
-2. [Key Updates in MUI v7](#key-updates-in-mui-v7)
-   - [Enhanced ESM Support](#enhanced-esm-support)
-   - [Standardized Slot Pattern](#standardized-slot-pattern)
-   - [Opt-in CSS Layers](#opt-in-css-layers)
-3. [Best Practices for Using MUI](#best-practices-for-using-mui)
-   - [Customization Techniques](#customization-techniques)
-   - [Theming Strategies](#theming-strategies)
-   - [Performance Optimization](#performance-optimization)
-   - [Accessibility Considerations](#accessibility-considerations)
-4. [Conclusion](#conclusion)
 
 ## 1. Introduction to MUI v7
 
@@ -467,3 +432,11 @@ Ensuring accessibility in your application broadens your user base and enhances 
 - **ARIA Attributes**: Apply ARIA attributes where necessary to convey additional information to assistive technologies.
 - **Keyboard Navigation**: Ensure all interactive elements are accessible via keyboard navigation.
 - **Contrast Ratios**: Maintain sufficient contrast ratios between text and background to aid users with visual impairments.
+
+### MUI Component Examples
+
+- **Basic Grid**: For layout structures using the Grid component. [View Example](https://mui.com/material-ui/react-grid/?srsltid=AfmBOopCCRw16ORE_It2PuF8ZLxL7groYkkvcgBbewc18mmVRep5VXMB#system-BasicGrid.tsx)
+
+## 4. Conclusion
+
+_(Content for Conclusion needs to be added here)_
