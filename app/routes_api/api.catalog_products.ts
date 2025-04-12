@@ -1,5 +1,4 @@
 import { fetchCatalogProducts } from "~/services/printful/printful_api";
-import type { PrintfulPagination } from "~/types/printful";
 
 /**
  * Resource route for catalog products with client-side pagination and search
@@ -10,51 +9,22 @@ export async function loader({ request }: { request: Request }) {
     const url = new URL(request.url);
     const limit = parseInt(url.searchParams.get("limit") ?? "20", 10);
     const offset = parseInt(url.searchParams.get("offset") ?? "0", 10);
-    const search = url.searchParams.get("search") ?? null;
-    const category = url.searchParams.get("category") ?? null;
+    const search = url.searchParams.get("search") ?? undefined;
+    const categoryIds = url.searchParams.get("category_ids") ?? undefined; // Added categoryIds
 
-    // Get catalog products
-    const response = await fetchCatalogProducts({
-      categoryId: category ?? undefined,
+    const productsResponse = await fetchCatalogProducts({
       limit,
       offset,
+      search,
+      categoryIds, // Pass categoryIds
     });
 
-    if (!response || !response.data) {
-      throw new Error("Failed to fetch catalog products");
-    }
-
-    let products = response.data;
-
-    // Client-side search filtering if needed
-    if (search) {
-      const searchLower = search.toLowerCase();
-      products = products.filter(
-        (product) =>
-          product.name.toLowerCase().includes(searchLower) ||
-          product.type.toLowerCase().includes(searchLower)
-      );
-    }
-
-    // Return products with pagination info from the response
-    const paging: PrintfulPagination = response.paging || {
-      total: products.length,
-      offset,
-      limit,
-    };
-
-    return new Response(
-      JSON.stringify({
-        products,
-        paging,
-      }),
-      {
-        status: 200,
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }
-    );
+    return new Response(JSON.stringify(productsResponse), {
+      status: 200,
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
   } catch (error) {
     console.error("Error in catalog products loader:", error);
     return new Response(

@@ -8,6 +8,7 @@ import type {
   PrintfulV2CatalogProduct,
   PrintfulV2CatalogVariantsResponse,
   PrintfulV2ProductAvailabilityResponse,
+  PrintfulV2CategoriesResponse, // Added
 } from "../../types/printful";
 
 /**
@@ -58,16 +59,16 @@ export async function fetchFromPrintful<T>(
  * Fetches catalog products from Printful API v2
  */
 export async function fetchCatalogProducts(params?: {
-  categoryId?: string;
+  categoryIds?: string; // Changed from categoryId to categoryIds (string)
   limit?: number;
   offset?: number;
   search?: string;
 }) {
-  const { categoryId, limit = 20, offset = 0, search } = params || {};
+  const { categoryIds, limit = 20, offset = 0, search } = params || {}; // Changed variable name
 
   // Build query string
   const queryParams = new URLSearchParams();
-  if (categoryId) queryParams.append("category_ids", categoryId);
+  if (categoryIds) queryParams.append("category_ids", categoryIds); // Changed parameter name
   if (limit) queryParams.append("limit", limit.toString());
   if (offset) queryParams.append("offset", offset.toString());
   if (search) queryParams.append("search", search);
@@ -108,6 +109,15 @@ export async function fetchProductAvailability(productId: string) {
 }
 
 /**
+ * Fetches catalog categories from Printful API v2
+ */
+export async function fetchCatalogCategories() {
+  return fetchFromPrintful<PrintfulV2CategoriesResponse>(
+    `/v2/catalog-categories`
+  );
+}
+
+/**
  * Fetches featured products using the v2 API with random pagination
  */
 export async function fetchCatalogFeaturedProducts(
@@ -119,8 +129,8 @@ export async function fetchCatalogFeaturedProducts(
       limit: 1, // Just need minimal data to get total count
     });
 
-    // Make sure we have a valid response with paging data
-    if (!countResponse || !countResponse.paging) {
+    // Make sure we have a valid response with paging data - Use optional chaining
+    if (!countResponse?.paging) {
       console.error("Unexpected API response format:", countResponse);
       throw new Error("Unexpected API response format");
     }

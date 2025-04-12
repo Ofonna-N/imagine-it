@@ -35,22 +35,55 @@ export default [
   ]),
 
   // API routes
-  route(API_ROUTES.FEATURED_PRODUCTS, "routes_api/api.featured_products.ts"),
-  route(API_ROUTES.CATALOG_PRODUCTS, "routes_api/api.catalog_products.ts"),
   route(
-    "api/catalog-products/:id/availability",
+    API_ROUTES.FEATURED_PRODUCTS.slice(1), // Use constant and slice leading '/'
+    "routes_api/api.featured_products.ts"
+  ),
+  route(
+    API_ROUTES.CATALOG_PRODUCTS.slice(1), // Use constant and slice leading '/'
+    "routes_api/api.catalog_products.ts"
+  ),
+  route(
+    API_ROUTES.CATALOG_CATEGORIES.slice(1), // Add category route using constant
+    "routes_api/api.catalog_categories.ts"
+  ),
+  route(
+    // Use function constant for dynamic path, slice leading '/'
+    API_ROUTES.CATALOG_PRODUCT_AVAILABILITY(":id").slice(1),
     "routes_api/api.catalog_products.$id.availability.ts",
     {
-      id: "catalog-product-availability",
+      id: "catalog-product-availability", // Keep ID if needed elsewhere
     }
   ),
-  route(API_ROUTES.USER_PROFILE, "routes_api/api.user.profile.ts"),
+  route(
+    API_ROUTES.USER_PROFILE.slice(1), // Use constant and slice leading '/'
+    "routes_api/api.user.profile.ts"
+  ),
 
   // Auth resource routes
-  route(API_ROUTES.AUTH.LOGIN, "routes_api/api.auth.login.ts"),
-  route(API_ROUTES.AUTH.SIGNUP, "routes_api/api.auth.signup.ts"),
-  route(API_ROUTES.AUTH.SIGNOUT, "routes_api/api.auth.signout.ts"),
-  route(API_ROUTES.AUTH.SESSION, "routes_api/api.auth.session.ts"),
-  route("api/auth/oauth/:provider", "routes_api/api.auth.oauth.$provider.ts"),
-  route(AUTH_ROUTES.OAUTH_CALLBACK, "routes_api/api.auth.oauth.callback.ts"),
+  route(
+    API_ROUTES.AUTH.LOGIN.slice(1), // Use constant and slice leading '/'
+    "routes_api/api.auth.login.ts"
+  ),
+  route(
+    API_ROUTES.AUTH.SIGNUP.slice(1), // Use constant and slice leading '/'
+    "routes_api/api.auth.signup.ts"
+  ),
+  route(
+    API_ROUTES.AUTH.SIGNOUT.slice(1), // Use constant and slice leading '/'
+    "routes_api/api.auth.signout.ts"
+  ),
+  route(
+    API_ROUTES.AUTH.SESSION.slice(1), // Use constant and slice leading '/'
+    "routes_api/api.auth.session.ts"
+  ),
+  route(
+    // Use function constant for dynamic path, slice leading '/'
+    API_ROUTES.AUTH.OAUTH(":provider").slice(1),
+    "routes_api/api.auth.oauth.$provider.ts"
+  ),
+  route(
+    AUTH_ROUTES.OAUTH_CALLBACK.slice(1), // Use constant and slice leading '/'
+    "routes_api/api.auth.oauth.callback.ts"
+  ),
 ] satisfies RouteConfig;

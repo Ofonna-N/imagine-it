@@ -7,7 +7,7 @@ import type {
 interface CatalogProductsParams {
   limit?: number;
   offset?: number;
-  category?: string;
+  categoryIds?: string; // Changed from category to categoryIds (string)
   search?: string;
 }
 
@@ -37,28 +37,27 @@ const useQueryCatalogProducts = ({
     >
   >;
 } = {}) => {
-  const { limit = 20, offset = 0, category, search } = params;
+  const { limit = 20, offset = 0, categoryIds, search } = params; // Changed variable name
 
   return useQuery({
     queryKey: ["catalogProducts", params],
     queryFn: async () => {
-      // Build the URL with all parameters
       const queryParams = new URLSearchParams();
       queryParams.append("limit", limit.toString());
       queryParams.append("offset", offset.toString());
-      if (category) queryParams.append("category", category);
+      if (categoryIds) queryParams.append("category_ids", categoryIds); // Changed parameter name
       if (search) queryParams.append("search", search);
 
-      const url = `api/catalog-products?${queryParams.toString()}`;
-
-      const response = await fetch(url);
+      const response = await fetch(`/api/catalog-products?${queryParams}`);
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to fetch catalog products");
+        throw new Error("Failed to fetch products");
       }
-
       const data = await response.json();
-      return data;
+      // Assuming the API route returns the full response including 'data' and 'paging'
+      return {
+        products: data.data,
+        paging: data.paging,
+      };
     },
     ...options,
   });

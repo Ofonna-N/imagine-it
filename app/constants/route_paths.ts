@@ -27,6 +27,7 @@ export const APP_ROUTES = {
 export const API_ROUTES = {
   FEATURED_PRODUCTS: "/api/products/featured",
   CATALOG_PRODUCTS: "/api/catalog-products",
+  CATALOG_CATEGORIES: "/api/catalog-categories", // Added category route
   CATALOG_PRODUCT_AVAILABILITY: (id: string) =>
     `/api/catalog-products/${id}/availability`,
   USER_PROFILE: "/api/user/profile",

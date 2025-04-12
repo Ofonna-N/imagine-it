@@ -148,6 +148,19 @@ export type PrintfulV2CatalogProductsResponse = PrintfulV2BaseResponse<
   PrintfulV2CatalogProduct[]
 >;
 
+// Catalog category in v2 API
+export interface PrintfulV2Category {
+  id: number;
+  parent_id: number | null;
+  image_url: string | null;
+  title: string;
+  size: string; // Seems to indicate number of products, might need clarification from API docs
+}
+
+// Catalog categories list response (v2)
+export interface PrintfulV2CategoriesResponse
+  extends PrintfulV2BaseResponse<PrintfulV2Category[]> {}
+
 // Error response type - keeping this as it might be used across both versions
 export interface PrintfulErrorResponse {
   code: number;
