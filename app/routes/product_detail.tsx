@@ -44,31 +44,34 @@ import { motion } from "framer-motion";
 import { APP_ROUTES } from "../constants/route_paths";
 import type { Route } from "./+types/product_detail";
 import useQueryProductAvailability from "~/features/product/hooks/use_query_product_availability";
+import ProductDesigner from "~/features/design/components/product_designer"; // Import the new component
 
 export async function loader({ params }: { params: { productId: string } }) {
   if (!params.productId) {
     throw new Response("Product ID is required", { status: 400 });
   }
 
+  const productIdStr = String(params.productId); // Convert once
+
   try {
-    // Fetch product details - convert productId to string to match expected parameter type
-    const productResponse = await fetchCatalogProductById(
-      String(params.productId)
-    );
+    // Fetch product details and variants in parallel
+    // Mockup styles will be fetched client-side in the designer component
+    const [productResponse, variantsResponse] = await Promise.all([
+      fetchCatalogProductById(productIdStr),
+      fetchCatalogVariantsByProductId(productIdStr),
+      // fetchCatalogProductMockupStyles(productIdStr), // Removed: Fetch mockup styles client-side
+    ]);
 
-    // Fetch variants for this product - convert productId to string to match expected parameter type
-    const variantsResponse = await fetchCatalogVariantsByProductId(
-      String(params.productId)
-    );
-
-    // Return both responses to be used in the component
+    // Return product and variant responses
     return {
       productResponse,
       variantsResponse,
+      // mockupStylesResponse, // Removed
     };
   } catch (error) {
-    console.error("Error loading product:", error);
-    throw new Response("Error loading product", {
+    console.error("Error loading product data:", error); // Log the specific error
+    // Rethrow or handle specific errors if needed
+    throw new Response("Error loading product data", {
       status: 500,
       statusText: error instanceof Error ? error.message : "Unknown error",
     });
@@ -76,10 +79,12 @@ export async function loader({ params }: { params: { productId: string } }) {
 }
 
 export default function ProductDetail() {
-  const { productResponse, variantsResponse } = useLoaderData<typeof loader>();
+  const { productResponse, variantsResponse /*, mockupStylesResponse */ } =
+    useLoaderData<typeof loader>(); // Removed mockupStylesResponse
 
   const product = productResponse.data;
   const variants = variantsResponse.data;
+  // const mockupStyles = mockupStylesResponse.data; // Removed: Data fetched in designer
 
   const [selectedVariantIndex, setSelectedVariantIndex] = useState(0);
   const selectedVariant = variants[selectedVariantIndex];
@@ -172,7 +177,16 @@ export default function ProductDetail() {
     );
   };
 
-  // Dialog state
+  // Dialog state for the designer
+  const [designerOpen, setDesignerOpen] = useState(false);
+
+  const handleOpenDesigner = () => {
+    setDesignerOpen(true);
+  };
+
+  const handleCloseDesigner = () => {
+    setDesignerOpen(false);
+  };
 
   return (
     <Box sx={{ mt: 4 }}>
@@ -512,6 +526,7 @@ export default function ProductDetail() {
                         boxShadow: "0 8px 20px rgba(94, 106, 210, 0.5)",
                       },
                     }}
+                    onClick={handleOpenDesigner} // Add onClick handler
                   >
                     Design Product
                   </Button>
@@ -740,6 +755,14 @@ export default function ProductDetail() {
           </Fade>
         </Grid>
       </Grid>
+
+      {/* Render the ProductDesigner component when designerOpen is true */}
+      <ProductDesigner
+        open={designerOpen}
+        onClose={handleCloseDesigner}
+        product={product}
+        selectedVariant={selectedVariant}
+      />
     </Box>
   );
 }
