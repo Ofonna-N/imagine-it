@@ -59,6 +59,12 @@ export default [
     API_ROUTES.USER_PROFILE.slice(1), // Use constant and slice leading '/'
     "routes_api/api.user.profile.ts"
   ),
+  route(
+    API_ROUTES.MOCKUP_TASKS?.slice
+      ? API_ROUTES.MOCKUP_TASKS.slice(1)
+      : "api/mockup-tasks",
+    "routes_api/api.mockup_tasks.ts"
+  ),
 
   // Auth resource routes
   route(

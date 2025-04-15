@@ -163,3 +163,20 @@ export async function fetchCatalogFeaturedProducts(
     throw error;
   }
 }
+
+/**
+ * Fetches a mockup task by ID from Printful API v2
+ */
+export async function fetchPrintfulMockupTask(id: string) {
+  return fetchFromPrintful<any>(`/v2/mockup-tasks?id=${id}`);
+}
+
+/**
+ * Creates a new mockup task via Printful API v2
+ */
+export async function createPrintfulMockupTask(body: any) {
+  return fetchFromPrintful<any>(`/v2/mockup-tasks`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}

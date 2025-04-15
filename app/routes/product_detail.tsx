@@ -44,6 +44,25 @@ import { motion } from "framer-motion";
 import { APP_ROUTES } from "../constants/route_paths";
 import type { Route } from "./+types/product_detail";
 import useQueryProductAvailability from "~/features/product/hooks/use_query_product_availability";
+import Dialog from "@mui/material/Dialog";
+import DialogTitle from "@mui/material/DialogTitle";
+import DialogContent from "@mui/material/DialogContent";
+import DialogActions from "@mui/material/DialogActions";
+import Stepper from "@mui/material/Stepper";
+import Step from "@mui/material/Step";
+import StepLabel from "@mui/material/StepLabel";
+import Select from "@mui/material/Select";
+import MenuItem from "@mui/material/MenuItem";
+import FormControl from "@mui/material/FormControl";
+import InputLabel from "@mui/material/InputLabel";
+import FormGroup from "@mui/material/FormGroup";
+import FormControlLabel from "@mui/material/FormControlLabel";
+import Checkbox from "@mui/material/Checkbox";
+import useMediaQuery from "@mui/material/useMediaQuery";
+import { useTheme } from "@mui/material/styles";
+import { MOCK_STORAGE_IMAGE_URLS } from "~/constants/mock_storage_image_urls";
+import { useMutation } from "@tanstack/react-query";
+import { useState as useReactState } from "react";
 
 export async function loader({ params }: { params: { productId: string } }) {
   if (!params.productId) {
@@ -171,6 +190,9 @@ export default function ProductDetail() {
       ) ?? true
     );
   };
+
+  // Dialog state
+  const [designDialogOpen, setDesignDialogOpen] = useState(false);
 
   return (
     <Box sx={{ mt: 4 }}>
@@ -499,8 +521,8 @@ export default function ProductDetail() {
                     variant="contained"
                     size="large"
                     startIcon={<FiZap />}
-                    component={Link}
-                    to={`${APP_ROUTES.DESIGN_PLAYGROUND}?productId=${product.id}&variantId=${selectedVariant.id}`}
+                    // Instead of navigating, open the dialog
+                    onClick={() => setDesignDialogOpen(true)}
                     fullWidth
                     sx={{
                       py: 1.8,
@@ -736,6 +758,28 @@ export default function ProductDetail() {
                   </Box>
                 </AccordionDetails>
               </Accordion>
+
+              {/* Add "Design Product" Button */}
+              <Box sx={{ mb: 2 }}>
+                <Button
+                  variant="outlined"
+                  color="primary"
+                  startIcon={<FiZap />}
+                  onClick={() => setDesignDialogOpen(true)}
+                  sx={{ mb: 2, fontWeight: 600 }}
+                  fullWidth
+                >
+                  Design Product
+                </Button>
+              </Box>
+
+              {/* Design Product Dialog */}
+              <DesignProductDialog
+                open={designDialogOpen}
+                onClose={() => setDesignDialogOpen(false)}
+                product={product}
+                selectedVariant={selectedVariant}
+              />
             </Box>
           </Fade>
         </Grid>
@@ -900,6 +944,313 @@ const AvailabilitySection = ({
     </Box>
   );
 };
+
+/**
+ * Dialog component for designing the product
+ */
+// --- Design Product Dialog Component ---
+function DesignProductDialog({
+  open,
+  onClose,
+  product,
+  selectedVariant,
+}: {
+  open: boolean;
+  onClose: () => void;
+  product: any;
+  selectedVariant: any;
+}) {
+  const theme = useTheme();
+  const fullScreen = useMediaQuery(theme.breakpoints.down("md"));
+
+  // Stepper state
+  const [activeStep, setActiveStep] = useReactState(0);
+
+  // Step 1: Technique selection
+  const [selectedTechnique, setSelectedTechnique] = useReactState<string>("");
+
+  // Step 2: Placement selection (multi-select)
+  const [selectedPlacements, setSelectedPlacements] = useReactState<string[]>(
+    []
+  );
+
+  // Step 3: Image selection for each placement
+  const [placementImages, setPlacementImages] = useReactState<
+    Record<string, string>
+  >({});
+
+  // Step 4: Mockup result
+  const [mockupResult, setMockupResult] = useReactState<any>(null);
+
+  // Placement options filtered by technique
+  const placementOptions = product.placements.filter(
+    (p: any) => p.technique === selectedTechnique
+  );
+
+  // Stepper steps
+  const steps = [
+    "Select Technique",
+    "Select Placement(s)",
+    "Add Art for Each Placement",
+    "Generate Mockup",
+  ];
+
+  // Handle technique change
+  const handleTechniqueChange = (e: any) => {
+    setSelectedTechnique(e.target.value);
+    setSelectedPlacements([]);
+    setPlacementImages({});
+    setActiveStep(1);
+  };
+
+  // Handle placement toggle
+  const handlePlacementToggle = (placement: string) => {
+    setSelectedPlacements((prev) =>
+      prev.includes(placement)
+        ? prev.filter((p) => p !== placement)
+        : [...prev, placement]
+    );
+    setPlacementImages((prev) => {
+      const copy = { ...prev };
+      if (copy[placement]) delete copy[placement];
+      return copy;
+    });
+  };
+
+  // Handle image selection for a placement
+  const handlePlacementImageSelect = (placement: string, url: string) => {
+    setPlacementImages((prev) => ({ ...prev, [placement]: url }));
+  };
+
+  // Move to next step
+  const handleNext = () => setActiveStep((s) => s + 1);
+  // Move to previous step
+  const handleBack = () => setActiveStep((s) => s - 1);
+
+  // --- Mockup API logic ---
+  const { mutate: generateMockup, isPending: isGenerating } = useMutation({
+    mutationFn: async () => {
+      // Compose placements for API
+      const placements = selectedPlacements.map((placement) => ({
+        placement,
+        technique: selectedTechnique,
+        layers: [
+          {
+            type: "file",
+            url: placementImages[placement],
+          },
+        ],
+      }));
+      // POST /v2/mockup-tasks
+      const res = await fetch("/api/mockup-tasks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          format: "jpg",
+          products: [
+            {
+              source: "catalog",
+              catalog_product_id: product.id,
+              catalog_variant_ids: [selectedVariant.id],
+              placements,
+            },
+          ],
+        }),
+      });
+      if (!res.ok) throw new Error("Failed to create mockup task");
+      const { data } = await res.json();
+      // Poll GET /v2/mockup-tasks?id=...
+      let pollCount = 0;
+      while (pollCount < 20) {
+        const pollRes = await fetch(`/api/mockup-tasks?id=${data.id}`);
+        const pollData = await pollRes.json();
+        if (pollData.data.status === "completed") return pollData.data;
+        await new Promise((r) => setTimeout(r, 1500));
+        pollCount++;
+      }
+      throw new Error("Mockup generation timed out");
+    },
+    onSuccess: (data) => setMockupResult(data),
+    onError: (err) => setMockupResult({ error: err.message }),
+  });
+
+  // Reset dialog state on close
+  const handleDialogClose = () => {
+    setActiveStep(0);
+    setSelectedTechnique("");
+    setSelectedPlacements([]);
+    setPlacementImages({});
+    setMockupResult(null);
+    onClose();
+  };
+
+  return (
+    <Dialog
+      open={open}
+      onClose={handleDialogClose}
+      fullScreen={fullScreen}
+      maxWidth="sm"
+      fullWidth
+    >
+      <DialogTitle>Design Your Product</DialogTitle>
+      <DialogContent>
+        <Stepper activeStep={activeStep} sx={{ mb: 3 }}>
+          {steps.map((label) => (
+            <Step key={label}>
+              <StepLabel>{label}</StepLabel>
+            </Step>
+          ))}
+        </Stepper>
+        {/* Step 1: Technique */}
+        {activeStep === 0 && (
+          <FormControl fullWidth sx={{ mt: 2 }}>
+            <InputLabel id="technique-label">Technique</InputLabel>
+            <Select
+              labelId="technique-label"
+              value={selectedTechnique}
+              label="Technique"
+              onChange={handleTechniqueChange}
+            >
+              {product.techniques.map((t: any) => (
+                <MenuItem key={t.key} value={t.key}>
+                  {t.display_name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        )}
+        {/* Step 2: Placement */}
+        {activeStep === 1 && (
+          <FormGroup sx={{ mt: 2 }}>
+            {placementOptions.length === 0 && (
+              <Typography color="text.secondary">
+                No placements available for this technique.
+              </Typography>
+            )}
+            {placementOptions.map((p: any) => (
+              <FormControlLabel
+                key={p.placement}
+                control={
+                  <Checkbox
+                    checked={selectedPlacements.includes(p.placement)}
+                    onChange={() => handlePlacementToggle(p.placement)}
+                  />
+                }
+                label={p.placement}
+              />
+            ))}
+          </FormGroup>
+        )}
+        {/* Step 3: Art for each placement */}
+        {activeStep === 2 && (
+          <Box>
+            {selectedPlacements.length === 0 ? (
+              <Typography color="text.secondary">
+                Please select at least one placement.
+              </Typography>
+            ) : (
+              selectedPlacements.map((placement) => (
+                <Box key={placement} sx={{ mb: 3 }}>
+                  <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                    Art for <b>{placement}</b>
+                  </Typography>
+                  <Box sx={{ display: "flex", gap: 2 }}>
+                    {MOCK_STORAGE_IMAGE_URLS.map((url) => (
+                      <Box
+                        key={url}
+                        component="img"
+                        src={url}
+                        alt="Mock Art"
+                        sx={{
+                          width: 64,
+                          height: 64,
+                          borderRadius: 2,
+                          border:
+                            placementImages[placement] === url
+                              ? "2px solid #5E6AD2"
+                              : "2px solid transparent",
+                          cursor: "pointer",
+                          objectFit: "cover",
+                        }}
+                        onClick={() =>
+                          handlePlacementImageSelect(placement, url)
+                        }
+                      />
+                    ))}
+                  </Box>
+                </Box>
+              ))
+            )}
+          </Box>
+        )}
+        {/* Step 4: Generate mockup and show result */}
+        {activeStep === 3 && (
+          <Box sx={{ mt: 2 }}>
+            {!mockupResult && (
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={() => generateMockup()}
+                disabled={isGenerating}
+              >
+                {isGenerating ? "Generating..." : "Generate Mockup"}
+              </Button>
+            )}
+            {mockupResult && mockupResult.catalog_variant_mockups && (
+              <Box sx={{ mt: 3 }}>
+                <Typography variant="subtitle1" sx={{ mb: 2 }}>
+                  Mockup Results:
+                </Typography>
+                <Stack direction="row" spacing={2}>
+                  {mockupResult.catalog_variant_mockups.map((m: any) => (
+                    <Box key={m.mockup_url}>
+                      <img
+                        src={m.mockup_url}
+                        alt={m.placement}
+                        style={{
+                          width: 120,
+                          height: 120,
+                          objectFit: "contain",
+                          borderRadius: 8,
+                          border: "1px solid #eee",
+                        }}
+                      />
+                      <Typography variant="caption">{m.placement}</Typography>
+                    </Box>
+                  ))}
+                </Stack>
+              </Box>
+            )}
+            {mockupResult && mockupResult.error && (
+              <Alert severity="error" sx={{ mt: 2 }}>
+                {mockupResult.error}
+              </Alert>
+            )}
+          </Box>
+        )}
+      </DialogContent>
+      <DialogActions>
+        {activeStep > 0 && activeStep < 3 && (
+          <Button onClick={handleBack}>Back</Button>
+        )}
+        {activeStep < 3 && (
+          <Button
+            onClick={handleNext}
+            disabled={
+              (activeStep === 0 && !selectedTechnique) ||
+              (activeStep === 1 && selectedPlacements.length === 0) ||
+              (activeStep === 2 &&
+                selectedPlacements.some((p) => !placementImages[p]))
+            }
+          >
+            Next
+          </Button>
+        )}
+        <Button onClick={handleDialogClose}>Close</Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
 
 export function ErrorBoundary({ error }: Readonly<Route.ErrorBoundaryProps>) {
   // Check if it's a route error response (including thrown Response objects)

@@ -38,6 +38,7 @@ export const API_ROUTES = {
     SESSION: "/api/auth/session",
     OAUTH: (provider: string) => `/api/auth/oauth/${provider}`,
   },
+  MOCKUP_TASKS: "/api/mockup-tasks",
 };
 
 // A flattened version combining all routes for easier imports
