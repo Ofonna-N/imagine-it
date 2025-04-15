@@ -39,6 +39,7 @@ export const API_ROUTES = {
     OAUTH: (provider: string) => `/api/auth/oauth/${provider}`,
   },
   MOCKUP_TASKS: "/api/mockup-tasks",
+  MOCK_UP_STYLES: (id: string) => `/api/catalog-products/${id}/mockup-styles`, // Added mockup styles route
 };
 
 // A flattened version combining all routes for easier imports

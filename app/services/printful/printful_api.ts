@@ -8,7 +8,8 @@ import type {
   PrintfulV2CatalogProduct,
   PrintfulV2CatalogVariantsResponse,
   PrintfulV2ProductAvailabilityResponse,
-  PrintfulV2CategoriesResponse, // Added
+  PrintfulV2CategoriesResponse,
+  PrintfulV2MockupStylesResponse, // Added
 } from "../../types/printful";
 
 /**
@@ -48,6 +49,7 @@ export async function fetchFromPrintful<T>(
       errorMessage = errorData.error?.message || errorMessage;
     } catch (e) {
       // If we can't parse the error response, use the default error message
+      console.error("Failed to parse error response:", e);
     }
     throw new Error(errorMessage);
   }
@@ -179,4 +181,16 @@ export async function createPrintfulMockupTask(body: any) {
     method: "POST",
     body: JSON.stringify(body),
   });
+}
+
+/**
+ * Fetches mockup styles for a specific catalog product from Printful API v2
+ *
+ * GET /v2/catalog-products/{id}/mockup-styles
+ * Utility: Retrieves available mockup style groups for a given product.
+ */
+export async function fetchCatalogProductMockupStyles(productId: string) {
+  return fetchFromPrintful<PrintfulV2MockupStylesResponse>(
+    `/v2/catalog-products/${productId}/mockup-styles`
+  );
 }

@@ -65,6 +65,11 @@ export default [
       : "api/mockup-tasks",
     "routes_api/api.mockup_tasks.ts"
   ),
+  route(
+    // Add mockup styles API route for catalog products
+    API_ROUTES.MOCK_UP_STYLES(":id").slice(1),
+    "routes_api/api.catalog_products.$id.mockup_styles.ts"
+  ),
 
   // Auth resource routes
   route(
