@@ -483,7 +483,7 @@ Starting from Material UI v6, these props are renamed to size on the updated Gri
 - xs={12}
 - sm={6}
 
-* size={{ xs: 12, sm: 6 }}
+size={{ xs: 12, sm: 6 }}
   >
 
 Copy
@@ -509,3 +509,24 @@ The updated Grid component doesn't grow to the full width of the container by de
 
 // alternatively, if the Grid's parent is a flex container: -<GridLegacy container>
 +<Grid container sx={{ flexGrow: 1 }}>
+
+/**
+ * Documentation Guidelines:
+ *
+ * - For complex blocks of code, include clear and concise comments explaining the logic, purpose, and any important details.
+ * - For API-related type definitions, attach comments specifying:
+ *    - The HTTP method (e.g., GET, POST, PUT, DELETE)
+ *    - The API path (e.g., /users/{id})
+ *    - The utility or purpose of the type within the API context
+ *
+ * Example for a complex code block:
+ * // This block handles user authentication by verifying the provided credentials
+ * // and generating a JWT token if authentication is successful.
+ *
+ * Example for an API type definition:
+ * /**
+ *  * POST /api/login
+ *  * Utility: Represents the request payload for user login.
+ *  *\/
+ * type LoginRequest = { ... }
+ */
