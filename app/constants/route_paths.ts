@@ -15,7 +15,6 @@ export const APP_ROUTES = {
   HOME: "/",
   PRODUCTS: "/products",
   PRODUCT_DETAIL: (id: string) => `/products/${id}`,
-  DESIGN_PLAYGROUND: "/design-playground",
   MY_DESIGNS: "/my-designs",
   CART: "/cart",
   CHECKOUT: "/checkout",

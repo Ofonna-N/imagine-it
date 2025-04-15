@@ -18,12 +18,6 @@ export default [
       "routes/product_detail.tsx"
     ),
 
-    // Design and creation routes
-    route(
-      APP_ROUTES.DESIGN_PLAYGROUND.slice(1),
-      "routes/image_gen_playground.tsx"
-    ),
-
     // Shopping cart and checkout
     route(APP_ROUTES.CART.slice(1), "routes/cart.tsx"),
     route(APP_ROUTES.CHECKOUT.slice(1), "routes/checkout.tsx"),
