@@ -37,11 +37,13 @@ const fetchProductMockupStyles = async (
  */
 export const useQueryProductMockupStyles = (
   productId: string | undefined, // Allow undefined to disable the query initially
-  options?: UseQueryOptions<
-    PrintfulV2BaseResponse<PrintfulV2MockupStyleGroup[]>, // Corrected Query function result type
-    Error, // Error type
-    PrintfulV2MockupStyleGroup[], // Select function result type (the actual data array)
-    (string | undefined)[] // Query key type
+  options?: Partial<
+    UseQueryOptions<
+      PrintfulV2BaseResponse<PrintfulV2MockupStyleGroup[]>, // Corrected Query function result type
+      Error, // Error type
+      PrintfulV2MockupStyleGroup[], // Select function result type (the actual data array)
+      (string | undefined)[] // Query key type
+    >
   >
 ) => {
   return useQuery({
