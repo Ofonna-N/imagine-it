@@ -243,9 +243,17 @@ export interface PrintfulV2MockupGeneratorTask {
 // Represents a generated mockup for a variant
 export interface PrintfulV2CatalogVariantMockup {
   catalog_variant_id: number;
-  mockup_url: string;
-  placement: string;
-  mockup_style_id: number;
+  mockups: PrintfulV2Mockup[];
+}
+
+// GET /v2/mockup-tasks
+// Represents the result of a single mockup generation within a task.
+export interface PrintfulV2Mockup {
+  placement: string; // Placement name for which the mockup was generated (e.g., "front")
+  display_name: string; // Name suitable for display to end customers (e.g., "Front Print")
+  technique: string; // Technique name used for the mockup (e.g., "dtg")
+  style_id: number; // Identifier for the mockup style used
+  mockup_url: string; // Temporary URL to the generated mockup image
 }
 
 // POST /v2/mockup-tasks, GET /v2/mockup-tasks

@@ -70,9 +70,6 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
     string | null
   >(null);
 
-  console.log("selectedTechnique", selectedTechnique);
-  console.log("selectedPlacements", selectedPlacements);
-  console.log("selectedMockupStyleIds", selectedMockupStyleIds);
   // --- Hooks --- //
 
   // Fetch available mockup styles for the product
@@ -131,13 +128,21 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
   useEffect(() => {
     if (taskResultData?.status === "completed") {
       const mockups = taskResultData.catalog_variant_mockups;
-      // Find the mockup matching the selected variant and style
-      const relevantMockup = mockups?.find(
-        (m) =>
-          m.catalog_variant_id === selectedVariant.id &&
-          selectedMockupStyleIds.includes(m.mockup_style_id)
-      );
-      setGeneratedMockupUrl(relevantMockup?.mockup_url ?? null); // Use nullish coalescing
+      // Find the first mockup for the selected variant and style
+      let relevantMockupUrl: string | null = null;
+      for (const variantMockup of mockups ?? []) {
+        if (variantMockup.catalog_variant_id === selectedVariant.id) {
+          // Find a mockup whose style_id matches one of the selectedMockupStyleIds
+          const found = variantMockup.mockups.find((m) =>
+            selectedMockupStyleIds.includes(m.style_id)
+          );
+          if (found) {
+            relevantMockupUrl = found.mockup_url;
+            break;
+          }
+        }
+      }
+      setGeneratedMockupUrl(relevantMockupUrl ?? null);
       setGeneratedTaskIds(null); // Stop polling
     } else if (taskResultData?.status === "failed") {
       console.error("Mockup task failed:", taskResultData.failure_reasons);
@@ -199,6 +204,32 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
     if (selectedStyleGroups.length === 0) return [];
     return selectedStyleGroups[0].mockup_styles ?? [];
   }, [selectedStyleGroups]);
+
+  // --- State for preview gallery --- //
+  const [selectedPreviewUrl, setSelectedPreviewUrl] = useState<string | null>(
+    null
+  );
+
+  // --- Memoized gallery images from mockup task response --- //
+  const galleryImages = useMemo(() => {
+    if (!taskResultResponse?.data) return [];
+    if (taskResultResponse.data.length === 0) return [];
+    if (taskResultResponse.data[0].status !== "completed") return [];
+    // Flatten all mockups for all variants in the completed task
+    return (
+      taskResultResponse.data[0]?.catalog_variant_mockups?.flatMap(
+        (variantMockup) =>
+          (variantMockup.mockups || []).map((mockup) => ({
+            mockup_url: mockup.mockup_url,
+            placement: mockup.placement,
+            style_id: mockup.style_id,
+            display_name: mockup.display_name,
+            technique: mockup.technique,
+            catalog_variant_id: variantMockup.catalog_variant_id,
+          }))
+      ) ?? []
+    );
+  }, [taskResultResponse]);
 
   // --- Event Handlers --- //
 
@@ -393,6 +424,65 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
       </Grid>
     );
   };
+  console.log("imageUrl", galleryImages);
+
+  // --- Preview Gallery UI --- //
+  const renderPreviewGallery = () => {
+    if (!galleryImages.length) return null;
+    return (
+      <Box sx={{ mt: 3 }}>
+        <Typography variant="subtitle1" gutterBottom>
+          Mockup Previews
+        </Typography>
+        <Grid container spacing={2}>
+          {galleryImages.map((img) => (
+            <Grid key={img.mockup_url} size={{ xs: 6, sm: 4, md: 3 }}>
+              <Card
+                sx={{
+                  cursor: "pointer",
+                  border: selectedPreviewUrl === img.mockup_url ? 2 : 1,
+                  borderColor:
+                    selectedPreviewUrl === img.mockup_url
+                      ? "primary.main"
+                      : "divider",
+                  boxShadow: selectedPreviewUrl === img.mockup_url ? 4 : 1,
+                  transition: "box-shadow 0.2s, border-color 0.2s",
+                }}
+                onClick={() => setSelectedPreviewUrl(img.mockup_url)}
+              >
+                <CardMedia
+                  component="img"
+                  image={img.mockup_url}
+                  alt={img.placement}
+                  sx={{ objectFit: "contain", height: 120 }}
+                />
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
+        {/* Large preview display */}
+        {selectedPreviewUrl && (
+          <Box sx={{ mt: 4, textAlign: "center" }}>
+            <Typography variant="subtitle2" gutterBottom>
+              Preview
+            </Typography>
+            <Card sx={{ maxWidth: 500, margin: "auto", boxShadow: 6 }}>
+              <CardMedia
+                component="img"
+                image={selectedPreviewUrl}
+                alt="Selected Mockup Preview"
+                sx={{
+                  objectFit: "contain",
+                  maxHeight: 400,
+                  bgcolor: "background.paper",
+                }}
+              />
+            </Card>
+          </Box>
+        )}
+      </Box>
+    );
+  };
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="lg" fullWidth>
@@ -420,6 +510,8 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
             </Typography>
             {renderDesignerControls()}
           </Grid>
+          {/* Right Side: Gallery */}
+          <Grid size={{ xs: 12, md: 7 }}>{renderPreviewGallery()}</Grid>
         </Grid>
       </DialogContent>
       <DialogActions sx={{ justifyContent: "space-between", px: 3, py: 2 }}>
