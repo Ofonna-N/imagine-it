@@ -81,7 +81,7 @@ export const useQueryMockupTaskResult = (
     if (tasks?.every((task) => task.status !== "pending")) {
       return false; // Stop polling
     }
-    return 3000; // Poll every 3 seconds
+    return 6000; // Poll every 6 seconds
   };
 
   const taskIdsString = taskIds?.map((id) => id.toString()).join(",") ?? "";
