@@ -44,9 +44,10 @@ import {
   Zoom,
   Divider,
   Alert,
-  CircularProgress,
+  Skeleton,
   ToggleButtonGroup,
   ToggleButton,
+  CircularProgress,
 } from "@mui/material";
 
 export async function loader({ params }: { params: { productId: string } }) {
@@ -367,7 +368,7 @@ export default function ProductDetail() {
                 </Stack>
                 {/* Note: Pricing for the selected variant technique */}
                 {variantPriceLoading ? (
-                  <CircularProgress size={24} />
+                  <Skeleton variant="text" width={100} height={50} />
                 ) : variantPriceError ? (
                   <Alert severity="error">Error loading price</Alert>
                 ) : (
