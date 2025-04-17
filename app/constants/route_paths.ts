@@ -39,7 +39,8 @@ export const API_ROUTES = {
   },
   MOCKUP_TASKS: "/api/mockup-tasks",
   MOCK_UP_STYLES: (id: string) => `/api/catalog-products/${id}/mockup-styles`,
-  CATALOG_PRODUCT_PRICES: (id: string) => `/api/catalog-products/${id}/prices`, // Added for product pricing endpoint
+  CATALOG_PRODUCT_PRICES: (id: string) => `/api/catalog-products/${id}/prices`,
+  CATALOG_VARIANT_PRICES: (id: string) => `/api/catalog-variants/${id}/prices`, // Added for variant pricing endpoint
 };
 
 // A flattened version combining all routes for easier imports

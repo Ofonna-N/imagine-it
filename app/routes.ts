@@ -92,6 +92,10 @@ export default [
     "routes_api/api.catalog_products.$id.prices.ts"
   ),
   route(
+    API_ROUTES.CATALOG_VARIANT_PRICES(":id").slice(1), // Use constant and slice leading '/'
+    "routes_api/api.catalog_variants.$id.prices.ts"
+  ),
+  route(
     AUTH_ROUTES.OAUTH_CALLBACK.slice(1), // Use constant and slice leading '/'
     "routes_api/api.auth.oauth.callback.ts"
   ),

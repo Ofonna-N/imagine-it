@@ -124,7 +124,7 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
     enabled: open,
   });
   // Removed: const mockupStyleGroups = mockupStyleGroupsResponse?.data;
-
+  console.log("mockupStyleGroups", mockupStyleGroups);
   // Mutation hook to create a mockup task
   const {
     mutate: createMockupTask,

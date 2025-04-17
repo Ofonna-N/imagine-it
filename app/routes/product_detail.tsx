@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react"; // Added useMemo
 import { useLoaderData, Link, isRouteErrorResponse } from "react-router";
 import {
   fetchCatalogProductById,
@@ -25,7 +25,7 @@ import { motion } from "framer-motion";
 import { APP_ROUTES } from "../constants/route_paths";
 import type { Route } from "./+types/product_detail";
 import useQueryProductAvailability from "~/features/product/hooks/use_query_product_availability";
-import { useQueryProductPrices } from "~/features/product/hooks/use_query_product_prices"; // Import price query hook
+import { useQueryVariantPrices } from "~/features/product/hooks/use_query_variant_prices"; // Import variant pricing hook
 import ProductDesigner from "~/features/design/components/product_designer"; // Import the new component
 import {
   Grid,
@@ -86,20 +86,26 @@ export default function ProductDetail() {
 
   const product = productResponse.data;
   const variants = variantsResponse.data;
-  console.log("product", product);
-
-  // Fetch product pricing data
-  const {
-    data: priceData,
-    isLoading: priceLoading,
-    error: priceError,
-  } = useQueryProductPrices(product.id.toString());
+  console.log("variants", variants);
 
   const [selectedVariantIndex, setSelectedVariantIndex] = useState(0);
   const [selectedTechnique, setSelectedTechnique] = useState<string>(
     product.techniques[0]?.key || ""
   );
   const selectedVariant = variants[selectedVariantIndex];
+  // Fetch pricing data for the selected variant
+  console.log("selectedVariant", selectedVariant);
+  const {
+    data: variantPriceData,
+    isLoading: variantPriceLoading,
+    error: variantPriceError,
+  } = useQueryVariantPrices(selectedVariant?.id?.toString());
+  // Find technique-specific pricing for display
+  const techniquePricing = useMemo(() => {
+    return variantPriceData?.variant.techniques.find(
+      (tech) => tech.technique_key === selectedTechnique
+    );
+  }, [variantPriceData, selectedTechnique]);
 
   // Get product availability data using our custom hook
   const {
@@ -359,10 +365,10 @@ export default function ProductDetail() {
                     />
                   )}
                 </Stack>
-                {/* Note: In v2 API, we'd need to make a separate API call to get the price. */}
-                {priceLoading ? (
+                {/* Note: Pricing for the selected variant technique */}
+                {variantPriceLoading ? (
                   <CircularProgress size={24} />
-                ) : priceError ? (
+                ) : variantPriceError ? (
                   <Alert severity="error">Error loading price</Alert>
                 ) : (
                   <Typography
@@ -377,8 +383,9 @@ export default function ProductDetail() {
                       bgcolor: "rgba(94, 106, 210, 0.08)",
                     }}
                   >
-                    {priceData?.currency}{" "}
-                    {priceData?.product.placements[0]?.price}
+                    {variantPriceData?.currency}{" "}
+                    {techniquePricing?.discounted_price ??
+                      techniquePricing?.price}
                   </Typography>
                 )}
               </Box>

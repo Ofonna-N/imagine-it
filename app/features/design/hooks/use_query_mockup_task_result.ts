@@ -91,7 +91,6 @@ export const useQueryMockupTaskResult = (
       if (!taskIds?.length) {
         return Promise.reject(new Error("Task IDDs are required."));
       }
-      console.log("Fetching mockup task result for taskIds:", taskIds);
       return fetchMockupTaskResult(taskIds);
     },
     ...options,

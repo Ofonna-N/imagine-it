@@ -36,7 +36,6 @@ export const useQueryProductPrices = (
     ["productPrices", string]
   >
 ) => {
-  console.log("useQueryProductPrices", productId, options);
   return useQuery({
     queryKey: ["productPrices", productId ?? ""],
     queryFn: async () => {
