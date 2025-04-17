@@ -84,7 +84,7 @@ export default function ProductDetail() {
 
   const product = productResponse.data;
   const variants = variantsResponse.data;
-  // const mockupStyles = mockupStylesResponse.data; // Removed: Data fetched in designer
+  console.log("product", product);
 
   const [selectedVariantIndex, setSelectedVariantIndex] = useState(0);
   const selectedVariant = variants[selectedVariantIndex];

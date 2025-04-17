@@ -16,10 +16,10 @@ import {
   InputLabel,
   Grid,
   TextField,
+  InputAdornment,
   Card,
   CardMedia,
-  LinearProgress,
-  InputAdornment,
+  type SelectChangeEvent,
 } from "@mui/material";
 import { FiX, FiImage } from "react-icons/fi";
 import type {
@@ -28,6 +28,7 @@ import type {
   PrintfulV2MockupStyleGroup,
   PrintfulV2MockupStyle,
   PrintfulV2MockupGeneratorTaskRequest,
+  ProductOption,
 } from "~/types/printful";
 import { useQueryProductMockupStyles } from "../hooks/use_query_product_mockup_styles";
 import { useMutateCreateMockupTask } from "../hooks/use_mutate_create_mockup_task";
@@ -58,7 +59,7 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
     number[]
   >([]);
   const [imageUrl, setImageUrl] = useState<string>(
-    MOCK_STORAGE_IMAGE_URLS[0] ?? "" // Use nullish coalescing
+    MOCK_STORAGE_IMAGE_URLS[0] ?? ""
   );
   const [generatedTaskIds, setGeneratedTaskIds] = useState<number[] | null>(
     null
@@ -69,6 +70,44 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
   const [selectedPreviewMockupUrl, setSelectedPreviewMockupUrl] = useState<
     string | null
   >(null);
+
+  // --- State for product option selection --- //
+  const [selectedCatalogOptionName, setSelectedCatalogOptionName] =
+    useState<string>("");
+
+  // --- State for selected product options --- //
+  // Keep selected options as an array of ProductOption objects
+  const [productOptions, setProductOptions] = useState<ProductOption[]>([]);
+
+  // console.log("Product Options:", productOptions);
+  // --- Helper: Get required product options (excluding 'notes') --- //
+  const requiredProductOptions = useMemo(() => {
+    return (product.product_options || []).filter(
+      (opt) => opt.name !== "notes"
+    );
+  }, [product.product_options]);
+
+  // --- Handler: selecting an option value --- //
+  const handleCatalogOptionValueChange = (e: SelectChangeEvent<string>) => {
+    const raw = e.target.value as string;
+    const meta = requiredProductOptions.find(
+      (o) => o.name === selectedCatalogOptionName
+    );
+    let value: string | number | boolean = raw;
+    if (meta) {
+      if (meta.values.includes(true) || meta.values.includes(false)) {
+        value = raw === "true";
+      } else if (meta.values.some((v) => typeof v === "number")) {
+        const num = Number(raw);
+        if (!Number.isNaN(num) && meta.values.includes(num)) value = num;
+      }
+    }
+    setProductOptions((prev) =>
+      prev.map((opt) =>
+        opt.name === selectedCatalogOptionName ? { ...opt, value } : opt
+      )
+    );
+  };
 
   // --- Hooks --- //
 
@@ -177,10 +216,19 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
     if (!mockupStyleGroups || !selectedTechnique) return [];
     return mockupStyleGroups
       .filter((group) => group.technique === selectedTechnique)
-      .map((group) => ({
-        placement: group.placement,
-        display_name: group.display_name,
-      }));
+      .map(
+        (group) =>
+          ({
+            placement: group.placement,
+            display_name: group.display_name,
+            dpi: group.dpi,
+            print_area_type: group.print_area_type,
+            mockup_styles: group.mockup_styles,
+            print_area_height: group.print_area_height,
+            print_area_width: group.print_area_width,
+            technique: group.technique,
+          } as Partial<PrintfulV2MockupStyleGroup>)
+      );
   }, [mockupStyleGroups, selectedTechnique]);
 
   // Get the style groups for the selected placements
@@ -260,6 +308,7 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
       console.error("Could not determine style group for placement.");
       return;
     }
+    console.log("selectedTechnique", selectedTechnique);
     const requestBody: PrintfulV2MockupGeneratorTaskRequest = {
       format: "png",
       products: [
@@ -273,17 +322,21 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
             return {
               placement: placementObj.placement,
               technique: selectedTechnique,
-              layers: [
-                {
-                  type: "file",
-                  url: imageUrl,
-                },
-              ],
+              layers: [{ type: "file", url: imageUrl }],
+              placement_options:
+                selectedTechnique === "embroidery" &&
+                product.placements.some((p) =>
+                  p.placement_options?.some((o) => o.name === "unlimited_color")
+                )
+                  ? [{ name: "unlimited_color", value: true }]
+                  : [],
             };
           }),
+          product_options: productOptions,
         },
       ],
     };
+    console.log("Request Body:", requestBody);
     createMockupTask(requestBody);
   };
 
@@ -334,29 +387,44 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
             <Select
               labelId="placement-select-label"
               multiple
-              value={selectedPlacements}
+              value={selectedPlacements} // Stores stringified placement objects
               label="Placement(s)"
               onChange={(e) =>
                 handlePlacementChange(e.target.value as string[])
               }
+              // Render the selected values in the input field
               renderValue={(selected) =>
                 (selected as string[])
-                  .map((p) => JSON.parse(p).display_name)
+                  .map((placementStr) => {
+                    try {
+                      // Parse the stringified object to access its properties
+                      const placementObj = JSON.parse(placementStr);
+                      // Display name and print area type for uniqueness
+                      return `${placementObj.display_name} (${placementObj.print_area_type})`;
+                    } catch (error) {
+                      console.error("Error parsing placement JSON:", error);
+                      return "Invalid Placement"; // Fallback display
+                    }
+                  })
                   .join(", ")
               }
             >
+              {/* Generate menu items for each available placement */}
               {availablePlacements.map((placementObj) => (
                 <MenuItem
-                  key={placementObj.placement}
+                  // Use a composite key for guaranteed uniqueness in React rendering
+                  key={`${placementObj.placement}-${placementObj.print_area_type}`}
+                  // Store the entire placement object as a JSON string in the value
                   value={JSON.stringify(placementObj)}
                 >
-                  {placementObj.display_name}
+                  {/* Display name and print area type in the dropdown list */}
+                  {`${placementObj.display_name} (${placementObj.print_area_type})`}
                 </MenuItem>
               ))}
             </Select>
           </FormControl>
         </Grid>
-        {/* Preview Style Selector (depends on first selected placement) */}
+        {/* Preview Style Selector */}
         <Grid size={{ xs: 12, sm: 6 }}>
           <FormControl
             fullWidth
@@ -402,6 +470,78 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
             </Select>
           </FormControl>
         </Grid>
+
+        {/* Product Option Selector */}
+        <Grid size={{ xs: 12, sm: 6 }}>
+          <FormControl
+            fullWidth
+            required
+            disabled={requiredProductOptions.length === 0}
+          >
+            <InputLabel id="catalog-option-select-label">
+              Product Option
+            </InputLabel>
+            <Select
+              labelId="catalog-option-select-label"
+              value={selectedCatalogOptionName}
+              label="Product Option"
+              onChange={(e) => {
+                const name = e.target.value as string;
+                setSelectedCatalogOptionName(name);
+                const meta = requiredProductOptions.find(
+                  (o) => o.name === name
+                );
+                if (meta) {
+                  // initialize default entry or replace existing
+                  const defaultVal = meta.values[0];
+                  setProductOptions((prev) => [
+                    ...prev.filter((o) => o.name !== name),
+                    { name, value: defaultVal } as ProductOption,
+                  ]);
+                }
+              }}
+            >
+              <MenuItem value="" disabled>
+                <em>Select Option</em>
+              </MenuItem>
+              {requiredProductOptions.map((opt) => (
+                <MenuItem key={opt.name} value={opt.name}>
+                  {opt.name.replace(/_/g, " ")}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Grid>
+
+        {/* Product Option Value Selector */}
+        {selectedCatalogOptionName && (
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <FormControl fullWidth required>
+              <InputLabel id="catalog-option-value-select-label">
+                Value
+              </InputLabel>
+              <Select
+                labelId="catalog-option-value-select-label"
+                value={String(
+                  productOptions.find(
+                    (o) => o.name === selectedCatalogOptionName
+                  )?.value ?? ""
+                )}
+                label="Value"
+                onChange={handleCatalogOptionValueChange}
+              >
+                {requiredProductOptions
+                  .find((o) => o.name === selectedCatalogOptionName)
+                  ?.values?.map((val) => (
+                    <MenuItem key={String(val)} value={String(val)}>
+                      {String(val)}
+                    </MenuItem>
+                  ))}
+              </Select>
+            </FormControl>
+          </Grid>
+        )}
+
         {/* Image Input */}
         <Grid size={{ xs: 12 }}>
           <TextField
@@ -424,7 +564,6 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
       </Grid>
     );
   };
-  console.log("imageUrl", galleryImages);
 
   // --- Preview Gallery UI --- //
   const renderPreviewGallery = () => {
