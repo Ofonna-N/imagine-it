@@ -40,6 +40,7 @@ interface ProductDesignerProps {
   onClose: () => void;
   product: PrintfulV2CatalogProduct;
   selectedVariant: PrintfulV2CatalogVariant;
+  selectedTechnique: string;
 }
 
 /**
@@ -51,9 +52,9 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
   onClose,
   product,
   selectedVariant,
+  selectedTechnique,
 }) => {
   // --- State --- //
-  const [selectedTechnique, setSelectedTechnique] = useState<string>("");
   const [selectedPlacements, setSelectedPlacements] = useState<string[]>([]);
   const [selectedMockupStyleIds, setSelectedMockupStyleIds] = useState<
     number[]
@@ -193,7 +194,6 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
   // Reset state when dialog closes
   useEffect(() => {
     if (!open) {
-      setSelectedTechnique("");
       setSelectedPlacements([]);
       setSelectedMockupStyleIds([]);
       setGeneratedTaskIds(null);
@@ -281,12 +281,6 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
 
   // --- Event Handlers --- //
 
-  const handleTechniqueChange = (technique: string) => {
-    setSelectedTechnique(technique);
-    setSelectedPlacements([]);
-    setSelectedMockupStyleIds([]);
-  };
-
   const handlePlacementChange = (placements: string[]) => {
     setSelectedPlacements(placements);
     setSelectedMockupStyleIds([]);
@@ -359,27 +353,6 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
     }
     return (
       <Grid container spacing={3}>
-        {/* Technique Selector */}
-        <Grid size={{ xs: 12, sm: 6 }}>
-          <FormControl fullWidth required>
-            <InputLabel id="technique-select-label">Technique</InputLabel>
-            <Select
-              labelId="technique-select-label"
-              value={selectedTechnique}
-              label="Technique"
-              onChange={(e) => handleTechniqueChange(e.target.value)}
-            >
-              <MenuItem value="" disabled>
-                <em>Select Technique</em>
-              </MenuItem>
-              {availableTechniques.map((technique) => (
-                <MenuItem key={technique} value={technique}>
-                  {technique}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Grid>
         {/* Placement Selector (multi-select) */}
         <Grid size={{ xs: 12, sm: 6 }}>
           <FormControl fullWidth required disabled={!selectedTechnique}>
@@ -429,7 +402,7 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
           <FormControl
             fullWidth
             required
-            disabled={selectedPlacements.length === 0}
+            disabled={selectedPlacements.length === 0 || !selectedTechnique}
           >
             <InputLabel id="mockup-style-select-label">
               Preview Style

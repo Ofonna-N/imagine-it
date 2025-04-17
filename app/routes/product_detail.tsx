@@ -1,22 +1,3 @@
-import {
-  Grid,
-  Box,
-  Paper,
-  Typography,
-  Button,
-  Stack,
-  Chip,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-  Fade,
-  Breadcrumbs,
-  Link as MuiLink,
-  Zoom,
-  Divider,
-  Alert,
-  CircularProgress,
-} from "@mui/material";
 import { useState } from "react";
 import { useLoaderData, Link, isRouteErrorResponse } from "react-router";
 import {
@@ -45,6 +26,29 @@ import { APP_ROUTES } from "../constants/route_paths";
 import type { Route } from "./+types/product_detail";
 import useQueryProductAvailability from "~/features/product/hooks/use_query_product_availability";
 import ProductDesigner from "~/features/design/components/product_designer"; // Import the new component
+import {
+  Grid,
+  Box,
+  Paper,
+  Typography,
+  Button,
+  Stack,
+  Chip,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  Fade,
+  Breadcrumbs,
+  Link as MuiLink,
+  Zoom,
+  Divider,
+  Alert,
+  CircularProgress,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+} from "@mui/material";
 
 export async function loader({ params }: { params: { productId: string } }) {
   if (!params.productId) {
@@ -87,6 +91,10 @@ export default function ProductDetail() {
   console.log("product", product);
 
   const [selectedVariantIndex, setSelectedVariantIndex] = useState(0);
+  // Technique selection moved here
+  const [selectedTechnique, setSelectedTechnique] = useState<string>(
+    product.techniques[0]?.key || ""
+  );
   const selectedVariant = variants[selectedVariantIndex];
 
   // Get product availability data using our custom hook
@@ -509,7 +517,22 @@ export default function ProductDetail() {
                   </Box>
                   Purchase Options
                 </Typography>
-
+                {/* Technique Selector */}
+                <FormControl fullWidth required sx={{ mb: 2 }}>
+                  <InputLabel id="detail-technique-select-label">Technique</InputLabel>
+                  <Select
+                    labelId="detail-technique-select-label"
+                    value={selectedTechnique}
+                    label="Technique"
+                    onChange={(e) => setSelectedTechnique(e.target.value)}
+                  >
+                    {product.techniques.map((tech) => (
+                      <MenuItem key={tech.key} value={tech.key}>
+                        {tech.display_name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
                 <Stack spacing={2}>
                   <Button
                     variant="contained"
@@ -527,6 +550,7 @@ export default function ProductDetail() {
                       },
                     }}
                     onClick={handleOpenDesigner} // Add onClick handler
+                    disabled={!selectedTechnique}
                   >
                     Design Product
                   </Button>
@@ -762,6 +786,7 @@ export default function ProductDetail() {
         onClose={handleCloseDesigner}
         product={product}
         selectedVariant={selectedVariant}
+        selectedTechnique={selectedTechnique}
       />
     </Box>
   );
