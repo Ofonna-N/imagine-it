@@ -461,17 +461,11 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
               onChange={(e) => {
                 const name = e.target.value as string;
                 setSelectedCatalogOptionName(name);
-                const meta = requiredProductOptions.find(
-                  (o) => o.name === name
-                );
-                if (meta) {
-                  // initialize default entry or replace existing
-                  const defaultVal = meta.values[0];
-                  setProductOptions((prev) => [
-                    ...prev.filter((o) => o.name !== name),
-                    { name, value: defaultVal } as ProductOption,
-                  ]);
-                }
+                // Set this option to true
+                setProductOptions((prev) => [
+                  ...prev.filter((o) => o.name !== name),
+                  { name, value: true } as ProductOption,
+                ]);
               }}
             >
               <MenuItem value="" disabled>
@@ -485,35 +479,6 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
             </Select>
           </FormControl>
         </Grid>
-
-        {/* Product Option Value Selector */}
-        {selectedCatalogOptionName && (
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <FormControl fullWidth required>
-              <InputLabel id="catalog-option-value-select-label">
-                Value
-              </InputLabel>
-              <Select
-                labelId="catalog-option-value-select-label"
-                value={String(
-                  productOptions.find(
-                    (o) => o.name === selectedCatalogOptionName
-                  )?.value ?? ""
-                )}
-                label="Value"
-                onChange={handleCatalogOptionValueChange}
-              >
-                {requiredProductOptions
-                  .find((o) => o.name === selectedCatalogOptionName)
-                  ?.values?.map((val) => (
-                    <MenuItem key={String(val)} value={String(val)}>
-                      {String(val)}
-                    </MenuItem>
-                  ))}
-              </Select>
-            </FormControl>
-          </Grid>
-        )}
 
         {/* Image Input */}
         <Grid size={{ xs: 12 }}>
