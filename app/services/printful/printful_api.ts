@@ -10,6 +10,7 @@ import type {
   PrintfulV2ProductAvailabilityResponse,
   PrintfulV2CategoriesResponse,
   PrintfulV2MockupStylesResponse, // Added
+  PrintfulV2CatalogProductPricesResponse, // Add import for product pricing response
 } from "../../types/printful";
 
 /**
@@ -46,7 +47,8 @@ export async function fetchFromPrintful<T>(
     let errorMessage = `Printful API error: ${response.status}`;
     try {
       const errorData = await response.json();
-      errorMessage = errorData.error?.message || errorMessage;
+      // Replace logical OR with nullish coalescing for error message
+      errorMessage = errorData.error?.message ?? errorMessage;
     } catch (e) {
       // If we can't parse the error response, use the default error message
       console.error("Failed to parse error response:", e);
@@ -192,5 +194,15 @@ export async function createPrintfulMockupTask(body: any) {
 export async function fetchCatalogProductMockupStyles(productId: string) {
   return fetchFromPrintful<PrintfulV2MockupStylesResponse>(
     `/v2/catalog-products/${productId}/mockup-styles`
+  );
+}
+
+/**
+ * GET /v2/catalog-products/{id}/prices
+ * Utility: Fetches catalog product pricing information.
+ */
+export async function fetchCatalogProductPrices(productId: string) {
+  return fetchFromPrintful<PrintfulV2CatalogProductPricesResponse>(
+    `/v2/catalog-products/${productId}/prices`
   );
 }
