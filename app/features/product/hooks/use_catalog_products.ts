@@ -60,6 +60,7 @@ const useQueryCatalogProducts = ({
       };
     },
     ...options,
+    staleTime: 45 * 60 * 1000, // 5 minutes
   });
 };
 
