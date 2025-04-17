@@ -331,7 +331,7 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
       ],
     };
     console.log("Request Body:", requestBody);
-    createMockupTask(requestBody);
+    // createMockupTask(requestBody);
   };
 
   // --- Render Logic --- //

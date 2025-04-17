@@ -44,10 +44,8 @@ import {
   Divider,
   Alert,
   CircularProgress,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
+  ToggleButtonGroup,
+  ToggleButton,
 } from "@mui/material";
 
 export async function loader({ params }: { params: { productId: string } }) {
@@ -373,7 +371,7 @@ export default function ProductDetail() {
                 </Typography>
               </Box>
 
-              {/* Color and Size Selection */}
+              {/* Technique Picker above Color/Size */}
               <Paper
                 elevation={1}
                 sx={{
@@ -383,6 +381,35 @@ export default function ProductDetail() {
                   bgcolor: "background.default",
                 }}
               >
+                <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                  Technique
+                </Typography>
+                <ToggleButtonGroup
+                  exclusive
+                  size="small"
+                  value={selectedTechnique}
+                  onChange={(_, val) => val && setSelectedTechnique(val)}
+                  sx={{ mb: 3 }}
+                  color="primary"
+                >
+                  {product.techniques.map((tech) => (
+                    <ToggleButton
+                      key={tech.key}
+                      value={tech.key}
+                      sx={{
+                        color:
+                          selectedTechnique === tech.key
+                            ? "primary"
+                            : "text.primary",
+                        fontWeight: selectedTechnique === tech.key ? 700 : 400,
+                      }}
+                    >
+                      {tech.display_name}
+                    </ToggleButton>
+                  ))}
+                </ToggleButtonGroup>
+
+                {/* Color and Size Selection */}
                 <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
                   Color: {selectedVariant.color}
                 </Typography>
@@ -517,22 +544,6 @@ export default function ProductDetail() {
                   </Box>
                   Purchase Options
                 </Typography>
-                {/* Technique Selector */}
-                <FormControl fullWidth required sx={{ mb: 2 }}>
-                  <InputLabel id="detail-technique-select-label">Technique</InputLabel>
-                  <Select
-                    labelId="detail-technique-select-label"
-                    value={selectedTechnique}
-                    label="Technique"
-                    onChange={(e) => setSelectedTechnique(e.target.value)}
-                  >
-                    {product.techniques.map((tech) => (
-                      <MenuItem key={tech.key} value={tech.key}>
-                        {tech.display_name}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
                 <Stack spacing={2}>
                   <Button
                     variant="contained"
