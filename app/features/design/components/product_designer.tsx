@@ -258,6 +258,7 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
     null
   );
 
+  console.log("selectedmockupStyleIds", selectedMockupStyleIds);
   // --- Memoized gallery images from mockup task response --- //
   const galleryImages = useMemo(() => {
     if (!taskResultResponse?.data) return [];
@@ -281,9 +282,35 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
 
   // --- Event Handlers --- //
 
+  console.log("placement", selectedPlacements);
   const handlePlacementChange = (placements: string[]) => {
     setSelectedPlacements(placements);
-    setSelectedMockupStyleIds([]);
+
+    // For each selected placement, pick one mockup style whose view_name matches (case-insensitive)
+    const autoStyleIds = placements
+      .map((p) => {
+        const placementKey = (() => {
+          try {
+            return JSON.parse(p).placement.toLowerCase();
+          } catch {
+            return p.toLowerCase();
+          }
+        })();
+        // Find the style group matching this placement
+        const group = (mockupStyleGroups ?? []).find(
+          (g) => g.placement.toLowerCase() === placementKey
+        );
+        if (!group) return null;
+        // Find a style whose view_name matches, else fallback to first style
+        const style = (group.mockup_styles ?? []).find(
+          (s) => s.view_name.toLowerCase() === placementKey
+        );
+        return style?.id ?? group.mockup_styles?.[0]?.id ?? null;
+      })
+      .filter((id): id is number => id !== null);
+
+    // Remove duplicate style IDs
+    setSelectedMockupStyleIds(Array.from(new Set(autoStyleIds)));
   };
 
   const handleGeneratePreview = () => {
@@ -412,13 +439,13 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
               multiple
               value={selectedMockupStyleIds}
               label="Preview Style"
-              onChange={(e) =>
-                setSelectedMockupStyleIds(
-                  typeof e.target.value === "string"
-                    ? [Number(e.target.value)]
-                    : (e.target.value as number[])
-                )
-              }
+              onChange={(e) => {
+                const raw = typeof e.target.value === "string"
+                  ? [Number(e.target.value)]
+                  : (e.target.value as number[]);
+                // Deduplicate manual selections
+                setSelectedMockupStyleIds(Array.from(new Set(raw)));
+              }}
               renderValue={(selected) =>
                 (selected as number[])
                   .map(
