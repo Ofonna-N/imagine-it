@@ -202,6 +202,17 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
     }
   }, [open, resetCreateMutation]);
 
+  // Default select the first product option when dialog opens
+  useEffect(() => {
+    if (open && requiredProductOptions.length > 0) {
+      const firstOpt = requiredProductOptions[0];
+      setSelectedCatalogOptionName(firstOpt.name);
+      setProductOptions([
+        { name: firstOpt.name, value: firstOpt.values[0] } as ProductOption,
+      ]);
+    }
+  }, [open, requiredProductOptions]);
+
   // --- Memoized Values --- //
 
   // Get all unique techniques from the mockup style groups
