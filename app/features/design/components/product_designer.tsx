@@ -19,6 +19,7 @@ import {
   InputAdornment,
   Card,
   CardMedia,
+  Paper,
   type SelectChangeEvent,
 } from "@mui/material";
 import { FiX, FiImage } from "react-icons/fi";
@@ -375,246 +376,302 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
 
   // --- Render Logic --- //
 
-  // --- AI Image Generation Integration --- //
-  // This section adds a button to open the AI image generator dialog/modal
-  const [openImageGen, setOpenImageGen] = useState(false);
-  const [aiImageUrl, setAiImageUrl] = useState<string | null>(null);
+  // --- Collapsible for secondary controls --- //
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
-  // Handler to receive image from generator
+  // --- AI Image Modal State & Handlers --- //
+  const [openImageGen, setOpenImageGen] = useState(false);
   const handleImageGenerated = (url: string) => {
-    setAiImageUrl(url);
-    setImageUrl(url); // Use the generated image in the designer
+    setImageUrl(url);
     setOpenImageGen(false);
   };
 
-  const renderDesignerControls = () => {
-    if (isLoadingStyles) {
-      return <CircularProgress />;
-    }
-    if (isErrorStyles) {
-      return (
-        <Alert severity="error">
-          Error loading design options:{" "}
-          {errorStyles?.message || "Unknown error"}
-        </Alert>
-      );
-    }
-    if (!mockupStyleGroups || mockupStyleGroups.length === 0) {
-      return <Alert severity="info">No design options available.</Alert>;
-    }
-    return (
-      <Grid container spacing={3}>
-        {/* Placement Selector (multi-select) */}
-        <Grid size={{ xs: 12, sm: 6 }}>
-          <FormControl fullWidth required disabled={!selectedTechnique}>
-            <InputLabel id="placement-select-label">Placement(s)</InputLabel>
-            <Select
-              labelId="placement-select-label"
-              multiple
-              value={selectedPlacements} // Stores stringified placement objects
-              label="Placement(s)"
-              onChange={(e) =>
-                handlePlacementChange(e.target.value as string[])
-              }
-              // Render the selected values in the input field
-              renderValue={(selected) =>
-                (selected as string[])
-                  .map((placementStr) => {
-                    try {
-                      // Parse the stringified object to access its properties
-                      const placementObj = JSON.parse(placementStr);
-                      // Display name and print area type for uniqueness
-                      return `${placementObj.display_name} (${placementObj.print_area_type})`;
-                    } catch (error) {
-                      console.error("Error parsing placement JSON:", error);
-                      return "Invalid Placement"; // Fallback display
-                    }
-                  })
-                  .join(", ")
-              }
-            >
-              {/* Generate menu items for each available placement */}
-              {availablePlacements.map((placementObj) => (
-                <MenuItem
-                  // Use a composite key for guaranteed uniqueness in React rendering
-                  key={`${placementObj.placement}-${placementObj.print_area_type}`}
-                  // Store the entire placement object as a JSON string in the value
-                  value={JSON.stringify(placementObj)}
-                >
-                  {/* Display name and print area type in the dropdown list */}
-                  {`${placementObj.display_name} (${placementObj.print_area_type})`}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Grid>
-        {/* Preview Style Selector */}
-        <Grid size={{ xs: 12, sm: 6 }}>
-          <FormControl
-            fullWidth
-            required
-            disabled={selectedPlacements.length === 0 || !selectedTechnique}
-          >
-            <InputLabel id="mockup-style-select-label">
-              Preview Style
-            </InputLabel>
-            <Select
-              labelId="mockup-style-select-label"
-              multiple
-              value={selectedMockupStyleIds}
-              label="Preview Style"
-              onChange={(e) => {
-                const raw =
-                  typeof e.target.value === "string"
-                    ? [Number(e.target.value)]
-                    : (e.target.value as number[]);
-                // Deduplicate manual selections
-                setSelectedMockupStyleIds(Array.from(new Set(raw)));
-              }}
-              renderValue={(selected) =>
-                (selected as number[])
-                  .map(
-                    (id) =>
-                      availableMockupStyles.find((style) => style.id === id)
-                        ?.category_name +
-                      " - " +
-                      availableMockupStyles.find((style) => style.id === id)
-                        ?.view_name
-                  )
-                  .join(", ")
-              }
-            >
-              <MenuItem value={""} disabled>
-                <em>Select Style</em>
-              </MenuItem>
-              {availableMockupStyles.map((style: PrintfulV2MockupStyle) => (
-                <MenuItem key={style.id} value={style.id}>
-                  {style.category_name} - {style.view_name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Grid>
-
-        {/* Product Option Selector */}
-        <Grid size={{ xs: 12, sm: 6 }}>
-          <FormControl
-            fullWidth
-            required
-            disabled={requiredProductOptions.length === 0}
-          >
-            <InputLabel id="catalog-option-select-label">
-              Product Option
-            </InputLabel>
-            <Select
-              labelId="catalog-option-select-label"
-              value={selectedCatalogOptionName}
-              label="Product Option"
-              onChange={(e) => {
-                const name = e.target.value as string;
-                setSelectedCatalogOptionName(name);
-                // Set this option to true
-                setProductOptions((prev) => [
-                  ...prev.filter((o) => o.name !== name),
-                  { name, value: true } as ProductOption,
-                ]);
-              }}
-            >
-              <MenuItem value="" disabled>
-                <em>Select Option</em>
-              </MenuItem>
-              {requiredProductOptions.map((opt) => (
-                <MenuItem key={opt.name} value={opt.name}>
-                  {opt.name.replace(/_/g, " ")}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Grid>
-
-        {/* Image Input */}
-        <Grid size={{ xs: 12 }}>
-          <TextField
-            fullWidth
-            label="Image URL (Mock)"
-            value={imageUrl}
-            onChange={(e) => setImageUrl(e.target.value)}
-            InputProps={{
-              readOnly: true,
-              startAdornment: (
-                <InputAdornment position="start">
-                  <FiImage />
-                </InputAdornment>
-              ),
-            }}
-            variant="outlined"
-            helperText="Using a predefined image URL for this demo."
-          />
-        </Grid>
-      </Grid>
-    );
-  };
-
-  // --- Preview Gallery UI --- //
+  // --- Render Generated Previews Gallery --- //
   const renderPreviewGallery = () => {
     if (!galleryImages.length) return null;
     return (
-      <Box sx={{ mt: 3 }}>
-        <Typography variant="subtitle1" gutterBottom>
-          Mockup Previews
+      <Box sx={{ mt: 4 }}>
+        <Typography variant="subtitle1" sx={{ mb: 2 }}>
+          Generated Previews
         </Typography>
         <Grid container spacing={2}>
-          {galleryImages.map((img) => (
-            <Grid key={img.mockup_url} size={{ xs: 6, sm: 4, md: 3 }}>
+          {galleryImages.map((img, idx) => (
+            <Grid key={img.mockup_url + idx} size={{ xs: 6, sm: 4, md: 3 }}>
               <Card
                 sx={{
-                  cursor: "pointer",
-                  border: selectedPreviewUrl === img.mockup_url ? 2 : 1,
+                  border: selectedPreviewMockupUrl === img.mockup_url ? 2 : 1,
                   borderColor:
-                    selectedPreviewUrl === img.mockup_url
+                    selectedPreviewMockupUrl === img.mockup_url
                       ? "primary.main"
                       : "divider",
-                  boxShadow: selectedPreviewUrl === img.mockup_url ? 4 : 1,
-                  transition: "box-shadow 0.2s, border-color 0.2s",
+                  cursor: "pointer",
                 }}
-                onClick={() => setSelectedPreviewUrl(img.mockup_url)}
+                onClick={() => setSelectedPreviewMockupUrl(img.mockup_url)}
               >
                 <CardMedia
                   component="img"
                   image={img.mockup_url}
-                  alt={img.placement}
-                  sx={{ objectFit: "contain", height: 120 }}
+                  alt={img.display_name}
+                  sx={{
+                    objectFit: "contain",
+                    height: 120,
+                    bgcolor: "background.paper",
+                  }}
                 />
+                <Box sx={{ p: 1 }}>
+                  <Typography variant="caption" color="text.secondary">
+                    {img.display_name}
+                  </Typography>
+                </Box>
               </Card>
             </Grid>
           ))}
         </Grid>
-        {/* Large preview display */}
-        {selectedPreviewUrl && (
-          <Box sx={{ mt: 4, textAlign: "center" }}>
-            <Typography variant="subtitle2" gutterBottom>
-              Preview
-            </Typography>
-            <Card sx={{ maxWidth: 500, margin: "auto", boxShadow: 6 }}>
-              <CardMedia
-                component="img"
-                image={selectedPreviewUrl}
-                alt="Selected Mockup Preview"
-                sx={{
-                  objectFit: "contain",
-                  maxHeight: 400,
-                  bgcolor: "background.paper",
-                }}
-              />
-            </Card>
-          </Box>
-        )}
       </Box>
     );
   };
 
+  // --- Redesigned UI --- //
   return (
-    <>
+    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+      <DialogTitle sx={{ m: 0, p: 2, fontWeight: 700 }}>
+        Design Your Product
+        <IconButton
+          aria-label="close"
+          onClick={onClose}
+          sx={{
+            position: "absolute",
+            right: 8,
+            top: 8,
+            color: (theme) => theme.palette.grey[500],
+          }}
+        >
+          <FiX />
+        </IconButton>
+      </DialogTitle>
+      <DialogContent dividers sx={{ bgcolor: "background.default" }}>
+        <Grid container spacing={4}>
+          {/* Main Controls: Placement & AI Image */}
+          <Grid size={{ xs: 12, md: 5 }}>
+            <Paper elevation={2} sx={{ p: 3, mb: 3 }}>
+              <Typography variant="h6" gutterBottom>
+                1. Select Placement
+              </Typography>
+              <FormControl fullWidth required>
+                <InputLabel id="placement-select-label">Placement</InputLabel>
+                <Select
+                  labelId="placement-select-label"
+                  value={selectedPlacements[0] || ""}
+                  label="Placement"
+                  onChange={(e) =>
+                    handlePlacementChange([e.target.value as string])
+                  }
+                  renderValue={(selected) => {
+                    try {
+                      const placementObj = JSON.parse(selected as string);
+                      return `${placementObj.display_name} (${placementObj.print_area_type})`;
+                    } catch {
+                      return "Select Placement";
+                    }
+                  }}
+                >
+                  {availablePlacements.map((placementObj) => (
+                    <MenuItem
+                      key={`${placementObj.placement}-${placementObj.print_area_type}`}
+                      value={JSON.stringify(placementObj)}
+                    >
+                      {`${placementObj.display_name} (${placementObj.print_area_type})`}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Paper>
+            <Paper elevation={2} sx={{ p: 3 }}>
+              <Typography variant="h6" gutterBottom>
+                2. AI Image
+              </Typography>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                <Card
+                  sx={{
+                    width: 100,
+                    height: 100,
+                    mr: 2,
+                    boxShadow: 3,
+                    border: imageUrl ? 2 : 1,
+                    borderColor: imageUrl ? "primary.main" : "divider",
+                  }}
+                >
+                  <CardMedia
+                    component="img"
+                    image={imageUrl}
+                    alt="AI Design Preview"
+                    sx={{ objectFit: "contain", width: "100%", height: "100%" }}
+                  />
+                </Card>
+                <Button
+                  variant="outlined"
+                  startIcon={<FiImage />}
+                  onClick={() => setOpenImageGen(true)}
+                  sx={{ minWidth: 120 }}
+                >
+                  {imageUrl ? "Change Image" : "Generate AI Image"}
+                </Button>
+              </Box>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ mt: 1, display: "block" }}
+              >
+                The selected image will be applied to your product.
+              </Typography>
+            </Paper>
+            <Button
+              variant="text"
+              size="small"
+              sx={{ mt: 2, textTransform: "none" }}
+              onClick={() => setShowAdvanced((v) => !v)}
+            >
+              {showAdvanced ? "Hide" : "Show"} Advanced Options
+            </Button>
+            {showAdvanced && (
+              <Paper elevation={1} sx={{ p: 2, mt: 2 }}>
+                <Typography variant="subtitle2" gutterBottom>
+                  Advanced Options
+                </Typography>
+                {/* Preview Style Selector */}
+                <FormControl fullWidth sx={{ mb: 2 }}>
+                  <InputLabel id="mockup-style-select-label">
+                    Preview Style
+                  </InputLabel>
+                  <Select
+                    labelId="mockup-style-select-label"
+                    multiple
+                    value={selectedMockupStyleIds}
+                    label="Preview Style"
+                    onChange={(e) => {
+                      const raw =
+                        typeof e.target.value === "string"
+                          ? [Number(e.target.value)]
+                          : (e.target.value as number[]);
+                      setSelectedMockupStyleIds(Array.from(new Set(raw)));
+                    }}
+                    renderValue={(selected) =>
+                      (selected as number[])
+                        .map(
+                          (id) =>
+                            availableMockupStyles.find(
+                              (style) => style.id === id
+                            )?.category_name +
+                            " - " +
+                            availableMockupStyles.find(
+                              (style) => style.id === id
+                            )?.view_name
+                        )
+                        .join(", ")
+                    }
+                  >
+                    <MenuItem value={""} disabled>
+                      <em>Select Style</em>
+                    </MenuItem>
+                    {availableMockupStyles.map((style) => (
+                      <MenuItem key={style.id} value={style.id}>
+                        {style.category_name} - {style.view_name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+                {/* Product Option Selector */}
+                <FormControl fullWidth>
+                  <InputLabel id="catalog-option-select-label">
+                    Product Option
+                  </InputLabel>
+                  <Select
+                    labelId="catalog-option-select-label"
+                    value={selectedCatalogOptionName}
+                    label="Product Option"
+                    onChange={(e) => {
+                      const name = e.target.value as string;
+                      setSelectedCatalogOptionName(name);
+                      setProductOptions((prev) => [
+                        ...prev.filter((o) => o.name !== name),
+                        { name, value: true } as ProductOption,
+                      ]);
+                    }}
+                  >
+                    <MenuItem value="" disabled>
+                      <em>Select Option</em>
+                    </MenuItem>
+                    {requiredProductOptions.map((opt) => (
+                      <MenuItem key={opt.name} value={opt.name}>
+                        {opt.name.replace(/_/g, " ")}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Paper>
+            )}
+          </Grid>
+          {/* Right Side: Large Preview & Action */}
+          <Grid size={{ xs: 12, md: 7 }}>
+            <Paper
+              elevation={3}
+              sx={{
+                p: 4,
+                minHeight: 420,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Typography variant="h6" sx={{ mb: 2 }}>
+                Preview
+              </Typography>
+              <Card sx={{ maxWidth: 350, width: "100%", mb: 2, boxShadow: 6 }}>
+                <CardMedia
+                  component="img"
+                  image={imageUrl}
+                  alt="Product Preview"
+                  sx={{
+                    objectFit: "contain",
+                    maxHeight: 300,
+                    bgcolor: "background.paper",
+                  }}
+                />
+              </Card>
+              <Button
+                variant="contained"
+                size="large"
+                onClick={handleGeneratePreview}
+                disabled={
+                  isLoadingStyles ||
+                  !selectedTechnique ||
+                  selectedPlacements.length === 0 ||
+                  selectedMockupStyleIds.length === 0 ||
+                  !imageUrl ||
+                  isCreatingTask ||
+                  !!generatedTaskIds
+                }
+                startIcon={
+                  isCreatingTask ? <CircularProgress size={20} /> : null
+                }
+                sx={{ mt: 2, minWidth: 200 }}
+              >
+                {generatedTaskIds
+                  ? "Generating..."
+                  : "Generate Product Preview"}
+              </Button>
+              {generatedMockupUrl && (
+                <Alert severity="success" sx={{ mt: 3 }}>
+                  Mockup generated! Scroll down to see your preview.
+                </Alert>
+              )}
+            </Paper>
+            {/* Gallery of generated previews */}
+            {renderPreviewGallery()}
+          </Grid>
+        </Grid>
+      </DialogContent>
       {/* AI Image Generation Modal */}
       <Dialog
         open={openImageGen}
@@ -632,67 +689,7 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
           </Button>
         </DialogActions>
       </Dialog>
-      {/* Main Product Designer Dialog */}
-      <Dialog open={open} onClose={onClose} maxWidth="lg" fullWidth>
-        <DialogTitle sx={{ m: 0, p: 2 }}>
-          Design: {product.name}
-          <IconButton
-            aria-label="close"
-            onClick={onClose}
-            sx={{
-              position: "absolute",
-              right: 8,
-              top: 8,
-              color: (theme) => theme.palette.grey[500],
-            }}
-          >
-            <FiX />
-          </IconButton>
-        </DialogTitle>
-        <DialogContent dividers>
-          <Grid container spacing={4}>
-            {/* Left Side: Controls */}
-            <Grid size={{ xs: 12, md: 5 }}>
-              <Typography variant="h6" gutterBottom>
-                Design Options
-              </Typography>
-              <Button
-                variant="outlined"
-                startIcon={<FiImage />}
-                sx={{ mb: 2 }}
-                onClick={() => setOpenImageGen(true)}
-              >
-                Generate AI Image
-              </Button>
-              {renderDesignerControls()}
-            </Grid>
-            {/* Right Side: Gallery */}
-            <Grid size={{ xs: 12, md: 7 }}>{renderPreviewGallery()}</Grid>
-          </Grid>
-        </DialogContent>
-        <DialogActions sx={{ justifyContent: "space-between", px: 3, py: 2 }}>
-          <Button onClick={onClose} color="inherit">
-            Cancel
-          </Button>
-          <Button
-            variant="contained"
-            onClick={handleGeneratePreview}
-            disabled={
-              isLoadingStyles ||
-              !selectedTechnique ||
-              selectedPlacements.length === 0 ||
-              selectedMockupStyleIds.length === 0 ||
-              !imageUrl || // Also disable if no image URL
-              isCreatingTask ||
-              !!generatedTaskIds
-            }
-            startIcon={isCreatingTask ? <CircularProgress size={20} /> : null}
-          >
-            {generatedTaskIds ? "Generating..." : "Generate Preview"}
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </>
+    </Dialog>
   );
 };
 
