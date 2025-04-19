@@ -188,14 +188,23 @@ export async function createPrintfulMockupTask(body: any) {
 
 /**
  * Fetches mockup styles for a specific catalog product from Printful API v2
+ * Supports filtering by placements via query parameter.
  *
- * GET /v2/catalog-products/{id}/mockup-styles
- * Utility: Retrieves available mockup style groups for a given product.
+ * @param productId The catalog product ID
+ * @param placements Optional array of placement identifiers to filter styles
  */
-export async function fetchCatalogProductMockupStyles(productId: string) {
-  return fetchFromPrintful<PrintfulV2MockupStylesResponse>(
-    `/v2/catalog-products/${productId}/mockup-styles`
-  );
+export async function fetchCatalogProductMockupStyles(
+  productId: string,
+  placements?: string[]
+) {
+  // Build endpoint with optional placements filter
+  let endpoint = `/v2/catalog-products/${productId}/mockup-styles`;
+  if (placements && placements.length > 0) {
+    const params = new URLSearchParams();
+    params.append("placements", placements.join(","));
+    endpoint += `?${params.toString()}`;
+  }
+  return fetchFromPrintful<PrintfulV2MockupStylesResponse>(endpoint);
 }
 
 /**

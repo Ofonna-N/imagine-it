@@ -98,9 +98,17 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
   // Assuming useQueryProductMockupStyles returns the array directly in its 'data' property
   // (e.g., via a 'select' option in the hook implementation)
   const { data: mockupStyleGroups, isLoading: isLoadingStyles } =
-    useQueryProductMockupStyles(open ? product.id.toString() : undefined, {
-      enabled: open,
-    });
+    useQueryProductMockupStyles(
+      open ? product.id.toString() : undefined,
+      selectedPlacements.map((p) => {
+        try {
+          return JSON.parse(p).placement;
+        } catch {
+          return p;
+        }
+      }),
+      { enabled: open }
+    );
   console.log("mockupStyleGroups", mockupStyleGroups);
   // Mutation hook to create a mockup task
   const {
@@ -210,9 +218,11 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
   }, [mockupStyleGroups, selectedTechnique]);
 
   // Get the style groups for the selected placements
-  const selectedStyleGroups = useMemo(() => {
+  // Get available mockup styles for all selected placements
+  const availableMockupStyles = useMemo(() => {
     if (!mockupStyleGroups || selectedPlacements.length === 0) return [];
-    // selectedPlacements is now string[], so parse each to get the placement value
+
+    // Get all placements from the selected items
     const selectedPlacementValues = selectedPlacements.map((p) => {
       try {
         return JSON.parse(p).placement;
@@ -220,17 +230,38 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
         return p;
       }
     });
-    return mockupStyleGroups.filter((group) =>
+
+    // Get all style groups that match the selected placements
+    const relevantGroups = mockupStyleGroups.filter((group) =>
       selectedPlacementValues.includes(group.placement)
     );
-  }, [mockupStyleGroups, selectedPlacements]);
 
-  // Get available mockup styles for the first selected placement
-  const availableMockupStyles = useMemo(() => {
-    if (selectedStyleGroups.length === 0) return [];
-    return selectedStyleGroups[0].mockup_styles ?? [];
-  }, [selectedStyleGroups]);
+    // Get all mockup styles from those groups that are not restricted or are allowed for this variant
+    return relevantGroups.flatMap((group) =>
+      (group.mockup_styles ?? []).filter(
+        (style) =>
+          !style.restricted_to_variants ||
+          style.restricted_to_variants.includes(selectedVariant.id)
+      )
+    );
+  }, [mockupStyleGroups, selectedPlacements, selectedVariant.id]);
 
+  // Select style groups based on the available mockup styles
+  const selectedStyleGroups = useMemo(() => {
+    if (!mockupStyleGroups || availableMockupStyles.length === 0) return [];
+
+    // Get the style IDs that are available
+    const availableStyleIds = availableMockupStyles.map((style) => style.id);
+
+    // Filter groups that contain any of these styles
+    return mockupStyleGroups.filter((group) =>
+      (group.mockup_styles ?? []).some((style) =>
+        availableStyleIds.includes(style.id)
+      )
+    );
+  }, [mockupStyleGroups, availableMockupStyles]);
+
+  console.log("availableMockupStyles", availableMockupStyles);
   console.log("selectedmockupStyleIds", selectedMockupStyleIds);
   // --- Memoized gallery images from mockup task response --- //
   const galleryImages = useMemo(() => {
@@ -270,30 +301,31 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
     setSelectedPlacements(placements);
 
     // For each selected placement, pick one mockup style whose view_name matches (case-insensitive)
-    const autoStyleIds = placements
-      .map((p) => {
-        const placementKey = (() => {
-          try {
-            return JSON.parse(p).placement.toLowerCase();
-          } catch {
-            return p.toLowerCase();
-          }
-        })();
-        // Find the style group matching this placement
-        const group = (mockupStyleGroups ?? []).find(
-          (g) => g.placement.toLowerCase() === placementKey
-        );
-        if (!group) return null;
-        // Find a style whose view_name matches, else fallback to first style
-        const style = (group.mockup_styles ?? []).find(
-          (s) => s.view_name.toLowerCase() === placementKey
-        );
-        return style?.id ?? group.mockup_styles?.[0]?.id ?? null;
-      })
-      .filter((id): id is number => id !== null);
+    // Get placement keys from the selected placements
+    const selectedPlacementKeys = placements.map((p) => {
+      try {
+        return JSON.parse(p).placement.toLowerCase();
+      } catch {
+        return p.toLowerCase();
+      }
+    });
 
-    // Remove duplicate style IDs
-    setSelectedMockupStyleIds(Array.from(new Set(autoStyleIds)));
+    // Filter styles that are:
+    // 1. Available for the selected placements
+    // 2. Not restricted or explicitly allowed for the selected variant
+    const eligibleStyles = availableMockupStyles.filter(
+      (style) =>
+        selectedPlacementKeys.some((placementKey) => {
+          const styleGroup = mockupStyleGroups?.find(
+            (g) =>
+              g.placement.toLowerCase() === placementKey &&
+              g.mockup_styles?.some((ms) => ms.id === style.id)
+          );
+          return !!styleGroup;
+        }) &&
+        (!style.restricted_to_variants ||
+          style.restricted_to_variants.includes(selectedVariant.id))
+    );
   };
 
   const handleGeneratePreview = () => {

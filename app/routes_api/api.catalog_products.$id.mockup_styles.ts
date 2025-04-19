@@ -1,4 +1,5 @@
 import { fetchCatalogProductMockupStyles } from "~/services/printful/printful_api";
+import type { Route } from "./+types/api.catalog_products.$id.mockup_styles";
 
 /**
  * GET /api/catalog-products/:id/mockup-styles
@@ -6,7 +7,7 @@ import { fetchCatalogProductMockupStyles } from "~/services/printful/printful_ap
  *
  * Path is managed via API_ROUTES in route_paths.ts for consistency.
  */
-export async function loader({ params }: { params: { id: string } }) {
+export async function loader({ params, request }: Route.LoaderArgs) {
   if (!params.id) {
     return new Response(JSON.stringify({ error: "Missing product id" }), {
       status: 400,
@@ -14,8 +15,16 @@ export async function loader({ params }: { params: { id: string } }) {
     });
   }
   try {
-    const data = await fetchCatalogProductMockupStyles(params.id);
-    return new Response(JSON.stringify(data), {
+    // Extract placements filter from query params (comma-separated)
+    const url = new URL(request.url);
+    const placementsParam = url.searchParams.get("placements");
+    const placements = placementsParam ? placementsParam.split(",") : undefined;
+    // Fetch mockup styles, with optional placements filter
+    const filteredData = await fetchCatalogProductMockupStyles(
+      params.id,
+      placements
+    );
+    return new Response(JSON.stringify(filteredData), {
       status: 200,
       headers: { "Content-Type": "application/json" },
     });
