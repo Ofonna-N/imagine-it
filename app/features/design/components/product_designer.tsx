@@ -15,14 +15,17 @@ import {
   FormControl,
   InputLabel,
   Grid,
-  TextField,
-  InputAdornment,
   Card,
   CardMedia,
   Paper,
-  type SelectChangeEvent,
 } from "@mui/material";
 import { FiX, FiImage } from "react-icons/fi";
+import { Swiper, SwiperSlide } from "swiper/react";
+import { Navigation, Pagination } from "swiper/modules";
+import "swiper/css";
+import "swiper/css/navigation";
+import "swiper/css/pagination";
+import { motion } from "framer-motion";
 import type {
   PrintfulV2CatalogProduct,
   PrintfulV2CatalogVariant,
@@ -70,9 +73,8 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
   const [generatedMockupUrl, setGeneratedMockupUrl] = useState<string | null>(
     null
   );
-  const [selectedPreviewMockupUrl, setSelectedPreviewMockupUrl] = useState<
-    string | null
-  >(null);
+  const [isGalleryOpen, setIsGalleryOpen] = useState(false);
+  const [galleryInitialIndex, setGalleryInitialIndex] = useState(0);
 
   // --- State for product option selection --- //
   const [selectedCatalogOptionName, setSelectedCatalogOptionName] =
@@ -90,49 +92,20 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
     );
   }, [product.product_options]);
 
-  // --- Handler: selecting an option value --- //
-  const handleCatalogOptionValueChange = (e: SelectChangeEvent<string>) => {
-    const raw = e.target.value as string;
-    const meta = requiredProductOptions.find(
-      (o) => o.name === selectedCatalogOptionName
-    );
-    let value: string | number | boolean = raw;
-    if (meta) {
-      if (meta.values.includes(true) || meta.values.includes(false)) {
-        value = raw === "true";
-      } else if (meta.values.some((v) => typeof v === "number")) {
-        const num = Number(raw);
-        if (!Number.isNaN(num) && meta.values.includes(num)) value = num;
-      }
-    }
-    setProductOptions((prev) =>
-      prev.map((opt) =>
-        opt.name === selectedCatalogOptionName ? { ...opt, value } : opt
-      )
-    );
-  };
-
   // --- Hooks --- //
 
   // Fetch available mockup styles for the product
   // Assuming useQueryProductMockupStyles returns the array directly in its 'data' property
   // (e.g., via a 'select' option in the hook implementation)
-  const {
-    data: mockupStyleGroups, // Renamed: This should now be the array PrintfulV2MockupStyleGroup[] | undefined
-    isLoading: isLoadingStyles,
-    isError: isErrorStyles,
-    error: errorStyles,
-  } = useQueryProductMockupStyles(open ? product.id.toString() : undefined, {
-    enabled: open,
-  });
-  // Removed: const mockupStyleGroups = mockupStyleGroupsResponse?.data;
+  const { data: mockupStyleGroups, isLoading: isLoadingStyles } =
+    useQueryProductMockupStyles(open ? product.id.toString() : undefined, {
+      enabled: open,
+    });
   console.log("mockupStyleGroups", mockupStyleGroups);
   // Mutation hook to create a mockup task
   const {
     mutate: createMockupTask,
     isPending: isCreatingTask,
-    isError: isErrorCreatingTask,
-    error: errorCreatingTask,
     reset: resetCreateMutation,
   } = useMutateCreateMockupTask({
     onSuccess: (response) => {
@@ -155,13 +128,12 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
   });
 
   // Query hook to poll for the mockup task result
-  const {
-    data: taskResultResponse,
-    isFetching: isFetchingTaskResult,
-    error: errorTaskResult,
-  } = useQueryMockupTaskResult(generatedTaskIds, {
-    enabled: !!generatedTaskIds,
-  });
+  const { data: taskResultResponse } = useQueryMockupTaskResult(
+    generatedTaskIds,
+    {
+      enabled: !!generatedTaskIds,
+    }
+  );
   const taskResultData = taskResultResponse?.data?.[0];
 
   // --- Effects --- //
@@ -217,13 +189,6 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
 
   // --- Memoized Values --- //
 
-  // Get all unique techniques from the mockup style groups
-  const availableTechniques = useMemo(() => {
-    if (!mockupStyleGroups) return [];
-    const techniques = mockupStyleGroups.map((group) => group.technique);
-    return Array.from(new Set(techniques));
-  }, [mockupStyleGroups]);
-
   // Get all placements for the selected technique (return objects, not just strings)
   const availablePlacements = useMemo(() => {
     if (!mockupStyleGroups || !selectedTechnique) return [];
@@ -266,11 +231,6 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
     return selectedStyleGroups[0].mockup_styles ?? [];
   }, [selectedStyleGroups]);
 
-  // --- State for preview gallery --- //
-  const [selectedPreviewUrl, setSelectedPreviewUrl] = useState<string | null>(
-    null
-  );
-
   console.log("selectedmockupStyleIds", selectedMockupStyleIds);
   // --- Memoized gallery images from mockup task response --- //
   const galleryImages = useMemo(() => {
@@ -298,7 +258,7 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
     const counts = new Map<string, number>();
     availablePlacements.forEach((p) => {
       const key = `${p.display_name}|${p.print_area_type}`;
-      counts.set(key, (counts.get(key) || 0) + 1);
+      counts.set(key, (counts.get(key) ?? 0) + 1);
     });
     return counts;
   }, [availablePlacements]);
@@ -409,14 +369,14 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
             <Grid key={img.mockup_url + idx} size={{ xs: 6, sm: 4, md: 3 }}>
               <Card
                 sx={{
-                  border: selectedPreviewMockupUrl === img.mockup_url ? 2 : 1,
-                  borderColor:
-                    selectedPreviewMockupUrl === img.mockup_url
-                      ? "primary.main"
-                      : "divider",
+                  border: 1,
+                  borderColor: "divider",
                   cursor: "pointer",
                 }}
-                onClick={() => setSelectedPreviewMockupUrl(img.mockup_url)}
+                onClick={() => {
+                  setGalleryInitialIndex(idx);
+                  setIsGalleryOpen(true);
+                }}
               >
                 <CardMedia
                   component="img"
@@ -473,14 +433,10 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
                   labelId="placement-select-label"
                   value={selectedPlacements[0] || ""}
                   label="Placement"
-                  onChange={(e) =>
-                    handlePlacementChange([e.target.value as string])
-                  }
+                  onChange={(e) => handlePlacementChange([e.target.value])}
                   renderValue={(selected) => {
                     try {
-                      const p = JSON.parse(
-                        selected as string
-                      ) as Partial<PrintfulV2MockupStyleGroup>;
+                      const p = JSON.parse(selected);
                       const key = `${p.display_name}|${p.print_area_type}`;
                       const count = placementLabelCounts.get(key) ?? 0;
                       return count > 1
@@ -584,7 +540,7 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
                       const raw =
                         typeof e.target.value === "string"
                           ? [Number(e.target.value)]
-                          : (e.target.value as number[]);
+                          : e.target.value;
                       setSelectedMockupStyleIds(Array.from(new Set(raw)));
                     }}
                     renderValue={(selected) =>
@@ -622,7 +578,7 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
                     value={selectedCatalogOptionName}
                     label="Product Option"
                     onChange={(e) => {
-                      const name = e.target.value as string;
+                      const name = e.target.value;
                       setSelectedCatalogOptionName(name);
                       setProductOptions((prev) => [
                         ...prev.filter((o) => o.name !== name),
@@ -720,6 +676,56 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
             Cancel
           </Button>
         </DialogActions>
+      </Dialog>
+      {/* Full-screen gallery modal */}
+      <Dialog
+        fullScreen
+        open={isGalleryOpen}
+        onClose={() => setIsGalleryOpen(false)}
+      >
+        <IconButton
+          onClick={() => setIsGalleryOpen(false)}
+          sx={{
+            position: "absolute",
+            top: 16,
+            right: 16,
+            zIndex: 10,
+            color: "white",
+          }}
+        >
+          <FiX size={32} />
+        </IconButton>
+        <DialogContent sx={{ bgcolor: "black", p: 0 }}>
+          <Swiper
+            modules={[Navigation, Pagination]}
+            navigation
+            pagination={{ clickable: true }}
+            initialSlide={galleryInitialIndex}
+            style={{ height: "100vh" }}
+          >
+            {galleryImages.map((img, i) => (
+              <SwiperSlide key={img.mockup_url + i}>
+                <Box
+                  sx={{
+                    display: "flex",
+                    height: "100%",
+                    justifyContent: "center",
+                    alignItems: "center",
+                  }}
+                >
+                  <motion.img
+                    src={img.mockup_url}
+                    alt={img.display_name}
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.4 }}
+                    style={{ maxWidth: "90%", maxHeight: "90%" }}
+                  />
+                </Box>
+              </SwiperSlide>
+            ))}
+          </Swiper>
+        </DialogContent>
       </Dialog>
     </Dialog>
   );
