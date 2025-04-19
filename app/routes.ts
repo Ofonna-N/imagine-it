@@ -26,6 +26,7 @@ export default [
     route(APP_ROUTES.MY_DESIGNS.slice(1), "routes/my_designs.tsx"),
     route(APP_ROUTES.ORDERS.slice(1), "routes/orders.tsx"),
     route(APP_ROUTES.ACCOUNT.slice(1), "routes/account.tsx"),
+    route(APP_ROUTES.IMAGE_GENERATION.slice(1), "routes/image_generation.tsx"),
   ]),
 
   // API routes

@@ -34,6 +34,7 @@ import { useQueryProductMockupStyles } from "../hooks/use_query_product_mockup_s
 import { useMutateCreateMockupTask } from "../hooks/use_mutate_create_mockup_task";
 import { useQueryMockupTaskResult } from "../hooks/use_query_mockup_task_result";
 import { MOCK_STORAGE_IMAGE_URLS } from "~/constants/mock_storage_image_urls";
+import ImageGenerator from "./image_generator";
 
 interface ProductDesignerProps {
   open: boolean;
@@ -374,6 +375,18 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
 
   // --- Render Logic --- //
 
+  // --- AI Image Generation Integration --- //
+  // This section adds a button to open the AI image generator dialog/modal
+  const [openImageGen, setOpenImageGen] = useState(false);
+  const [aiImageUrl, setAiImageUrl] = useState<string | null>(null);
+
+  // Handler to receive image from generator
+  const handleImageGenerated = (url: string) => {
+    setAiImageUrl(url);
+    setImageUrl(url); // Use the generated image in the designer
+    setOpenImageGen(false);
+  };
+
   const renderDesignerControls = () => {
     if (isLoadingStyles) {
       return <CircularProgress />;
@@ -451,9 +464,10 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
               value={selectedMockupStyleIds}
               label="Preview Style"
               onChange={(e) => {
-                const raw = typeof e.target.value === "string"
-                  ? [Number(e.target.value)]
-                  : (e.target.value as number[]);
+                const raw =
+                  typeof e.target.value === "string"
+                    ? [Number(e.target.value)]
+                    : (e.target.value as number[]);
                 // Deduplicate manual selections
                 setSelectedMockupStyleIds(Array.from(new Set(raw)));
               }}
@@ -600,57 +614,85 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="lg" fullWidth>
-      <DialogTitle sx={{ m: 0, p: 2 }}>
-        Design: {product.name}
-        <IconButton
-          aria-label="close"
-          onClick={onClose}
-          sx={{
-            position: "absolute",
-            right: 8,
-            top: 8,
-            color: (theme) => theme.palette.grey[500],
-          }}
-        >
-          <FiX />
-        </IconButton>
-      </DialogTitle>
-      <DialogContent dividers>
-        <Grid container spacing={4}>
-          {/* Left Side: Controls */}
-          <Grid size={{ xs: 12, md: 5 }}>
-            <Typography variant="h6" gutterBottom>
-              Design Options
-            </Typography>
-            {renderDesignerControls()}
+    <>
+      {/* AI Image Generation Modal */}
+      <Dialog
+        open={openImageGen}
+        onClose={() => setOpenImageGen(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>Generate AI Image</DialogTitle>
+        <DialogContent>
+          <ImageGenerator onImageSelect={handleImageGenerated} singleSelect />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenImageGen(false)} color="inherit">
+            Cancel
+          </Button>
+        </DialogActions>
+      </Dialog>
+      {/* Main Product Designer Dialog */}
+      <Dialog open={open} onClose={onClose} maxWidth="lg" fullWidth>
+        <DialogTitle sx={{ m: 0, p: 2 }}>
+          Design: {product.name}
+          <IconButton
+            aria-label="close"
+            onClick={onClose}
+            sx={{
+              position: "absolute",
+              right: 8,
+              top: 8,
+              color: (theme) => theme.palette.grey[500],
+            }}
+          >
+            <FiX />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent dividers>
+          <Grid container spacing={4}>
+            {/* Left Side: Controls */}
+            <Grid size={{ xs: 12, md: 5 }}>
+              <Typography variant="h6" gutterBottom>
+                Design Options
+              </Typography>
+              <Button
+                variant="outlined"
+                startIcon={<FiImage />}
+                sx={{ mb: 2 }}
+                onClick={() => setOpenImageGen(true)}
+              >
+                Generate AI Image
+              </Button>
+              {renderDesignerControls()}
+            </Grid>
+            {/* Right Side: Gallery */}
+            <Grid size={{ xs: 12, md: 7 }}>{renderPreviewGallery()}</Grid>
           </Grid>
-          {/* Right Side: Gallery */}
-          <Grid size={{ xs: 12, md: 7 }}>{renderPreviewGallery()}</Grid>
-        </Grid>
-      </DialogContent>
-      <DialogActions sx={{ justifyContent: "space-between", px: 3, py: 2 }}>
-        <Button onClick={onClose} color="inherit">
-          Cancel
-        </Button>
-        <Button
-          variant="contained"
-          onClick={handleGeneratePreview}
-          disabled={
-            isLoadingStyles ||
-            !selectedTechnique ||
-            selectedPlacements.length === 0 ||
-            selectedMockupStyleIds.length === 0 ||
-            !imageUrl || // Also disable if no image URL
-            isCreatingTask ||
-            !!generatedTaskIds
-          }
-          startIcon={isCreatingTask ? <CircularProgress size={20} /> : null}
-        >
-          {generatedTaskIds ? "Generating..." : "Generate Preview"}
-        </Button>
-      </DialogActions>
-    </Dialog>
+        </DialogContent>
+        <DialogActions sx={{ justifyContent: "space-between", px: 3, py: 2 }}>
+          <Button onClick={onClose} color="inherit">
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleGeneratePreview}
+            disabled={
+              isLoadingStyles ||
+              !selectedTechnique ||
+              selectedPlacements.length === 0 ||
+              selectedMockupStyleIds.length === 0 ||
+              !imageUrl || // Also disable if no image URL
+              isCreatingTask ||
+              !!generatedTaskIds
+            }
+            startIcon={isCreatingTask ? <CircularProgress size={20} /> : null}
+          >
+            {generatedTaskIds ? "Generating..." : "Generate Preview"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </>
   );
 };
 
