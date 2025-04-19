@@ -54,11 +54,11 @@ export default [
 Example of a loader function:
 
 ```jsx
-import { json } from "react-router";
+
 
 export async function loader() {
   const data = await fetchData(); // Assume fetchData is defined elsewhere
-  return json(data);
+  return new Response(data);
 }
 ```
 
