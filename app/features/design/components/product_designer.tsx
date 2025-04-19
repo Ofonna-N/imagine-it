@@ -293,6 +293,16 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
     );
   }, [taskResultResponse]);
 
+  // --- Memoized placement label counts to determine when to show dimensions --- //
+  const placementLabelCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    availablePlacements.forEach((p) => {
+      const key = `${p.display_name}|${p.print_area_type}`;
+      counts.set(key, (counts.get(key) || 0) + 1);
+    });
+    return counts;
+  }, [availablePlacements]);
+
   // --- Event Handlers --- //
 
   console.log("placement", selectedPlacements);
@@ -468,21 +478,43 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
                   }
                   renderValue={(selected) => {
                     try {
-                      const placementObj = JSON.parse(selected as string);
-                      return `${placementObj.display_name} (${placementObj.print_area_type})`;
+                      const p = JSON.parse(
+                        selected as string
+                      ) as Partial<PrintfulV2MockupStyleGroup>;
+                      const key = `${p.display_name}|${p.print_area_type}`;
+                      const count = placementLabelCounts.get(key) ?? 0;
+                      return count > 1
+                        ? `${p.display_name} (${
+                            p.print_area_type
+                          }, ${p.print_area_width?.toFixed(
+                            2
+                          )}×${p.print_area_height?.toFixed(2)})`
+                        : `${p.display_name} (${p.print_area_type})`;
                     } catch {
                       return "Select Placement";
                     }
                   }}
                 >
-                  {availablePlacements.map((placementObj) => (
-                    <MenuItem
-                      key={`${placementObj.placement}-${placementObj.print_area_type}`}
-                      value={JSON.stringify(placementObj)}
-                    >
-                      {`${placementObj.display_name} (${placementObj.print_area_type})`}
-                    </MenuItem>
-                  ))}
+                  {availablePlacements.map((p) => {
+                    const key = `${p.display_name}|${p.print_area_type}`;
+                    const count = placementLabelCounts.get(key) ?? 0;
+                    const label =
+                      count > 1
+                        ? `${p.display_name} (${
+                            p.print_area_type
+                          }, ${p.print_area_width?.toFixed(
+                            2
+                          )}×${p.print_area_height?.toFixed(2)})`
+                        : `${p.display_name} (${p.print_area_type})`;
+                    return (
+                      <MenuItem
+                        key={`${p.placement}-${p.print_area_type}-${p.print_area_width}-${p.print_area_height}`}
+                        value={JSON.stringify(p)}
+                      >
+                        {label}
+                      </MenuItem>
+                    );
+                  })}
                 </Select>
               </FormControl>
             </Paper>
