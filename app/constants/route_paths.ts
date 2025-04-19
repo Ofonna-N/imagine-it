@@ -42,6 +42,11 @@ export const API_ROUTES = {
   MOCK_UP_STYLES: (id: string) => `/api/catalog-products/${id}/mockup-styles`,
   CATALOG_PRODUCT_PRICES: (id: string) => `/api/catalog-products/${id}/prices`,
   CATALOG_VARIANT_PRICES: (id: string) => `/api/catalog-variants/${id}/prices`, // Added for variant pricing endpoint
+  /**
+   * POST /api/generate-image
+   * Resource route for AI image generation
+   */
+  GENERATE_IMAGE: "/api/generate-image",
 };
 
 // A flattened version combining all routes for easier imports
@@ -49,6 +54,7 @@ export const ROUTE_PATHS = {
   ...AUTH_ROUTES,
   ...APP_ROUTES,
   API: API_ROUTES,
+  GENERATE_IMAGE: API_ROUTES.GENERATE_IMAGE,
 };
 
 // Export default for easier importing

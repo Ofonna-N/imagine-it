@@ -100,4 +100,6 @@ export default [
     AUTH_ROUTES.OAUTH_CALLBACK.slice(1), // Use constant and slice leading '/'
     "routes_api/api.auth.oauth.callback.ts"
   ),
+  // Generate image resource route (AI image generation endpoint)
+  route(API_ROUTES.GENERATE_IMAGE.slice(1), "routes_api/api.generate_image.ts"),
 ] satisfies RouteConfig;

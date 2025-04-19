@@ -1,14 +1,21 @@
 import React, { useState } from "react";
+import { useMutateGenerateImage } from "~/features/design/hooks/use_mutate_generate_image";
 import {
   Box,
   Button,
   TextField,
-  Grid,
   Card,
   CardMedia,
   CircularProgress,
   Typography,
+  IconButton,
+  ImageList,
+  ImageListItem,
+  Paper,
+  Stack,
+  InputAdornment,
 } from "@mui/material";
+import { FiSearch, FiCheck } from "react-icons/fi";
 
 /**
  * Props for ImageGenerator component
@@ -31,20 +38,22 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
 }) => {
   // State for prompt and generated images
   const [prompt, setPrompt] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
   const [images, setImages] = useState<string[]>([]);
 
-  // Handler for generating images (placeholder logic)
-  const handleGenerate = async () => {
-    setIsLoading(true);
-    // TODO: Replace with actual API call to Replicate
-    setTimeout(() => {
-      setImages([
-        "https://placehold.co/400x400/5e6ad2/fff?text=AI+Image+1",
-        "https://placehold.co/400x400/ff8a47/fff?text=AI+Image+2",
-      ]);
-      setIsLoading(false);
-    }, 1500);
+  // Mutation hook for generating images via API
+  const {
+    mutate: generateImages,
+    isPending: isGenerating,
+    isError,
+    error: generateError,
+  } = useMutateGenerateImage({
+    onSuccess: (data) => {
+      setImages(data.images);
+    },
+  });
+  // Handler to invoke the image generation mutation
+  const handleGenerate = () => {
+    generateImages({ prompt });
   };
 
   // Handler for selecting an image
@@ -55,52 +64,95 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
   };
 
   return (
-    <Box>
-      <Grid container spacing={2} alignItems="center">
-        <Grid size={{ xs: 12, md: 8 }}>
-          <TextField
-            fullWidth
-            label="Describe your image"
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-            disabled={isLoading}
-          />
-        </Grid>
-        <Grid size={{ xs: 12, md: 4 }}>
-          <Button
-            variant="contained"
-            fullWidth
-            onClick={handleGenerate}
-            disabled={!prompt.trim() || isLoading}
+    <Paper elevation={2} sx={{ p: 3, borderRadius: 2 }}>
+      <Stack spacing={3}>
+        {/* Prompt Input */}
+        <TextField
+          fullWidth
+          placeholder="e.g. A sunset over mountains"
+          value={prompt}
+          onChange={(e) => setPrompt(e.target.value)}
+          disabled={isGenerating}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <FiSearch />
+              </InputAdornment>
+            ),
+          }}
+        />
+
+        {/* Generate Button */}
+        <Button
+          variant="contained"
+          size="large"
+          onClick={handleGenerate}
+          disabled={!prompt.trim() || isGenerating}
+          startIcon={isGenerating ? <CircularProgress size={20} /> : null}
+        >
+          Generate
+        </Button>
+
+        {/* Images Grid */}
+        {isGenerating ? (
+          <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
+            <CircularProgress />
+          </Box>
+        ) : images.length > 0 ? (
+          <ImageList variant="masonry" cols={3} gap={8} sx={{ m: 0 }}>
+            {images.map((url, idx) => (
+              <ImageListItem key={url}>
+                <Card
+                  sx={{
+                    position: "relative",
+                    cursor: onImageSelect ? "pointer" : "default",
+                  }}
+                  onClick={singleSelect ? () => handleSelect(url) : undefined}
+                >
+                  <CardMedia
+                    component="img"
+                    image={url}
+                    alt={`AI Image ${idx + 1}`}
+                    sx={{ width: "100%", display: "block" }}
+                  />
+                  {onImageSelect && (
+                    <Box
+                      className="overlay"
+                      sx={{
+                        position: "absolute",
+                        inset: 0,
+                        bgcolor: "rgba(0,0,0,0.4)",
+                        opacity: 0,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        transition: "opacity 0.3s",
+                        "&:hover": { opacity: 1 },
+                      }}
+                    >
+                      <IconButton
+                        onClick={() => handleSelect(url)}
+                        sx={{ color: "common.white" }}
+                      >
+                        <FiCheck />
+                      </IconButton>
+                    </Box>
+                  )}
+                </Card>
+              </ImageListItem>
+            ))}
+          </ImageList>
+        ) : (
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{ textAlign: "center", py: 4 }}
           >
-            {isLoading ? <CircularProgress size={20} /> : "Generate Image"}
-          </Button>
-        </Grid>
-      </Grid>
-      <Box sx={{ mt: 4 }}>
-        <Grid container spacing={2}>
-          {images.map((url, idx) => (
-            <Grid key={url} size={{ xs: 6, sm: 4, md: 3 }}>
-              <Card
-                sx={{ cursor: onImageSelect ? "pointer" : undefined }}
-                onClick={singleSelect ? () => handleSelect(url) : undefined}
-              >
-                <CardMedia
-                  component="img"
-                  image={url}
-                  alt={`AI Image ${idx + 1}`}
-                />
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
-        {!isLoading && images.length === 0 && (
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-            No images generated yet.
+            Enter a prompt and click Generate to create images.
           </Typography>
         )}
-      </Box>
-    </Box>
+      </Stack>
+    </Paper>
   );
 };
 
