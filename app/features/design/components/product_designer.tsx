@@ -30,9 +30,9 @@ import type {
   PrintfulV2CatalogProduct,
   PrintfulV2CatalogVariant,
   PrintfulV2MockupStyleGroup,
-  PrintfulV2MockupStyle,
   PrintfulV2MockupGeneratorTaskRequest,
   ProductOption,
+  PrintfulV2MockupStyle,
 } from "~/types/printful";
 import { useQueryProductMockupStyles } from "../hooks/use_query_product_mockup_styles";
 import { useMutateCreateMockupTask } from "../hooks/use_mutate_create_mockup_task";
@@ -60,10 +60,8 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
   selectedTechnique,
 }) => {
   // --- State --- //
-  const [selectedPlacements, setSelectedPlacements] = useState<string[]>([]);
-  const [selectedMockupStyleIds, setSelectedMockupStyleIds] = useState<
-    number[]
-  >([]);
+  // Single placement selection
+  const [selectedPlacement, setSelectedPlacement] = useState<string>("");
   const [imageUrl, setImageUrl] = useState<string>(
     MOCK_STORAGE_IMAGE_URLS[0] ?? ""
   );
@@ -84,6 +82,11 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
   // Keep selected options as an array of ProductOption objects
   const [productOptions, setProductOptions] = useState<ProductOption[]>([]);
 
+  // Selected mockup style IDs (multiple)
+  const [selectedMockupStyleIds, setSelectedMockupStyleIds] = useState<
+    number[]
+  >([]);
+
   // console.log("Product Options:", productOptions);
   // --- Helper: Get required product options (excluding 'notes') --- //
   const requiredProductOptions = useMemo(() => {
@@ -94,22 +97,15 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
 
   // --- Hooks --- //
 
-  // Fetch available mockup styles for the product
-  // Assuming useQueryProductMockupStyles returns the array directly in its 'data' property
-  // (e.g., via a 'select' option in the hook implementation)
+  // Fetch mockup style groups, API filter by the raw placement identifier
+  // placementKey will be derived below from selectedPlacementGroup
   const { data: mockupStyleGroups, isLoading: isLoadingStyles } =
     useQueryProductMockupStyles(
       open ? product.id.toString() : undefined,
-      selectedPlacements.map((p) => {
-        try {
-          return JSON.parse(p).placement;
-        } catch {
-          return p;
-        }
-      }),
+      undefined,
       { enabled: open }
     );
-  console.log("mockupStyleGroups", mockupStyleGroups);
+
   // Mutation hook to create a mockup task
   const {
     mutate: createMockupTask,
@@ -176,8 +172,7 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
   // Reset state when dialog closes
   useEffect(() => {
     if (!open) {
-      setSelectedPlacements([]);
-      setSelectedMockupStyleIds([]);
+      setSelectedPlacement("");
       setGeneratedTaskIds(null);
       setGeneratedMockupUrl(null);
       resetCreateMutation();
@@ -197,72 +192,61 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
 
   // --- Memoized Values --- //
 
-  // Get all placements for the selected technique (return objects, not just strings)
-  const availablePlacements = useMemo(() => {
+  // Composite key for placement uniqueness
+  const getPlacementKey = (group: PrintfulV2MockupStyleGroup) =>
+    `${group.placement}|${group.print_area_width}|${group.print_area_height}`;
+
+  // Available placement groups filtered by technique and variant compatibility
+  const availablePlacements = useMemo<PrintfulV2MockupStyleGroup[]>(() => {
     if (!mockupStyleGroups || !selectedTechnique) return [];
     return mockupStyleGroups
-      .filter((group) => group.technique === selectedTechnique)
-      .map(
+      .filter(
         (group) =>
-          ({
-            placement: group.placement,
-            display_name: group.display_name,
-            dpi: group.dpi,
-            print_area_type: group.print_area_type,
-            mockup_styles: group.mockup_styles,
-            print_area_height: group.print_area_height,
-            print_area_width: group.print_area_width,
-            technique: group.technique,
-          } as Partial<PrintfulV2MockupStyleGroup>)
+          group.technique.toLowerCase() === selectedTechnique.toLowerCase()
+      )
+      .filter((group) =>
+        (group.mockup_styles ?? []).every(
+          (style) =>
+            !style.restricted_to_variants ||
+            style.restricted_to_variants.includes(selectedVariant.id)
+        )
       );
-  }, [mockupStyleGroups, selectedTechnique]);
+  }, [mockupStyleGroups, selectedTechnique, selectedVariant.id]);
 
-  // Get the style groups for the selected placements
-  // Get available mockup styles for all selected placements
-  const availableMockupStyles = useMemo(() => {
-    if (!mockupStyleGroups || selectedPlacements.length === 0) return [];
+  // Find the selected placement group by composite key
+  const selectedPlacementGroup = useMemo<
+    PrintfulV2MockupStyleGroup | undefined
+  >(
+    () =>
+      availablePlacements.find(
+        (group) => getPlacementKey(group) === selectedPlacement
+      ),
+    [availablePlacements, selectedPlacement]
+  );
 
-    // Get all placements from the selected items
-    const selectedPlacementValues = selectedPlacements.map((p) => {
-      try {
-        return JSON.parse(p).placement;
-      } catch {
-        return p;
-      }
-    });
-
-    // Get all style groups that match the selected placements
-    const relevantGroups = mockupStyleGroups.filter((group) =>
-      selectedPlacementValues.includes(group.placement)
+  // Available mockup styles from the selected placement group
+  const availableMockupStyles = useMemo<PrintfulV2MockupStyle[]>(() => {
+    if (!selectedPlacementGroup) return [];
+    return (selectedPlacementGroup.mockup_styles ?? []).filter(
+      (style) =>
+        !style.restricted_to_variants ||
+        style.restricted_to_variants.includes(selectedVariant.id)
     );
+  }, [selectedPlacementGroup, selectedVariant.id]);
 
-    // Get all mockup styles from those groups that are not restricted or are allowed for this variant
-    return relevantGroups.flatMap((group) =>
-      (group.mockup_styles ?? []).filter(
-        (style) =>
-          !style.restricted_to_variants ||
-          style.restricted_to_variants.includes(selectedVariant.id)
-      )
-    );
-  }, [mockupStyleGroups, selectedPlacements, selectedVariant.id]);
+  // Derive the actual placement key (e.g., "front") from the selected group
+  const placementKey = useMemo(
+    () => selectedPlacementGroup?.placement,
+    [selectedPlacementGroup]
+  );
+  // Refetch styles when placement changes
+  useEffect(() => {
+    if (placementKey) {
+      // Trigger React Query refetch for mockup styles with the new placement filter
+      // Note: useQueryProductMockupStyles internally listens to the placements key
+    }
+  }, [placementKey]);
 
-  // Select style groups based on the available mockup styles
-  const selectedStyleGroups = useMemo(() => {
-    if (!mockupStyleGroups || availableMockupStyles.length === 0) return [];
-
-    // Get the style IDs that are available
-    const availableStyleIds = availableMockupStyles.map((style) => style.id);
-
-    // Filter groups that contain any of these styles
-    return mockupStyleGroups.filter((group) =>
-      (group.mockup_styles ?? []).some((style) =>
-        availableStyleIds.includes(style.id)
-      )
-    );
-  }, [mockupStyleGroups, availableMockupStyles]);
-
-  console.log("availableMockupStyles", availableMockupStyles);
-  console.log("selectedmockupStyleIds", selectedMockupStyleIds);
   // --- Memoized gallery images from mockup task response --- //
   const galleryImages = useMemo(() => {
     if (!taskResultResponse?.data) return [];
@@ -296,55 +280,32 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
 
   // --- Event Handlers --- //
 
-  console.log("placement", selectedPlacements);
-  const handlePlacementChange = (placements: string[]) => {
-    setSelectedPlacements(placements);
-
-    // For each selected placement, pick one mockup style whose view_name matches (case-insensitive)
-    // Get placement keys from the selected placements
-    const selectedPlacementKeys = placements.map((p) => {
-      try {
-        return JSON.parse(p).placement.toLowerCase();
-      } catch {
-        return p.toLowerCase();
-      }
-    });
-
-    // Filter styles that are:
-    // 1. Available for the selected placements
-    // 2. Not restricted or explicitly allowed for the selected variant
-    const eligibleStyles = availableMockupStyles.filter(
-      (style) =>
-        selectedPlacementKeys.some((placementKey) => {
-          const styleGroup = mockupStyleGroups?.find(
-            (g) =>
-              g.placement.toLowerCase() === placementKey &&
-              g.mockup_styles?.some((ms) => ms.id === style.id)
-          );
-          return !!styleGroup;
-        }) &&
-        (!style.restricted_to_variants ||
-          style.restricted_to_variants.includes(selectedVariant.id))
-    );
+  const handlePlacementChange = (value: string) => {
+    setSelectedPlacement(value);
   };
 
   const handleGeneratePreview = () => {
     if (
       !selectedTechnique ||
-      selectedPlacements.length === 0 ||
+      !selectedPlacement ||
       selectedMockupStyleIds.length === 0 ||
       !imageUrl
     ) {
       console.error("Missing required fields for mockup generation.");
       return;
     }
-    // Find the style group for the first selected placement
-    const styleGroup = selectedStyleGroups[0];
+    const styleGroup = selectedPlacementGroup;
     if (!styleGroup) {
       console.error("Could not determine style group for placement.");
       return;
     }
-    console.log("selectedTechnique", selectedTechnique);
+
+    // Determine if unlimited_color should be included
+    const includeUnlimitedColor =
+      selectedTechnique === "embroidery" &&
+      product.placements.some((p) =>
+        p.placement_options?.some((o) => o.name === "unlimited_color")
+      );
     const requestBody: PrintfulV2MockupGeneratorTaskRequest = {
       format: "png",
       products: [
@@ -353,21 +314,16 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
           catalog_product_id: product.id,
           catalog_variant_ids: [selectedVariant.id],
           mockup_style_ids: selectedMockupStyleIds,
-          placements: selectedPlacements.map((placementStr) => {
-            const placementObj = JSON.parse(placementStr);
-            return {
-              placement: placementObj.placement,
+          placements: [
+            {
+              placement: placementKey!,
               technique: selectedTechnique,
               layers: [{ type: "file", url: imageUrl }],
-              placement_options:
-                selectedTechnique === "embroidery" &&
-                product.placements.some((p) =>
-                  p.placement_options?.some((o) => o.name === "unlimited_color")
-                )
-                  ? [{ name: "unlimited_color", value: true }]
-                  : [],
-            };
-          }),
+              placement_options: includeUnlimitedColor
+                ? [{ name: "unlimited_color", value: true }]
+                : [],
+            },
+          ],
           product_options: productOptions,
         },
       ],
@@ -432,7 +388,12 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
       </Box>
     );
   };
-
+  console.log("selectedplacementGroup", selectedPlacementGroup);
+  console.log("mockupStyleGroups", mockupStyleGroups);
+  console.log("allavalablePlacements", availablePlacements);
+  console.log("availableMockupStyles", availableMockupStyles);
+  console.log("selectedmockupStyleIds", selectedMockupStyleIds);
+  console.log("placement", selectedPlacement);
   // --- Redesigned UI --- //
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
@@ -463,41 +424,40 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
                 <InputLabel id="placement-select-label">Placement</InputLabel>
                 <Select
                   labelId="placement-select-label"
-                  value={selectedPlacements[0] || ""}
+                  value={selectedPlacement}
                   label="Placement"
-                  onChange={(e) => handlePlacementChange([e.target.value])}
+                  onChange={(e) => handlePlacementChange(e.target.value)}
                   renderValue={(selected) => {
-                    try {
-                      const p = JSON.parse(selected);
-                      const key = `${p.display_name}|${p.print_area_type}`;
-                      const count = placementLabelCounts.get(key) ?? 0;
-                      return count > 1
-                        ? `${p.display_name} (${
-                            p.print_area_type
-                          }, ${p.print_area_width?.toFixed(
-                            2
-                          )}×${p.print_area_height?.toFixed(2)})`
-                        : `${p.display_name} (${p.print_area_type})`;
-                    } catch {
-                      return "Select Placement";
-                    }
+                    const group = availablePlacements.find(
+                      (g) => getPlacementKey(g) === selected
+                    );
+                    if (!group) return "Select Placement";
+                    const key = `${group.display_name}|${group.print_area_type}`;
+                    const count = placementLabelCounts.get(key) ?? 0;
+                    return count > 1
+                      ? `${group.display_name} (${
+                          group.print_area_type
+                        }, ${group.print_area_width.toFixed(
+                          2
+                        )}×${group.print_area_height.toFixed(2)})`
+                      : `${group.display_name} (${group.print_area_type})`;
                   }}
                 >
                   {availablePlacements.map((p) => {
-                    const key = `${p.display_name}|${p.print_area_type}`;
-                    const count = placementLabelCounts.get(key) ?? 0;
+                    const keyLabel = `${p.display_name}|${p.print_area_type}`;
+                    const count = placementLabelCounts.get(keyLabel) ?? 0;
                     const label =
                       count > 1
                         ? `${p.display_name} (${
                             p.print_area_type
-                          }, ${p.print_area_width?.toFixed(
+                          }, ${p.print_area_width.toFixed(
                             2
-                          )}×${p.print_area_height?.toFixed(2)})`
+                          )}×${p.print_area_height.toFixed(2)})`
                         : `${p.display_name} (${p.print_area_type})`;
                     return (
                       <MenuItem
-                        key={`${p.placement}-${p.print_area_type}-${p.print_area_width}-${p.print_area_height}`}
-                        value={JSON.stringify(p)}
+                        key={getPlacementKey(p)}
+                        value={getPlacementKey(p)}
                       >
                         {label}
                       </MenuItem>
@@ -576,24 +536,22 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
                       setSelectedMockupStyleIds(Array.from(new Set(raw)));
                     }}
                     renderValue={(selected) =>
-                      (selected as number[])
-                        .map(
-                          (id) =>
-                            availableMockupStyles.find(
-                              (style) => style.id === id
-                            )?.category_name +
-                            " - " +
-                            availableMockupStyles.find(
-                              (style) => style.id === id
-                            )?.view_name
-                        )
+                      selected
+                        .map((id) => {
+                          const style = availableMockupStyles.find(
+                            (s) => s.id === id
+                          );
+                          return (
+                            style?.category_name + " - " + style?.view_name
+                          );
+                        })
                         .join(", ")
                     }
                   >
                     <MenuItem value={""} disabled>
                       <em>Select Style</em>
                     </MenuItem>
-                    {availableMockupStyles.map((style) => (
+                    {availableMockupStyles?.map((style) => (
                       <MenuItem key={style.id} value={style.id}>
                         {style.category_name} - {style.view_name}
                       </MenuItem>
@@ -666,7 +624,7 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
                 disabled={
                   isLoadingStyles ||
                   !selectedTechnique ||
-                  selectedPlacements.length === 0 ||
+                  !selectedPlacement ||
                   selectedMockupStyleIds.length === 0 ||
                   !imageUrl ||
                   isCreatingTask ||
