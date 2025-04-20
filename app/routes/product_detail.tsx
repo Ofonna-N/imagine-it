@@ -87,7 +87,6 @@ export default function ProductDetail() {
 
   const product = productResponse.data;
   const variants = variantsResponse.data;
-  console.log("variants", variants);
 
   const [selectedVariantIndex, setSelectedVariantIndex] = useState(0);
   const [selectedTechnique, setSelectedTechnique] = useState<string>(
@@ -95,7 +94,7 @@ export default function ProductDetail() {
   );
   const selectedVariant = variants[selectedVariantIndex];
   // Fetch pricing data for the selected variant
-  console.log("selectedVariant", selectedVariant);
+
   const {
     data: variantPriceData,
     isLoading: variantPriceLoading,
