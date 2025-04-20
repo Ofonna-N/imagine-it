@@ -1,10 +1,10 @@
-import { Box, Grid, Typography, Fade } from "@mui/material";
+import { Box, Grid, Typography } from "@mui/material";
 import { ProductCard } from "./product_card";
 import { motion } from "framer-motion";
-import type { PrintfulCatalogProduct } from "~/types/printful";
+import type { PrintfulV2CatalogProduct } from "~/types/printful";
 
 interface ProductGridProps {
-  catalogProducts: PrintfulCatalogProduct[];
+  catalogProducts: PrintfulV2CatalogProduct[];
   featured?: boolean;
 }
 
@@ -14,7 +14,7 @@ const MotionGrid = motion(Grid);
 export function ProductGrid({
   catalogProducts,
   featured = false,
-}: ProductGridProps) {
+}: Readonly<ProductGridProps>) {
   if (!catalogProducts || catalogProducts.length === 0) {
     return (
       <Box sx={{ textAlign: "center", py: 6 }}>

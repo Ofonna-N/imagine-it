@@ -1,7 +1,6 @@
 import {
   FiHome,
   FiShoppingBag,
-  FiEdit,
   FiImage,
   FiShoppingCart,
   FiFileText,
@@ -13,9 +12,9 @@ export const NAV_ITEMS = [
   { text: "Home", path: APP_ROUTES.HOME, icon: <FiHome /> },
   { text: "Products", path: APP_ROUTES.PRODUCTS, icon: <FiShoppingBag /> },
   {
-    text: "Design Playground",
-    path: APP_ROUTES.DESIGN_PLAYGROUND,
-    icon: <FiEdit />,
+    text: "Image Generation",
+    path: APP_ROUTES.IMAGE_GENERATION,
+    icon: <FiImage />,
   },
   { text: "My Designs", path: APP_ROUTES.MY_DESIGNS, icon: <FiImage /> },
   { text: "Cart", path: APP_ROUTES.CART, icon: <FiShoppingCart /> },

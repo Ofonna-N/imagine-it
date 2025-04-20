@@ -24,7 +24,7 @@ export async function insertOrCreateUserProfile(user: User): Promise<void> {
         createdAt: new Date(),
         updatedAt: new Date(),
       });
-      console.log(`Created profile for user ${user.id}`);
+      // console.log(`Created profile for user ${user.id}`);
     } else {
       console.log(`Profile already exists for user ${user.id}`);
     }

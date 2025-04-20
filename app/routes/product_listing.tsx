@@ -12,20 +12,247 @@ import {
   IconButton,
   Fade,
   Chip,
+  Popover,
+  List,
+  ListItem,
+  ListItemText,
+  Checkbox,
+  Collapse,
+  ListItemIcon,
+  Button,
 } from "@mui/material";
 import { ProductGrid } from "~/features/product/components/product_grid";
 import useQueryCatalogProducts from "~/features/product/hooks/use_catalog_products";
-import { useState, useEffect, useCallback } from "react";
-import { FiSearch, FiX, FiFilter } from "react-icons/fi";
+import useQueryCatalogCategories from "~/features/product/hooks/use_catalog_categories";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import {
+  FiSearch,
+  FiX,
+  FiFilter,
+  FiChevronDown,
+  FiChevronRight,
+} from "react-icons/fi";
+import type { PrintfulV2Category } from "~/types/printful";
+
+// Helper type for nested categories
+interface NestedCategory extends PrintfulV2Category {
+  children: NestedCategory[];
+}
+
+// Helper function to build category tree
+const buildCategoryTree = (
+  categories: PrintfulV2Category[]
+): NestedCategory[] => {
+  const categoryMap: Record<number, NestedCategory> = {};
+  const rootCategories: NestedCategory[] = [];
+
+  // Initialize map and add children array
+  categories.forEach((category) => {
+    categoryMap[category.id] = { ...category, children: [] };
+  });
+
+  // Build the tree structure
+  categories.forEach((category) => {
+    const nestedCategory = categoryMap[category.id];
+    if (category.parent_id && categoryMap[category.parent_id]) {
+      categoryMap[category.parent_id].children.push(nestedCategory);
+    } else {
+      rootCategories.push(nestedCategory);
+    }
+  });
+
+  // Sort children alphabetically
+  Object.values(categoryMap).forEach((category) => {
+    category.children.sort((a, b) => a.title.localeCompare(b.title));
+  });
+  // Sort root categories alphabetically
+  rootCategories.sort((a, b) => a.title.localeCompare(b.title));
+
+  return rootCategories;
+};
+
+// Recursive component to render category list items
+const CategoryListItem: React.FC<{
+  category: NestedCategory;
+  selectedCategories: number[];
+  onCategoryToggle: (categoryId: number) => void;
+  level: number;
+}> = ({ category, selectedCategories, onCategoryToggle, level }) => {
+  const [open, setOpen] = useState(false);
+  const hasChildren = category.children.length > 0;
+
+  const handleToggle = () => {
+    if (hasChildren) {
+      setOpen(!open);
+    }
+  };
+
+  const handleCheckboxChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    event.stopPropagation();
+    onCategoryToggle(category.id);
+  };
+
+  // Determine icon based on open state and children
+  let icon = null;
+  if (hasChildren) {
+    icon = open ? <FiChevronDown /> : <FiChevronRight />;
+  }
+
+  return (
+    <>
+      <ListItem
+        onClick={handleToggle} // Keep onClick for toggling collapse
+        sx={{ pl: 2 + level * 2, cursor: hasChildren ? "pointer" : "default" }} // Add pointer cursor only if it has children
+      >
+        <ListItemIcon sx={{ minWidth: "auto", mr: 1 }}>
+          <Checkbox
+            edge="start"
+            checked={selectedCategories.includes(category.id)}
+            onChange={handleCheckboxChange}
+            tabIndex={-1}
+            disableRipple
+            size="small"
+          />
+        </ListItemIcon>
+        <ListItemText primary={category.title} />
+        {icon} {/* Use the determined icon */}
+      </ListItem>
+      {hasChildren && (
+        <Collapse in={open} timeout="auto" unmountOnExit>
+          <List component="div" disablePadding>
+            {category.children.map((child) => (
+              <CategoryListItem
+                key={child.id}
+                category={child}
+                selectedCategories={selectedCategories}
+                onCategoryToggle={onCategoryToggle}
+                level={level + 1}
+              />
+            ))}
+          </List>
+        </Collapse>
+      )}
+    </>
+  );
+};
+
+// Extracted Category Filter Popover Component
+interface CategoryFilterPopoverProps {
+  id: string | undefined;
+  open: boolean;
+  anchorEl: HTMLButtonElement | null;
+  onClose: () => void;
+  categoriesLoading: boolean;
+  categoriesError: boolean;
+  categoryTree: NestedCategory[];
+  selectedCategories: number[];
+  onCategoryToggle: (categoryId: number) => void;
+  onClearFilters: () => void;
+}
+
+const CategoryFilterPopover: React.FC<CategoryFilterPopoverProps> = ({
+  id,
+  open,
+  anchorEl,
+  onClose,
+  categoriesLoading,
+  categoriesError,
+  categoryTree,
+  selectedCategories,
+  onCategoryToggle,
+  onClearFilters,
+}) => {
+  return (
+    <Popover
+      id={id}
+      open={open}
+      anchorEl={anchorEl}
+      onClose={onClose}
+      anchorOrigin={{
+        vertical: "bottom",
+        horizontal: "right",
+      }}
+      transformOrigin={{
+        vertical: "top",
+        horizontal: "right",
+      }}
+      slotProps={{
+        // Replaced MenuListProps with slotProps.paper
+        paper: {
+          sx: {
+            width: 350,
+            maxHeight: 400,
+            overflowY: "auto",
+            borderRadius: 2,
+            mt: 1,
+          },
+        },
+      }}
+    >
+      <Box
+        sx={{
+          p: 2,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          borderBottom: "1px solid",
+          borderColor: "divider",
+        }}
+      >
+        <Typography variant="h6" sx={{ fontWeight: 600 }}>
+          Categories
+        </Typography>
+        <Button
+          size="small"
+          onClick={onClearFilters}
+          disabled={selectedCategories.length === 0}
+        >
+          Clear All
+        </Button>
+      </Box>
+      {categoriesLoading && (
+        <Box sx={{ p: 3, textAlign: "center" }}>
+          <CircularProgress size={24} />
+        </Box>
+      )}
+      {categoriesError && (
+        <Alert severity="error" sx={{ m: 2 }}>
+          Could not load categories.
+        </Alert>
+      )}
+      {!categoriesLoading && !categoriesError && categoryTree.length > 0 && (
+        <List dense component="nav" aria-labelledby="nested-list-subheader">
+          {categoryTree.map((category) => (
+            <CategoryListItem
+              key={category.id}
+              category={category}
+              selectedCategories={selectedCategories}
+              onCategoryToggle={onCategoryToggle}
+              level={0}
+            />
+          ))}
+        </List>
+      )}
+      {!categoriesLoading && !categoriesError && categoryTree.length === 0 && (
+        <Typography sx={{ p: 2, color: "text.secondary" }}>
+          No categories available.
+        </Typography>
+      )}
+    </Popover>
+  );
+};
 
 export default function ProductListing() {
-  // Pagination and search state
+  // ... existing state ...
   const [page, setPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const ITEMS_PER_PAGE = 12;
+  const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
+  const [filterAnchorEl, setFilterAnchorEl] =
+    useState<HTMLButtonElement | null>(null);
 
-  // Create a debounced search handler using MUI's debounce
+  // ... existing handlers and effects ...
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const debouncedSearchHandler = useCallback(
     debounce((value: string) => {
@@ -35,47 +262,101 @@ export default function ProductListing() {
     []
   );
 
-  // Update the debounced value when search term changes
   useEffect(() => {
     debouncedSearchHandler(searchTerm);
-    // No cleanup needed as MUI's debounce handles cancelation
   }, [searchTerm, debouncedSearchHandler]);
 
-  // Fetch products with pagination and search
+  const {
+    data: categoriesData,
+    isLoading: categoriesLoading,
+    isError: categoriesError,
+  } = useQueryCatalogCategories();
+
+  const categoryTree = useMemo(() => {
+    return categoriesData ? buildCategoryTree(categoriesData) : [];
+  }, [categoriesData]);
+
   const { data, isLoading, isError, error } = useQueryCatalogProducts({
     params: {
       limit: ITEMS_PER_PAGE,
       offset: (page - 1) * ITEMS_PER_PAGE,
       search: debouncedSearch || undefined,
+      categoryIds: selectedCategories.join(",") || undefined,
     },
     options: {
-      staleTime: 40 * 60 * 1000, // 10 minutes
+      staleTime: 10 * 60 * 1000,
+      enabled: !categoriesLoading,
     },
   });
 
-  // Handle page change
   const handlePageChange = (
     event: React.ChangeEvent<unknown>,
     value: number
   ) => {
     setPage(value);
-    // Scroll to top when page changes
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  // Clear search function
   const handleClearSearch = () => {
     setSearchTerm("");
   };
 
-  // Get total pages based on API response
+  const handleFilterClick = (event: React.MouseEvent<HTMLDivElement>) => {
+    // Changed event type to HTMLDivElement
+    setFilterAnchorEl(event.currentTarget as unknown as HTMLButtonElement); // Cast might be needed depending on strictness
+  };
+
+  const handleFilterClose = () => {
+    setFilterAnchorEl(null);
+  };
+
+  const handleCategoryToggle = (categoryId: number) => {
+    setSelectedCategories((prevSelected) =>
+      prevSelected.includes(categoryId)
+        ? prevSelected.filter((id) => id !== categoryId)
+        : [...prevSelected, categoryId]
+    );
+    setPage(1);
+  };
+
+  const handleClearFilters = () => {
+    setSelectedCategories([]);
+    setPage(1);
+    handleFilterClose();
+  };
+
+  const openFilter = Boolean(filterAnchorEl);
+  const filterId = openFilter ? "category-filter-popover" : undefined;
+
   const totalPages = data?.paging
     ? Math.ceil(data.paging.total / ITEMS_PER_PAGE)
     : 0;
 
+  const isProductLoading = isLoading || categoriesLoading;
+
+  // Simplified filter label construction
+  const filterLabel =
+    selectedCategories.length > 0
+      ? `Filters (${selectedCategories.length})`
+      : "Filters";
+
+  // Determine loading/error/data state for products
+  const showLoading = isProductLoading;
+  const showError = isError || categoriesError;
+  const showData =
+    !isProductLoading &&
+    !showError &&
+    data?.products &&
+    data.products.length > 0;
+  const showNoResults =
+    !isProductLoading &&
+    !showError &&
+    (!data?.products || data.products.length === 0);
+
   return (
     <Box sx={{ mt: 4 }}>
       <Fade in={true} timeout={800}>
+        {/* ... existing header ... */}
         <Box sx={{ textAlign: "center", mb: 6 }}>
           <Typography
             variant="h3"
@@ -119,42 +400,54 @@ export default function ProductListing() {
               placeholder="Search products..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <FiSearch color="#5E6AD2" />
-                  </InputAdornment>
-                ),
-                endAdornment: searchTerm ? (
-                  <InputAdornment position="end">
-                    <IconButton
-                      aria-label="clear search"
-                      onClick={handleClearSearch}
-                      edge="end"
-                      size="small"
-                      sx={{ color: "text.secondary" }}
-                    >
-                      <FiX />
-                    </IconButton>
-                  </InputAdornment>
-                ) : (
-                  <Chip
-                    icon={<FiFilter size={14} />}
-                    label="Filters"
-                    size="small"
-                    variant="outlined"
-                    onClick={() => console.log("Filter clicked")}
-                    sx={{
-                      mr: 1,
-                      borderRadius: 2,
-                      "&:hover": {
-                        bgcolor: "action.hover",
-                      },
-                    }}
-                  />
-                ),
+              slotProps={{
+                // Replaced InputProps with slotProps.input
+                input: {
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <FiSearch color="#5E6AD2" />
+                    </InputAdornment>
+                  ),
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      {searchTerm && (
+                        <IconButton
+                          aria-label="clear search"
+                          onClick={handleClearSearch}
+                          edge="end"
+                          size="small"
+                          sx={{ color: "text.secondary", mr: 0.5 }}
+                        >
+                          <FiX />
+                        </IconButton>
+                      )}
+                      <Chip
+                        aria-describedby={filterId}
+                        icon={<FiFilter size={14} />}
+                        label={filterLabel} // Use simplified label
+                        size="small"
+                        variant={
+                          selectedCategories.length > 0 ? "filled" : "outlined"
+                        }
+                        color={
+                          selectedCategories.length > 0 ? "primary" : "default"
+                        }
+                        onClick={handleFilterClick} // Type should now match
+                        sx={{
+                          mr: 1,
+                          borderRadius: 2,
+                          cursor: "pointer",
+                          "&:hover": {
+                            bgcolor: "action.hover",
+                          },
+                        }}
+                      />
+                    </InputAdornment>
+                  ),
+                },
               }}
               sx={{
+                // Styles moved from InputProps to sx or slotProps.input
                 "& .MuiOutlinedInput-root": {
                   pr: 1,
                   borderRadius: 2,
@@ -174,10 +467,24 @@ export default function ProductListing() {
               }}
             />
           </Paper>
+          {/* Category Filter Popover Component Usage */}
+          <CategoryFilterPopover
+            id={filterId}
+            open={openFilter}
+            anchorEl={filterAnchorEl}
+            onClose={handleFilterClose}
+            categoriesLoading={categoriesLoading}
+            categoriesError={!!categoriesError} // Pass boolean
+            categoryTree={categoryTree}
+            selectedCategories={selectedCategories}
+            onCategoryToggle={handleCategoryToggle}
+            onClearFilters={handleClearFilters}
+          />
         </Box>
       </Fade>
 
-      {isError && (
+      {/* Conditional Rendering Logic Refactored */}
+      {showError && (
         <Alert
           severity="error"
           sx={{
@@ -186,11 +493,11 @@ export default function ProductListing() {
             boxShadow: "0 4px 12px rgba(255, 82, 82, 0.1)",
           }}
         >
-          {error?.message ?? "Failed to load products"}
+          {error?.message ?? "Failed to load products or categories"}
         </Alert>
       )}
 
-      {isLoading ? (
+      {showLoading && (
         <Box
           sx={{
             display: "flex",
@@ -205,12 +512,12 @@ export default function ProductListing() {
             Loading amazing products...
           </Typography>
         </Box>
-      ) : data?.products && data.products.length > 0 ? (
+      )}
+
+      {showData && data && (
         <Fade in={true} timeout={1000}>
           <Box>
             <ProductGrid catalogProducts={data.products} />
-
-            {/* Pagination controls */}
             {totalPages > 1 && (
               <Stack spacing={2} alignItems="center" sx={{ mt: 6, mb: 4 }}>
                 <Pagination
@@ -238,18 +545,26 @@ export default function ProductListing() {
             )}
           </Box>
         </Fade>
-      ) : (
+      )}
+
+      {showNoResults && (
         <Alert
           severity="info"
           sx={{
             borderRadius: 2,
             p: 3,
-            boxShadow: "0 4px 12px rgba(100, 181, 246, 0.1)",
+            textAlign: "center",
+            boxShadow: "0 4px 12px rgba(0, 0, 0, 0.05)",
           }}
         >
-          {debouncedSearch
-            ? "No products match your search criteria. Try something else!"
-            : "No products available at the moment. Check back soon!"}
+          <Typography variant="h6" gutterBottom>
+            No products found
+          </Typography>
+          <Typography color="text.secondary">
+            {debouncedSearch || selectedCategories.length > 0
+              ? "Try adjusting your search or filters."
+              : "No products available at the moment."}
+          </Typography>
         </Alert>
       )}
     </Box>

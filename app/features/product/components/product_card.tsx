@@ -5,15 +5,14 @@ import {
   CardMedia,
   Chip,
   Typography,
-  Stack,
   Box,
 } from "@mui/material";
 import { Link } from "react-router";
 import { FiEdit } from "react-icons/fi";
-import type { PrintfulCatalogProduct } from "~/types/printful";
+import type { PrintfulV2CatalogProduct } from "~/types/printful";
 
 interface ProductCardProps {
-  readonly product: PrintfulCatalogProduct;
+  readonly product: PrintfulV2CatalogProduct;
   readonly featured?: boolean;
 }
 
@@ -103,7 +102,7 @@ export function ProductCard({ product, featured = false }: ProductCardProps) {
           <CardMedia
             component="img"
             image={previewImage}
-            alt={product.title}
+            alt={product.name}
             sx={{
               objectFit: "contain",
               bgcolor: "background.paper",
@@ -153,7 +152,7 @@ export function ProductCard({ product, featured = false }: ProductCardProps) {
               fontSize: { xs: "0.9rem", sm: "1rem" },
             }}
           >
-            {product.title}
+            {product.name}
           </Typography>
 
           <Box>
@@ -178,7 +177,7 @@ export function ProductCard({ product, featured = false }: ProductCardProps) {
                     : "rgba(255,255,255,0.08)",
               }}
             >
-              {product.type_name}
+              {product.type}
             </Typography>
 
             {/* Customize hint text */}
