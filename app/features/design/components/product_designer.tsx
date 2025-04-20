@@ -234,6 +234,25 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
     );
   }, [selectedPlacementGroup, selectedVariant.id]);
 
+  // Auto-select a default mockup style when the placement group changes
+  useEffect(() => {
+    if (selectedPlacementGroup) {
+      // Try to match a style whose view_name matches the placement name (case-insensitive)
+      const match = (selectedPlacementGroup.mockup_styles ?? []).find(
+        (style) =>
+          style.view_name.toLowerCase() ===
+          selectedPlacementGroup.placement.toLowerCase()
+      );
+      const defaultStyle = match || selectedPlacementGroup.mockup_styles?.[0];
+      if (defaultStyle) {
+        setSelectedMockupStyleIds([defaultStyle.id]);
+      }
+    } else {
+      // Clear selection if no placement
+      setSelectedMockupStyleIds([]);
+    }
+  }, [selectedPlacementGroup]);
+
   // Derive the actual placement key (e.g., "front") from the selected group
   const placementKey = useMemo(
     () => selectedPlacementGroup?.placement,
