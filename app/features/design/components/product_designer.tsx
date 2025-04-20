@@ -179,13 +179,19 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
     }
   }, [open, resetCreateMutation]);
 
+  // console.log("requiredProductOptions", requiredProductOptions);
   // Default select the first product option when dialog opens
   useEffect(() => {
     if (open && requiredProductOptions.length > 0) {
       const firstOpt = requiredProductOptions[0];
+
       setSelectedCatalogOptionName(firstOpt.name);
+      const firstValue = Array.isArray(firstOpt.values)
+        ? firstOpt.values[0]
+        : (Object.values(firstOpt.values)[0] as any)?.toLowerCase();
+
       setProductOptions([
-        { name: firstOpt.name, value: firstOpt.values[0] } as ProductOption,
+        { name: firstOpt.name, value: firstValue } as ProductOption,
       ]);
     }
   }, [open, requiredProductOptions]);

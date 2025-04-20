@@ -38,7 +38,11 @@ export interface PrintfulV2CatalogOption {
   name: string;
   techniques: string[];
   type: string;
-  values: PrintfulV2OptionValue[];
+  values:
+    | PrintfulV2OptionValue[]
+    | {
+        [key: string]: PrintfulV2OptionValue[];
+      };
 }
 
 // Printing technique - v2 API
