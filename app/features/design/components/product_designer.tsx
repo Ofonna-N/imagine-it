@@ -116,7 +116,7 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
       // The API returns an array, use the first task's ID
       const tasks = response.data;
       if (tasks && tasks.length > 0) {
-        console.log("Mockup task created, ID:", tasks);
+        // console.log("Mockup task created, ID:", tasks);
         setGeneratedMockupUrl(null); // Clear previous mockup
         setGeneratedTaskIds(tasks.map((t) => t.id)); // Set the current task ID for polling
       } else {
@@ -388,12 +388,14 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
       </Box>
     );
   };
+  console.log("selectedVariant", selectedVariant);
   console.log("selectedplacementGroup", selectedPlacementGroup);
-  console.log("mockupStyleGroups", mockupStyleGroups);
-  console.log("allavalablePlacements", availablePlacements);
-  console.log("availableMockupStyles", availableMockupStyles);
-  console.log("selectedmockupStyleIds", selectedMockupStyleIds);
-  console.log("placement", selectedPlacement);
+  // console.log("selectedplacementGroup", selectedPlacementGroup);
+  // console.log("mockupStyleGroups", mockupStyleGroups);
+  // console.log("allavalablePlacements", availablePlacements);
+  // console.log("availableMockupStyles", availableMockupStyles);
+  // console.log("selectedmockupStyleIds", selectedMockupStyleIds);
+  // console.log("placement", selectedPlacement);
   // --- Redesigned UI --- //
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
