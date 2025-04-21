@@ -13,50 +13,22 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  CircularProgress,
 } from "@mui/material";
 import { useState } from "react";
 import { FiEdit, FiTrash2, FiShoppingCart, FiEye } from "react-icons/fi";
 import { Link } from "react-router";
-
-// Mock designs data
-const myDesigns = [
-  {
-    id: 1,
-    name: "Mountain Landscape",
-    created: "2023-10-15",
-    image: "https://placehold.co/400x400/random/fff?text=Mountain+Design",
-    used: true,
-  },
-  {
-    id: 2,
-    name: "Abstract Pattern",
-    created: "2023-10-22",
-    image: "https://placehold.co/400x400/random/fff?text=Abstract+Pattern",
-    used: true,
-  },
-  {
-    id: 3,
-    name: "Space Explorer",
-    created: "2023-11-05",
-    image: "https://placehold.co/400x400/random/fff?text=Space+Explorer",
-    used: false,
-  },
-  {
-    id: 4,
-    name: "Ocean Waves",
-    created: "2023-11-12",
-    image: "https://placehold.co/400x400/random/fff?text=Ocean+Waves",
-    used: false,
-  },
-];
+import {
+  useQueryUserDesigns,
+  type UserDesign,
+} from "~/features/design/hooks/use_query_user_designs";
 
 export default function MyDesigns() {
-  const [selectedDesign, setSelectedDesign] = useState<
-    null | (typeof myDesigns)[0]
-  >(null);
+  const { data: myDesigns = [], isLoading, isError } = useQueryUserDesigns();
+  const [selectedDesign, setSelectedDesign] = useState<null | UserDesign>(null);
   const [openDialog, setOpenDialog] = useState(false);
 
-  const handleOpenDialog = (design: (typeof myDesigns)[0]) => {
+  const handleOpenDialog = (design: UserDesign) => {
     setSelectedDesign(design);
     setOpenDialog(true);
   };
@@ -89,7 +61,15 @@ export default function MyDesigns() {
         </Button>
       </Box>
 
-      {myDesigns.length === 0 ? (
+      {isLoading ? (
+        <Box sx={{ textAlign: "center", py: 6 }}>
+          <CircularProgress />
+        </Box>
+      ) : isError ? (
+        <Box sx={{ textAlign: "center", py: 6 }}>
+          <Typography color="error">Failed to load designs.</Typography>
+        </Box>
+      ) : myDesigns.length === 0 ? (
         <Box sx={{ textAlign: "center", py: 6 }}>
           <Typography variant="h6" gutterBottom>
             You haven't created any designs yet
@@ -118,7 +98,7 @@ export default function MyDesigns() {
                 <CardMedia
                   component="img"
                   height="200"
-                  image={design.image}
+                  image={design.image_url}
                   alt={design.name}
                   onClick={() => handleOpenDialog(design)}
                   sx={{ cursor: "pointer" }}
@@ -135,12 +115,13 @@ export default function MyDesigns() {
                     }}
                   >
                     <Typography variant="body2" color="text.secondary">
-                      Created: {new Date(design.created).toLocaleDateString()}
+                      Created:{" "}
+                      {new Date(design.created_at).toLocaleDateString()}
                     </Typography>
                     <Chip
-                      label={design.used ? "Used in products" : "Unused"}
+                      label={design.product_id ? "Used in products" : "Unused"}
                       size="small"
-                      color={design.used ? "success" : "default"}
+                      color={design.product_id ? "success" : "default"}
                       variant="outlined"
                     />
                   </Box>
@@ -193,11 +174,12 @@ export default function MyDesigns() {
                   maxHeight: "70vh",
                   objectFit: "contain",
                 }}
-                src={selectedDesign.image}
+                src={selectedDesign.image_url}
                 alt={selectedDesign.name}
               />
               <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-                Created: {new Date(selectedDesign.created).toLocaleDateString()}
+                Created:{" "}
+                {new Date(selectedDesign.created_at).toLocaleDateString()}
               </Typography>
             </DialogContent>
             <DialogActions>

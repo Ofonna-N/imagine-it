@@ -11,7 +11,7 @@ import {
  * Drizzle schema for storing user designs
  */
 export const designsTable = pgTable("designs", {
-  id: uuid("id").primaryKey().generatedAlwaysAs("uuid_generate_v4()"),
+  id: uuid("id").primaryKey(),
   userId: uuid("user_id").notNull(),
   name: text("name").notNull(),
   imageUrl: text("image_url").notNull(),
