@@ -18,6 +18,7 @@ import {
 import { useState } from "react";
 import { FiEdit, FiTrash2, FiShoppingCart, FiEye } from "react-icons/fi";
 import { Link } from "react-router";
+import { APP_ROUTES } from "~/constants/route_paths";
 import {
   useQueryUserDesigns,
   type UserDesign,
@@ -54,7 +55,7 @@ export default function MyDesigns() {
           variant="contained"
           color="primary"
           component={Link}
-          to="/design-playground"
+          to={APP_ROUTES.IMAGE_GENERATION}
           startIcon={<FiEdit />}
         >
           Create New Design
@@ -77,7 +78,7 @@ export default function MyDesigns() {
           <Button
             variant="contained"
             component={Link}
-            to="/design-playground"
+            to={APP_ROUTES.IMAGE_GENERATION}
             startIcon={<FiEdit />}
             sx={{ mt: 2 }}
           >
@@ -138,7 +139,7 @@ export default function MyDesigns() {
                     size="small"
                     color="primary"
                     component={Link}
-                    to="/design-playground"
+                    to={APP_ROUTES.IMAGE_GENERATION}
                   >
                     <FiEdit />
                   </IconButton>
@@ -149,7 +150,7 @@ export default function MyDesigns() {
                     size="small"
                     color="primary"
                     component={Link}
-                    to="/products"
+                    to={APP_ROUTES.PRODUCTS}
                     startIcon={<FiShoppingCart />}
                     sx={{ ml: "auto" }}
                   >
@@ -186,7 +187,7 @@ export default function MyDesigns() {
               <Button onClick={handleCloseDialog}>Close</Button>
               <Button
                 component={Link}
-                to="/design-playground"
+                to={APP_ROUTES.IMAGE_GENERATION}
                 startIcon={<FiEdit />}
               >
                 Edit
@@ -194,7 +195,7 @@ export default function MyDesigns() {
               <Button
                 variant="contained"
                 component={Link}
-                to="/products"
+                to={APP_ROUTES.PRODUCTS}
                 startIcon={<FiShoppingCart />}
                 onClick={handleCloseDialog}
               >
