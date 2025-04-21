@@ -47,6 +47,11 @@ export const API_ROUTES = {
    * Resource route for AI image generation
    */
   GENERATE_IMAGE: "/api/generate-image",
+  /**
+   * GET, POST /api/designs
+   * Resource routes for user designs
+   */
+  DESIGNS: "/api/designs",
 };
 
 // A flattened version combining all routes for easier imports

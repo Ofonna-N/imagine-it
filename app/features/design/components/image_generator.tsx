@@ -14,8 +14,10 @@ import {
   Paper,
   Stack,
   InputAdornment,
+  Tooltip,
 } from "@mui/material";
-import { FiSearch, FiCheck } from "react-icons/fi";
+import { FiSearch, FiCheck, FiSave } from "react-icons/fi";
+import { useMutateSaveDesign } from "../hooks/use_mutate_save_design";
 
 /**
  * Props for ImageGenerator component
@@ -51,6 +53,16 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
       setImages(data.images);
     },
   });
+
+  const { mutate: saveDesign, isPending: isSaving } = useMutateSaveDesign({
+    onSuccess: () => {
+      console.log("Design saved");
+    },
+    onError: (err) => {
+      console.error("Error saving design:", err);
+    },
+  });
+
   // Handler to invoke the image generation mutation
   const handleGenerate = () => {
     generateImages({ prompt });
@@ -73,12 +85,14 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
           disabled={isGenerating}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <FiSearch />
-              </InputAdornment>
-            ),
+          slotProps={{
+            input: {
+              startAdornment: (
+                <InputAdornment position="start">
+                  <FiSearch />
+                </InputAdornment>
+              ),
+            },
           }}
         />
 
@@ -130,12 +144,27 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
                         "&:hover": { opacity: 1 },
                       }}
                     >
-                      <IconButton
-                        onClick={() => handleSelect(url)}
-                        sx={{ color: "common.white" }}
-                      >
-                        <FiCheck />
-                      </IconButton>
+                      <Stack direction="row" spacing={1}>
+                        <IconButton
+                          onClick={() => handleSelect(url)}
+                          sx={{ color: "common.white" }}
+                        >
+                          <FiCheck />
+                        </IconButton>
+                        <Tooltip title={isSaving ? "Saving..." : "Save Design"}>
+                          <span>
+                            <IconButton
+                              disabled={isSaving}
+                              onClick={() =>
+                                saveDesign({ name: prompt, image_url: url })
+                              }
+                              sx={{ color: "common.white" }}
+                            >
+                              <FiSave />
+                            </IconButton>
+                          </span>
+                        </Tooltip>
+                      </Stack>
                     </Box>
                   )}
                 </Card>

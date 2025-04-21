@@ -102,4 +102,5 @@ export default [
   ),
   // Generate image resource route (AI image generation endpoint)
   route(API_ROUTES.GENERATE_IMAGE.slice(1), "routes_api/api.generate_image.ts"),
+  route(API_ROUTES.DESIGNS.slice(1), "routes_api/api.designs.ts"),
 ] satisfies RouteConfig;

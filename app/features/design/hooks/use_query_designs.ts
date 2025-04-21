@@ -1,11 +1,10 @@
 import { useQuery, type UseQueryOptions } from "@tanstack/react-query";
 import {
   getAllDesigns,
-  getDesignById,
   getDesignsByProductId,
   getPublicDesigns,
 } from "../api/mock_data";
-import type { Design } from "../types";
+import type { DesignRecord } from "~/db/schema/designs";
 
 /**
  * Interface for designs query parameters
@@ -19,7 +18,31 @@ interface DesignsQueryParams {
  * Interface for designs query response
  */
 interface DesignsQueryResponse {
-  designs: Design[];
+  designs: DesignRecord[];
+}
+
+/**
+ * Fetches designs based on query parameters
+ *
+ * @param params - Query parameters for filtering designs
+ * @returns Promise resolving to designs data
+ */
+async function fetchDesigns(
+  params: DesignsQueryParams
+): Promise<DesignsQueryResponse> {
+  const { productId, publicOnly } = params;
+
+  let designs: DesignRecord[];
+
+  if (productId) {
+    designs = getDesignsByProductId(productId);
+  } else if (publicOnly) {
+    designs = getPublicDesigns();
+  } else {
+    designs = getAllDesigns();
+  }
+
+  return { designs };
 }
 
 /**
@@ -43,81 +66,12 @@ export function useQueryDesigns({
     >
   >;
 } = {}) {
-  const { productId, publicOnly } = params;
-
   return useQuery({
     queryKey: ["designs", params],
-    queryFn: async () => {
-      // Simulate API call
-      return new Promise<DesignsQueryResponse>((resolve) => {
-        setTimeout(() => {
-          let designs: Design[];
-
-          if (productId) {
-            designs = getDesignsByProductId(productId);
-          } else if (publicOnly) {
-            designs = getPublicDesigns();
-          } else {
-            designs = getAllDesigns();
-          }
-
-          resolve({ designs });
-        }, 500);
-      });
-    },
+    queryFn: () => fetchDesigns(params),
     ...options,
   });
 }
 
-/**
- * Interface for single design query parameters
- */
-interface DesignQueryParams {
-  designId: string;
-}
-
-/**
- * Interface for single design query response
- */
-interface DesignQueryResponse {
-  design: Design | null;
-}
-
-/**
- * Hook for fetching a single design by ID using TanStack Query
- *
- * @param params - Query parameters containing the design ID
- * @param options - TanStack Query options for customizing query behavior
- * @returns Query result with design data, loading state, error state, etc.
- */
-export function useQueryDesign({
-  params,
-  options,
-}: {
-  params: DesignQueryParams;
-  options?: Partial<
-    UseQueryOptions<
-      DesignQueryResponse,
-      Error,
-      DesignQueryResponse,
-      ["design", DesignQueryParams]
-    >
-  >;
-}) {
-  const { designId } = params;
-
-  return useQuery({
-    queryKey: ["design", params],
-    queryFn: async () => {
-      // Simulate API call
-      return new Promise<DesignQueryResponse>((resolve) => {
-        setTimeout(() => {
-          const design = getDesignById(designId);
-          resolve({ design: design || null });
-        }, 300);
-      });
-    },
-    enabled: !!designId,
-    ...options,
-  });
-}
+// The `useQueryUserDesigns` hook has been moved to `use_query_user_designs.ts`
+// The `useQueryDesign` hook has been moved to `use_query_design.ts`
