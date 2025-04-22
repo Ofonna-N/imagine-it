@@ -12,6 +12,7 @@ import type {
   PrintfulV2MockupStylesResponse, // Added
   PrintfulV2CatalogProductPricesResponse,
   PrintfulV2CatalogVariantPricesResponse, // Add import for product pricing response
+  PrintfulV2CatalogVariantAvailabilityResponse // Add import for variant availability response
 } from "../../types/printful";
 
 /**
@@ -226,5 +227,24 @@ export async function fetchCatalogVariantPrices(
 ): Promise<PrintfulV2CatalogVariantPricesResponse> {
   return fetchFromPrintful<PrintfulV2CatalogVariantPricesResponse>(
     `/v2/catalog-variants/${variantId}/prices`
+  );
+}
+
+/**
+ * GET /v2/catalog-variants/{id}/availability
+ * Utility: Fetches availability information for a specific catalog variant.
+ */
+export async function fetchCatalogVariantAvailability(
+  variantId: string,
+  techniques?: string[]
+): Promise<PrintfulV2CatalogVariantAvailabilityResponse> {
+  let endpoint = `/v2/catalog-variants/${variantId}/availability`;
+  if (techniques && techniques.length > 0) {
+    const params = new URLSearchParams();
+    params.append("techniques", techniques.join(","));
+    endpoint += `?${params.toString()}`;
+  }
+  return fetchFromPrintful<PrintfulV2CatalogVariantAvailabilityResponse>(
+    endpoint
   );
 }

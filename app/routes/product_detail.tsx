@@ -24,7 +24,7 @@ import {
 import { motion } from "framer-motion";
 import { APP_ROUTES } from "../constants/route_paths";
 import type { Route } from "./+types/product_detail";
-import useQueryProductAvailability from "~/features/product/hooks/use_query_product_availability";
+import useQueryCatalogVariantsAvailability from "~/features/product/hooks/use_query_catalog_variants_availability";
 import { useQueryVariantPrices } from "~/features/product/hooks/use_query_variant_prices"; // Import variant pricing hook
 import ProductDesigner from "~/features/design/components/product_designer"; // Import the new component
 import {
@@ -109,10 +109,14 @@ export default function ProductDetail() {
 
   // Get product availability data using our custom hook
   const {
-    data: availabilityData,
+    data: availabilityResponse,
     isLoading: availabilityLoading,
     error: availabilityError,
-  } = useQueryProductAvailability(product.id.toString());
+  } = useQueryCatalogVariantsAvailability({
+    variantId: selectedVariant.id?.toString() ?? null,
+    techniques: [selectedTechnique],
+  });
+  const availabilityDataArray = availabilityResponse?.data ? [availabilityResponse.data] : [];
 
   // Extract unique colors and their color codes for the color selector
   const uniqueColorsWithCodes = Array.from(
@@ -176,16 +180,12 @@ export default function ProductDetail() {
 
   // Function to determine if a variant is in stock based on availability data
   const isInStock = (variant: PrintfulV2CatalogVariant) => {
-    if (!availabilityData?.data || availabilityData.data.length === 0) {
-      return true; // Default to true if we don't have availability data yet
+    if (availabilityDataArray.length === 0) {
+      return true;
     }
-
-    // Find the availability data for this variant
-    const variantAvailability = availabilityData.data.find(
+    const variantAvailability = availabilityDataArray.find(
       (item) => item.catalog_variant_id === variant.id
     );
-
-    // Check if the variant is available in at least one region for any technique
     return (
       variantAvailability?.techniques.some((technique) =>
         technique.selling_regions.some(
@@ -673,7 +673,7 @@ export default function ProductDetail() {
                   {/* Display availability data */}
                   {!availabilityLoading &&
                     !availabilityError &&
-                    availabilityData && (
+                    availabilityDataArray.length > 0 && (
                       <>
                         {/* Display general availability message */}
                         <Box sx={{ mb: 2 }}>
@@ -685,7 +685,7 @@ export default function ProductDetail() {
                         </Box>
 
                         <AvailabilitySection
-                          availabilityData={availabilityData}
+                          availabilityData={{ data: availabilityDataArray }}
                         />
                       </>
                     )}

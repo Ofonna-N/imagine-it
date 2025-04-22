@@ -4,12 +4,21 @@ Ask for the specific type of API code needed (Loader, Action, Resource Route, Qu
 
 Requirements for the generated code:
 
+- **API Route Management and Source of Truth:**
+
+  - All API route paths must be defined in a central `route_paths` module, which serves as the single source of truth for API endpoints.
+  - API routes should be explicitly added to the main `routes.ts` module to ensure consistency and discoverability across the application.
+  - For requests that require API keys or sensitive credentials, these requests must be handled server-side within the corresponding API route. The client should interact with these server-side API routes via custom API hooks, never exposing API keys or secrets in client-side code.
+
 - **Loaders/Actions/Resource Routes (React Router v7):**
+
   - Use `async function loader()` for data fetching before route rendering.
   - Use `async function action()` for handling data mutations (form submissions, etc.).
   - Use Resource Routes for API-like endpoints serving data directly, typically located within a `routes_api` directory.
   - Reference: [Data Loading](https://reactrouter.com/start/framework/data-loading), [Resource Routes](https://reactrouter.com/start/framework/resource-routes)
+
 - **Client-Side API Hooks (TanStack Query):**
+
   - All client-side API requests **must** be made using custom hooks built on top of TanStack Query (`useQuery`, `useMutation`).
   - **Always use object parameter syntax for TanStack Query hooks** (e.g., `useQuery({ queryKey: [], queryFn: () => {} })`) rather than positional arguments.
   - The `fetch` functions within these hooks should primarily interact with the application's own Resource Routes defined in the `routes_api` directory.
@@ -53,6 +62,7 @@ Requirements for the generated code:
       });
     };
     ```
+
 - **TypeScript Types:**
   - Always define TypeScript types for API request payloads and response data.
 - **Documentation Comments:**

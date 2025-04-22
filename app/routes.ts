@@ -65,8 +65,6 @@ export default [
     API_ROUTES.MOCK_UP_STYLES(":id").slice(1),
     "routes_api/api.catalog_products.$id.mockup_styles.ts"
   ),
-
-  // Auth resource routes
   route(
     API_ROUTES.AUTH.LOGIN.slice(1), // Use constant and slice leading '/'
     "routes_api/api.auth.login.ts"
@@ -95,6 +93,10 @@ export default [
   route(
     API_ROUTES.CATALOG_VARIANT_PRICES(":id").slice(1), // Use constant and slice leading '/'
     "routes_api/api.catalog_variants.$id.prices.ts"
+  ),
+  route(
+    API_ROUTES.CATALOG_VARIANT_AVAILABILITY(":id").slice(1), // Add variant availability API route
+    "routes_api/api.catalog_variants.$id.availability.ts"
   ),
   route(
     AUTH_ROUTES.OAUTH_CALLBACK.slice(1), // Use constant and slice leading '/'
