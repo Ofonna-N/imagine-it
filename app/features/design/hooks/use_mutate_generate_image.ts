@@ -1,7 +1,10 @@
 import { useMutation, type UseMutationOptions } from "@tanstack/react-query";
 import ROUTE_PATHS from "~/constants/route_paths";
 
-export type GenerateImagePayload = { prompt: string };
+export type GenerateImagePayload = {
+  prompt: string;
+  orientation?: "landscape" | "portrait" | "square";
+};
 export type GenerateImageResponse = { images: string[] };
 
 /**

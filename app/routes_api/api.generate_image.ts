@@ -1,16 +1,15 @@
 import replicate from "~/services/replicate/replicate";
-import REPLICATE_MODELS, {
-  ImageGenerationModelType,
-} from "~/services/replicate/replicate_models";
+import REPLICATE_MODELS from "~/services/replicate/replicate_models";
 import type {
   GenerateImageInput,
-  GenerateImageOutput,
+  PRUNAAI_HIDREAM_L1_FAST_SCHEMA,
 } from "~/features/design/types/image_generation";
 
 /**
  * POST /api/generate-image
  * Resource route for AI image generation
  */
+type GenerateImageResponse = PRUNAAI_HIDREAM_L1_FAST_SCHEMA["output"];
 export async function action({ request }: { request: Request }) {
   try {
     const body = (await request.json()) as GenerateImageInput;
@@ -23,25 +22,33 @@ export async function action({ request }: { request: Request }) {
       });
     }
 
-    // Determine model version (fallback to our default model identifier)
-    const modelType =
-      (body.model_type as ImageGenerationModelType) ??
-      ImageGenerationModelType.PRUNAAI_HIDREAM_L1_FAST;
-    const modelVersion = REPLICATE_MODELS.IMAGE_GENERATION[modelType] as
-      | `${string}/${string}`
-      | `${string}/${string}:${string}`;
+    const modelVersion = REPLICATE_MODELS.IMAGE_GENERATION[
+      "prunaai/hidream-l1-fast"
+    ] as `${string}/${string}` | `${string}/${string}:${string}`;
 
-    // Call Replicate API to generate images using the correct signature
+    // Determine resolution based on user-selected orientation
+    const orientation = body.orientation ?? "square";
+    let resolution: PRUNAAI_HIDREAM_L1_FAST_SCHEMA["input"]["resolution"];
+    switch (orientation) {
+      case "landscape":
+        resolution = "1360 × 768 (Landscape)";
+        break;
+      case "portrait":
+        resolution = "768 × 1360 (Portrait)";
+        break;
+      default:
+        resolution = "1024 × 1024 (Square)";
+    }
+
+    // Call Replicate API to generate images with the selected orientation
     const output = await replicate.run(modelVersion, {
       input: {
         prompt: body.prompt,
-        seed: body.seed ?? -1,
-        model_type: body.model_type,
-        speed_mode: body.speed_mode,
-        resolution: body.resolution ?? "1024 × 1024 (Square)",
-        output_format: body.output_format ?? "png",
-        output_quality: body.output_quality,
-      },
+        seed: 15,
+        resolution,
+        output_format: "png",
+        speed_mode: "Lightly Juiced 🍊 (more consistent)",
+      } as PRUNAAI_HIDREAM_L1_FAST_SCHEMA["input"],
     });
 
     // Extract image URIs from the Replicate output

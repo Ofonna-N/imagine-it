@@ -15,6 +15,10 @@ import {
   Stack,
   InputAdornment,
   Tooltip,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from "@mui/material";
 import { FiSearch, FiCheck, FiSave } from "react-icons/fi";
 import { useMutateSaveDesign } from "../hooks/use_mutate_save_design";
@@ -43,18 +47,18 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
   const [images, setImages] = useState<string[]>([]);
   const [file, setFile] = useState<File | null>(null);
   const [filePreview, setFilePreview] = useState<string>("");
+  // State for selected orientation
+  const [orientation, setOrientation] = useState<
+    "square" | "landscape" | "portrait"
+  >("square");
 
   // Mutation hook for generating images via API
-  const {
-    mutate: generateImages,
-    isPending: isGenerating,
-    isError,
-    error: generateError,
-  } = useMutateGenerateImage({
-    onSuccess: (data) => {
-      setImages(data.images);
-    },
-  });
+  const { mutate: generateImages, isPending: isGenerating } =
+    useMutateGenerateImage({
+      onSuccess: (data) => {
+        setImages(data.images);
+      },
+    });
 
   const { mutate: saveDesign, isPending: isSaving } = useMutateSaveDesign({
     onSuccess: () => {
@@ -67,7 +71,7 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
 
   // Handler to invoke the image generation mutation
   const handleGenerate = () => {
-    generateImages({ prompt });
+    generateImages({ prompt, orientation });
   };
 
   // Handler for selecting an image
@@ -110,7 +114,7 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
         {/* Upload from computer */}
         {!file ? (
           <Button variant="outlined" component="label">
-            Upload Image
+            <span>Upload Image</span>
             <input
               type="file"
               accept="image/*"
@@ -165,6 +169,25 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
             },
           }}
         />
+
+        {/* Orientation Selector */}
+        <FormControl fullWidth disabled={isGenerating}>
+          <InputLabel id="orientation-select-label">Orientation</InputLabel>
+          <Select
+            labelId="orientation-select-label"
+            value={orientation}
+            label="Orientation"
+            onChange={(e) =>
+              setOrientation(
+                e.target.value as "square" | "landscape" | "portrait"
+              )
+            }
+          >
+            <MenuItem value="square">Square</MenuItem>
+            <MenuItem value="landscape">Landscape</MenuItem>
+            <MenuItem value="portrait">Portrait</MenuItem>
+          </Select>
+        </FormControl>
 
         {/* Generate Button */}
         <Button

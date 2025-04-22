@@ -17,6 +17,7 @@ export function useMutateSaveDesign(
   options?: UseMutationOptions<{ design: any }, Error, SaveDesignInput>
 ) {
   return useMutation({
+    mutationKey: ["saveDesign"], // Adding a mutation key for identification
     mutationFn: async (input: SaveDesignInput) => {
       const formData = new FormData();
       formData.append("name", input.name);

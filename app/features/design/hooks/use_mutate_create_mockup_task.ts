@@ -61,6 +61,7 @@ export const useMutateCreateMockupTask = (
     Error,
     PrintfulV2MockupGeneratorTaskRequest
   >({
+    mutationKey: ["createMockupTask"], // Adding a mutation key for identification
     mutationFn: createMockupTasks,
     ...options,
   });
