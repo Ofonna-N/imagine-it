@@ -99,7 +99,7 @@ export default function MyDesigns() {
                 <CardMedia
                   component="img"
                   height="200"
-                  image={design.image_url}
+                  image={design.imageUrl}
                   alt={design.name}
                   onClick={() => handleOpenDialog(design)}
                   sx={{ cursor: "pointer" }}
@@ -117,12 +117,14 @@ export default function MyDesigns() {
                   >
                     <Typography variant="body2" color="text.secondary">
                       Created:{" "}
-                      {new Date(design.created_at).toLocaleDateString()}
+                      {design.createdAt
+                        ? new Date(design.createdAt).toLocaleDateString()
+                        : "Unknown"}
                     </Typography>
                     <Chip
-                      label={design.product_id ? "Used in products" : "Unused"}
+                      label={design.productId ? "Used in products" : "Unused"}
                       size="small"
-                      color={design.product_id ? "success" : "default"}
+                      color={design.productId ? "success" : "default"}
                       variant="outlined"
                     />
                   </Box>
@@ -175,12 +177,14 @@ export default function MyDesigns() {
                   maxHeight: "70vh",
                   objectFit: "contain",
                 }}
-                src={selectedDesign.image_url}
+                src={selectedDesign.imageUrl}
                 alt={selectedDesign.name}
               />
               <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
                 Created:{" "}
-                {new Date(selectedDesign.created_at).toLocaleDateString()}
+                {selectedDesign.createdAt
+                  ? new Date(selectedDesign.createdAt).toLocaleDateString()
+                  : "Unknown"}
               </Typography>
             </DialogContent>
             <DialogActions>

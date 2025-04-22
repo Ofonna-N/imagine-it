@@ -17,7 +17,14 @@ const ImageGenerationPage: React.FC = () => {
         in product designs.
       </Typography>
       <Paper sx={{ p: 3 }}>
-        <ImageGenerator />
+        <ImageGenerator
+          onImageSelect={
+            (url) => {
+              console.log("Image selected:", url);
+            } // Handle image selection if needed
+          }
+          singleSelect={false}
+        />
       </Paper>
     </Box>
   );

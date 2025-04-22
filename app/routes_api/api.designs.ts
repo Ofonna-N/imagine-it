@@ -1,9 +1,10 @@
-import createSupabaseServerClient from "../services/supabase/supabase_client";
+import createSupabaseServerClient from "~/services/supabase/supabase_client";
 import { randomUUID } from "crypto";
 import {
   getDesignsByUserId,
+  getDesignByIdAndUser,
   createDesign,
-} from "../db/queries/designs_queries";
+} from "~/db/queries/designs_queries";
 
 /**
  * GET /api/designs
@@ -11,7 +12,30 @@ import {
  */
 export async function loader({ request }: { request: Request }) {
   const { headers, supabase } = createSupabaseServerClient({ request });
-  // Get session user
+  const url = new URL(request.url);
+  const designId = url.searchParams.get("designId");
+
+  // If requesting a single design by ID
+  if (designId) {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (!session?.user) {
+      return new Response(JSON.stringify({ design: null }), {
+        headers: { ...headers, "Content-Type": "application/json" },
+        status: 401,
+      });
+    }
+    const userId = session.user.id;
+
+    const design = await getDesignByIdAndUser(designId, userId);
+    return new Response(JSON.stringify({ design }), {
+      headers: { ...headers, "Content-Type": "application/json" },
+      status: design ? 200 : 404,
+    });
+  }
+
+  // Existing list loader logic...
   const {
     data: { session },
   } = await supabase.auth.getSession();
@@ -50,6 +74,7 @@ export async function action({ request }: { request: Request }) {
   const userId = session.user.id;
 
   const formData = await request.formData();
+  const file = formData.get("file") as Blob | null;
   const name = formData.get("name") as string;
   const imageUrl = formData.get("image_url") as string;
   const previewUrl = formData.get("preview_url") as string | null;
@@ -58,43 +83,149 @@ export async function action({ request }: { request: Request }) {
 
   // Create new design record with image stored in Supabase bucket
   const id = randomUUID();
-  // Upload main image to storage
-  const imageResponse = await fetch(imageUrl);
-  const imageType = imageResponse.headers.get("content-type") ?? "image/png";
-  const imageExt = imageType.split("/")[1] ?? "png";
-  const imageBuffer = await imageResponse.arrayBuffer();
-  await supabase.storage
-    .from("imagine-it")
-    .upload(`designs/${id}.${imageExt}`, new Uint8Array(imageBuffer), {
-      contentType: imageType,
-    });
-  const {
-    data: { publicUrl: storedImageUrl },
-  } = supabase.storage
-    .from("imagine-it")
-    .getPublicUrl(`designs/${id}.${imageExt}`);
+  // Upload main image
+  let storedImageUrl: string;
+  if (file instanceof Blob) {
+    // Upload the uploaded file blob
+    const imageType = file.type || "image/png";
+    const imageExt = imageType.split("/")[1] ?? "png";
+    const buffer = await file.arrayBuffer();
+    const { error: uploadError } = await supabase.storage
+      .from("imagine-it")
+      .upload(`designs/${id}.${imageExt}`, Buffer.from(buffer), {
+        contentType: imageType,
+      });
+    console.log("uploadError:", uploadError);
+    if (uploadError) {
+      return new Response(
+        JSON.stringify({
+          data: null,
+          error: {
+            statusCode: "500",
+            error: "StorageUploadError",
+            message: uploadError.message,
+          },
+        }),
+        {
+          headers: { ...headers, "Content-Type": "application/json" },
+          status: 500,
+        }
+      );
+    }
+    const {
+      data: { publicUrl },
+    } = supabase.storage
+      .from("imagine-it")
+      .getPublicUrl(`designs/${id}.${imageExt}`);
+    storedImageUrl = publicUrl;
+  } else {
+    try {
+      const imageResponse = await fetch(imageUrl);
+      const imageType =
+        imageResponse.headers.get("content-type") ?? "image/png";
+      const imageExt = imageType.split("/")[1] ?? "png";
+      const imageBuffer = await imageResponse.arrayBuffer();
+      const { error: uploadError } = await supabase.storage
+        .from("imagine-it")
+        .upload(`designs/${id}.${imageExt}`, new Uint8Array(imageBuffer), {
+          contentType: imageType,
+        });
+      if (uploadError) {
+        return new Response(
+          JSON.stringify({
+            data: null,
+            error: {
+              statusCode: "500",
+              error: "StorageUploadError",
+              message: uploadError.message,
+            },
+          }),
+          {
+            headers: { ...headers, "Content-Type": "application/json" },
+            status: 500,
+          }
+        );
+      }
+      const {
+        data: { publicUrl },
+      } = supabase.storage
+        .from("imagine-it")
+        .getPublicUrl(`designs/${id}.${imageExt}`);
+      storedImageUrl = publicUrl;
+    } catch (err: any) {
+      return new Response(
+        JSON.stringify({
+          data: null,
+          error: {
+            statusCode: "500",
+            error: "UploadException",
+            message: err.message ?? "Unexpected upload error",
+          },
+        }),
+        {
+          headers: { ...headers, "Content-Type": "application/json" },
+          status: 500,
+        }
+      );
+    }
+  }
+
   // Optionally upload preview image
   let storedPreviewUrl: string | undefined = undefined;
   if (previewUrl) {
-    const previewResponse = await fetch(previewUrl);
-    const previewType =
-      previewResponse.headers.get("content-type") ?? imageType;
-    const previewExt = previewType.split("/")[1] ?? imageExt;
-    const previewBuffer = await previewResponse.arrayBuffer();
-    await supabase.storage
-      .from("imagine-it")
-      .upload(
-        `designs/${id}_preview.${previewExt}`,
-        new Uint8Array(previewBuffer),
-        { contentType: previewType }
+    try {
+      const previewResponse = await fetch(previewUrl);
+      const previewType =
+        previewResponse.headers.get("content-type") ?? "image/png";
+      const previewExt = previewType.split("/")[1] ?? "png";
+      const previewBuffer = await previewResponse.arrayBuffer();
+      const { error: previewError } = await supabase.storage
+        .from("imagine-it")
+        .upload(
+          `designs/${id}_preview.${previewExt}`,
+          new Uint8Array(previewBuffer),
+          { contentType: previewType }
+        );
+      if (previewError) {
+        return new Response(
+          JSON.stringify({
+            data: null,
+            error: {
+              statusCode: "500",
+              error: "PreviewUploadError",
+              message: previewError.message,
+            },
+          }),
+          {
+            headers: { ...headers, "Content-Type": "application/json" },
+            status: 500,
+          }
+        );
+      }
+      const {
+        data: { publicUrl: previewPublicUrl },
+      } = supabase.storage
+        .from("imagine-it")
+        .getPublicUrl(`designs/${id}_preview.${previewExt}`);
+      storedPreviewUrl = previewPublicUrl;
+    } catch (err: any) {
+      return new Response(
+        JSON.stringify({
+          data: null,
+          error: {
+            statusCode: "500",
+            error: "PreviewUploadException",
+            message: err.message ?? "Unexpected preview upload error",
+          },
+        }),
+        {
+          headers: { ...headers, "Content-Type": "application/json" },
+          status: 500,
+        }
       );
-    const {
-      data: { publicUrl: previewPublicUrl },
-    } = supabase.storage
-      .from("imagine-it")
-      .getPublicUrl(`designs/${id}_preview.${previewExt}`);
-    storedPreviewUrl = previewPublicUrl;
+    }
   }
+
   // Insert record referencing storage URLs
   const design = await createDesign({
     id,

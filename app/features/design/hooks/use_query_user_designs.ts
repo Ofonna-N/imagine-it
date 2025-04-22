@@ -1,18 +1,11 @@
 import { useQuery, type UseQueryOptions } from "@tanstack/react-query";
 import { API_ROUTES } from "~/constants/route_paths";
+import type { DesignRecord } from "~/db/schema/designs";
 
 /**
  * Type representing a user's design record
  */
-export type UserDesign = {
-  id: string;
-  name: string;
-  image_url: string;
-  preview_url?: string;
-  canvas_data?: string;
-  product_id?: string;
-  created_at: string;
-};
+export type UserDesign = DesignRecord;
 
 /**
  * Hook for fetching the authenticated user's saved designs

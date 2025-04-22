@@ -18,8 +18,9 @@ import {
   Card,
   CardMedia,
   Paper,
+  Stack,
 } from "@mui/material";
-import { FiX, FiImage } from "react-icons/fi";
+import { FiX, FiImage, FiCheck } from "react-icons/fi";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation, Pagination } from "swiper/modules";
 import "swiper/css";
@@ -39,6 +40,7 @@ import { useMutateCreateMockupTask } from "../hooks/use_mutate_create_mockup_tas
 import { useQueryMockupTaskResult } from "../hooks/use_query_mockup_task_result";
 import { MOCK_STORAGE_IMAGE_URLS } from "~/constants/mock_storage_image_urls";
 import ImageGenerator from "./image_generator";
+import { DesignsGallery } from "./designs_gallery";
 
 interface ProductDesignerProps {
   open: boolean;
@@ -364,6 +366,14 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
 
   // --- AI Image Modal State & Handlers --- //
   const [openImageGen, setOpenImageGen] = useState(false);
+  // --- Saved Designs Gallery State & Handlers --- //
+  const [openDesignsGallery, setOpenDesignsGallery] = useState(false);
+  const handleDesignSelected = (url: string) => {
+    setImageUrl(url);
+    setOpenDesignsGallery(false);
+  };
+
+  // --- AI Image Handler ---
   const handleImageGenerated = (url: string) => {
     setImageUrl(url);
     setOpenImageGen(false);
@@ -413,8 +423,8 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
       </Box>
     );
   };
-  console.log("selectedVariant", selectedVariant);
-  console.log("selectedplacementGroup", selectedPlacementGroup);
+  // console.log("selectedVariant", selectedVariant);
+  // console.log("selectedplacementGroup", selectedPlacementGroup);
   // console.log("selectedplacementGroup", selectedPlacementGroup);
   // console.log("mockupStyleGroups", mockupStyleGroups);
   // console.log("allavalablePlacements", availablePlacements);
@@ -515,14 +525,24 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
                     sx={{ objectFit: "contain", width: "100%", height: "100%" }}
                   />
                 </Card>
-                <Button
-                  variant="outlined"
-                  startIcon={<FiImage />}
-                  onClick={() => setOpenImageGen(true)}
-                  sx={{ minWidth: 120 }}
-                >
-                  {imageUrl ? "Change Image" : "Generate AI Image"}
-                </Button>
+                <Stack spacing={1}>
+                  <Button
+                    variant="outlined"
+                    startIcon={<FiImage />}
+                    onClick={() => setOpenImageGen(true)}
+                    sx={{ minWidth: 120 }}
+                  >
+                    {imageUrl ? "Change Image" : "Generate AI Image"}
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    startIcon={<FiCheck />}
+                    onClick={() => setOpenDesignsGallery(true)}
+                    sx={{ minWidth: 120 }}
+                  >
+                    Choose from My Designs
+                  </Button>
+                </Stack>
               </Box>
               <Typography
                 variant="caption"
@@ -694,6 +714,13 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
           </Button>
         </DialogActions>
       </Dialog>
+      {/* Saved Designs Gallery Modal */}
+      <DesignsGallery
+        open={openDesignsGallery}
+        onClose={() => setOpenDesignsGallery(false)}
+        productId={product.id.toString()}
+        variantId={selectedVariant.id.toString()}
+      />
       {/* Full-screen gallery modal */}
       <Dialog
         fullScreen

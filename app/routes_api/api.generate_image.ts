@@ -39,7 +39,7 @@ export async function action({ request }: { request: Request }) {
         model_type: body.model_type,
         speed_mode: body.speed_mode,
         resolution: body.resolution ?? "1024 × 1024 (Square)",
-        output_format: body.output_format,
+        output_format: body.output_format ?? "png",
         output_quality: body.output_quality,
       },
     });
