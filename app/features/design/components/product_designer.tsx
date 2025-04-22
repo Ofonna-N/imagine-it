@@ -720,6 +720,7 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
         onClose={() => setOpenDesignsGallery(false)}
         productId={product.id.toString()}
         variantId={selectedVariant.id.toString()}
+        onDesignSelect={(design) => handleDesignSelected(design.imageUrl)}
       />
       {/* Full-screen gallery modal */}
       <Dialog

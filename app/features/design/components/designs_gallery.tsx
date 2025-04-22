@@ -24,6 +24,7 @@ interface DesignsGalleryProps {
   onClose: () => void;
   productId: string;
   variantId: string;
+  onDesignSelect?: (design: UserDesign) => void;
 }
 
 export const DesignsGallery: React.FC<DesignsGalleryProps> = ({
@@ -31,16 +32,19 @@ export const DesignsGallery: React.FC<DesignsGalleryProps> = ({
   onClose,
   productId,
   variantId,
+  onDesignSelect,
 }) => {
   const navigate = useNavigate();
   const { data: designs = [], isLoading, isError } = useQueryUserDesigns();
 
   const handleSelect = (design: UserDesign) => {
+    if (onDesignSelect) {
+      onDesignSelect(design);
+      onClose();
+      return;
+    }
     onClose();
     // Navigate to design playground with selected design
-    navigate(
-      `/design-playground?productId=${productId}&variantId=${variantId}&designId=${design.id}`
-    );
   };
 
   return (
@@ -63,7 +67,7 @@ export const DesignsGallery: React.FC<DesignsGalleryProps> = ({
                   <CardMedia
                     component="img"
                     height="140"
-                    image={design.image_url}
+                    image={design.imageUrl}
                     alt={design.name}
                   />
                   <CardActions>
