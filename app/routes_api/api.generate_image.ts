@@ -41,10 +41,17 @@ export async function action({ request }: { request: Request }) {
     }
 
     // Call Replicate API to generate images with the selected orientation
+    // Generate a random seed between 1 and 20 (inclusive)
+    // The seed value controls the randomness of the AI model's output.
+    // Using the same seed with the same input will produce the same image,
+    // while changing the seed will generate a different variation.
+    // This allows for reproducibility and controlled diversity in generated images.
+    const seed = Math.floor(Math.random() * 20) + 1;
+
     const output = await replicate.run(modelVersion, {
       input: {
         prompt: body.prompt,
-        seed: 15,
+        seed,
         resolution,
         output_format: "png",
         speed_mode: "Lightly Juiced 🍊 (more consistent)",

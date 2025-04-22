@@ -19,6 +19,7 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  Alert,
 } from "@mui/material";
 import { FiSearch, FiCheck, FiSave } from "react-icons/fi";
 import { useMutateSaveDesign } from "../hooks/use_mutate_save_design";
@@ -51,6 +52,30 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
   const [orientation, setOrientation] = useState<
     "square" | "landscape" | "portrait"
   >("square");
+  // State for selected art style
+  const [artStyle, setArtStyle] = useState<string>("bokeh");
+  const artStyleOptions = [
+    "minimalist",
+    "abstract",
+    "sketchy",
+    "photography",
+    "painting",
+    "3d render",
+    "cinematic",
+    "graphic design pop art",
+    "creative",
+    "fashion",
+    "graphic design",
+    "moody",
+    "bokeh",
+    "pro b&w photography",
+    "pro color photography",
+    "pro film photography",
+    "sketch black and white",
+    "sketch color",
+  ];
+
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   // Mutation hook for generating images via API
   const { mutate: generateImages, isPending: isGenerating } =
@@ -60,18 +85,33 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
       },
     });
 
-  const { mutate: saveDesign, isPending: isSaving } = useMutateSaveDesign({
+  const {
+    mutate: saveDesign,
+    isPending: isSaving,
+    isSuccess: isSaved,
+    reset: resetSaveDesign,
+  } = useMutateSaveDesign({
     onSuccess: () => {
+      setSaveError(null);
       console.log("Design saved");
     },
     onError: (err) => {
       console.error("Error saving design:", err);
+      setSaveError(
+        err instanceof Error ? err.message : "Failed to save design"
+      );
     },
   });
 
   // Handler to invoke the image generation mutation
   const handleGenerate = () => {
-    generateImages({ prompt, orientation });
+    if (!prompt.trim()) return;
+    resetSaveDesign();
+    let finalPrompt = prompt;
+    if (artStyle) {
+      finalPrompt = `${prompt} art style must be(${artStyle})`;
+    }
+    generateImages({ prompt: finalPrompt, orientation });
   };
 
   // Handler for selecting an image
@@ -111,6 +151,13 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
   return (
     <Paper elevation={2} sx={{ p: 3, borderRadius: 2 }}>
       <Stack spacing={3}>
+        {/* Error Alert for Save Design */}
+        {saveError && (
+          <Alert severity="error" onClose={() => setSaveError(null)}>
+            {saveError}
+          </Alert>
+        )}
+
         {/* Upload from computer */}
         {!file ? (
           <Button variant="outlined" component="label">
@@ -170,6 +217,26 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
           }}
         />
 
+        {/* Art Style Selector */}
+        <FormControl fullWidth disabled={isGenerating} sx={{ mt: 1 }}>
+          <InputLabel id="art-style-select-label">Art Style</InputLabel>
+          <Select
+            labelId="art-style-select-label"
+            value={artStyle}
+            label="Art Style"
+            onChange={(e) => setArtStyle(e.target.value)}
+          >
+            <MenuItem value="">
+              <em>None</em>
+            </MenuItem>
+            {artStyleOptions.map((style) => (
+              <MenuItem key={style} value={style}>
+                {style.charAt(0).toUpperCase() + style.slice(1)}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+
         {/* Orientation Selector */}
         <FormControl fullWidth disabled={isGenerating}>
           <InputLabel id="orientation-select-label">Orientation</InputLabel>
@@ -222,7 +289,7 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
                     alt={`AI Image ${idx + 1}`}
                     sx={{ width: "100%", display: "block" }}
                   />
-                  {onImageSelect && (
+                  {
                     <Box
                       className="overlay"
                       sx={{
@@ -238,16 +305,27 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
                       }}
                     >
                       <Stack direction="row" spacing={1}>
-                        <IconButton
-                          onClick={() => handleSelect(url)}
-                          sx={{ color: "common.white" }}
+                        {onImageSelect && (
+                          <IconButton
+                            onClick={() => handleSelect(url)}
+                            sx={{ color: "common.white" }}
+                          >
+                            <FiCheck />
+                          </IconButton>
+                        )}
+                        <Tooltip
+                          title={
+                            isSaving
+                              ? "Saving..."
+                              : isSaved
+                              ? "Design Saved"
+                              : "Save Design"
+                          }
                         >
-                          <FiCheck />
-                        </IconButton>
-                        <Tooltip title={isSaving ? "Saving..." : "Save Design"}>
                           <span>
                             <IconButton
-                              disabled={isSaving}
+                              disabled={isSaving || isSaved}
+                              loading={isSaving}
                               onClick={() =>
                                 saveDesign({ name: prompt, image_url: url })
                               }
@@ -259,7 +337,7 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
                         </Tooltip>
                       </Stack>
                     </Box>
-                  )}
+                  }
                 </Card>
               </ImageListItem>
             ))}
