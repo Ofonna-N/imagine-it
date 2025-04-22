@@ -448,6 +448,14 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
         </IconButton>
       </DialogTitle>
       <DialogContent dividers sx={{ bgcolor: "background.default" }}>
+        {/* Feedback for variants without placement options */}
+        {availablePlacements.length === 0 && (
+          <Alert severity="info" sx={{ mb: 2 }}>
+            This variant doesn’t support custom design placements for the
+            selected technique.
+          </Alert>
+        )}
+
         <Grid container spacing={4}>
           {/* Main Controls: Placement & AI Image */}
           <Grid size={{ xs: 12, md: 5 }}>
@@ -462,6 +470,7 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
                   value={selectedPlacement}
                   label="Placement"
                   onChange={(e) => handlePlacementChange(e.target.value)}
+                  disabled={!availablePlacements.length} // Disable when no placements
                   renderValue={(selected) => {
                     const group = availablePlacements.find(
                       (g) => getPlacementKey(g) === selected
@@ -506,7 +515,12 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
                 2. AI Image
               </Typography>
               <Box
-                sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}
+                sx={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: 2,
+                }}
               >
                 {/* Image Preview */}
                 <Card
