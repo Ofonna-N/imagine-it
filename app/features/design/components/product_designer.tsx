@@ -19,6 +19,7 @@ import {
   CardMedia,
   Paper,
   Stack,
+  Skeleton,
 } from "@mui/material";
 import { FiX, FiImage, FiCheck } from "react-icons/fi";
 import { Swiper, SwiperSlide } from "swiper/react";
@@ -38,7 +39,6 @@ import type {
 import { useQueryProductMockupStyles } from "../hooks/use_query_product_mockup_styles";
 import { useMutateCreateMockupTask } from "../hooks/use_mutate_create_mockup_task";
 import { useQueryMockupTaskResult } from "../hooks/use_query_mockup_task_result";
-import { MOCK_STORAGE_IMAGE_URLS } from "~/constants/mock_storage_image_urls";
 import ImageGenerator from "./image_generator";
 import { DesignsGallery } from "./designs_gallery";
 
@@ -64,9 +64,7 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
   // --- State --- //
   // Single placement selection
   const [selectedPlacement, setSelectedPlacement] = useState<string>("");
-  const [imageUrl, setImageUrl] = useState<string>(
-    MOCK_STORAGE_IMAGE_URLS[0] ?? ""
-  );
+  const [imageUrl, setImageUrl] = useState<string>("");
   const [generatedTaskIds, setGeneratedTaskIds] = useState<number[] | null>(
     null
   );
@@ -518,12 +516,31 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
                     borderColor: imageUrl ? "primary.main" : "divider",
                   }}
                 >
-                  <CardMedia
-                    component="img"
-                    image={imageUrl}
-                    alt="AI Design Preview"
-                    sx={{ objectFit: "contain", width: "100%", height: "100%" }}
-                  />
+                  {imageUrl ? (
+                    <CardMedia
+                      component="img"
+                      image={imageUrl}
+                      alt="AI Design Preview"
+                      sx={{
+                        objectFit: "contain",
+                        width: "100%",
+                        height: "100%",
+                      }}
+                    />
+                  ) : (
+                    <Box
+                      sx={{
+                        width: "100%",
+                        height: "100%",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        bgcolor: "background.paper",
+                      }}
+                    >
+                      <FiImage size={48} color="grey" />
+                    </Box>
+                  )}
                 </Card>
                 <Stack spacing={1}>
                   <Button
@@ -653,16 +670,31 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
                 Preview
               </Typography>
               <Card sx={{ maxWidth: 350, width: "100%", mb: 2, boxShadow: 6 }}>
-                <CardMedia
-                  component="img"
-                  image={imageUrl}
-                  alt="Product Preview"
-                  sx={{
-                    objectFit: "contain",
-                    maxHeight: 300,
-                    bgcolor: "background.paper",
-                  }}
-                />
+                {imageUrl ? (
+                  <CardMedia
+                    component="img"
+                    image={imageUrl}
+                    alt="Product Preview"
+                    sx={{
+                      objectFit: "contain",
+                      maxHeight: 300,
+                      bgcolor: "background.paper",
+                    }}
+                  />
+                ) : (
+                  <Box
+                    sx={{
+                      width: "100%",
+                      height: 300,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      bgcolor: "background.paper",
+                    }}
+                  >
+                    <FiImage size={64} color="grey" />
+                  </Box>
+                )}
               </Card>
               <Button
                 variant="contained"

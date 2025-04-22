@@ -16,7 +16,7 @@ import {
   Typography,
   Box,
 } from "@mui/material";
-import { FiCheck } from "react-icons/fi";
+import { FiCheck, FiImage } from "react-icons/fi";
 import { useNavigate } from "react-router";
 
 interface DesignsGalleryProps {
@@ -64,12 +64,26 @@ export const DesignsGallery: React.FC<DesignsGalleryProps> = ({
             {designs.map((design) => (
               <Grid key={design.id} size={{ xs: 12, sm: 6, md: 4 }}>
                 <Card>
-                  <CardMedia
-                    component="img"
-                    height="140"
-                    image={design.imageUrl}
-                    alt={design.name}
-                  />
+                  {design.imageUrl ? (
+                    <CardMedia
+                      component="img"
+                      height="140"
+                      image={design.imageUrl}
+                      alt={design.name}
+                    />
+                  ) : (
+                    <Box
+                      sx={{
+                        height: 140,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        bgcolor: "background.paper",
+                      }}
+                    >
+                      <FiImage size={32} color="grey" />
+                    </Box>
+                  )}
                   <CardActions>
                     <Button
                       size="small"
