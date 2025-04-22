@@ -505,12 +505,14 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
               <Typography variant="h6" gutterBottom>
                 2. AI Image
               </Typography>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+              <Box
+                sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}
+              >
+                {/* Image Preview */}
                 <Card
                   sx={{
                     width: 100,
                     height: 100,
-                    mr: 2,
                     boxShadow: 3,
                     border: imageUrl ? 2 : 1,
                     borderColor: imageUrl ? "primary.main" : "divider",
@@ -542,7 +544,8 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
                     </Box>
                   )}
                 </Card>
-                <Stack spacing={1}>
+                {/* Action Buttons */}
+                <Stack spacing={1} sx={{ mt: 1 }}>
                   <Button
                     variant="outlined"
                     startIcon={<FiImage />}
