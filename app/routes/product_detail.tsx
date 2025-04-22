@@ -116,7 +116,9 @@ export default function ProductDetail() {
     variantId: selectedVariant.id?.toString() ?? null,
     techniques: [selectedTechnique],
   });
-  const availabilityDataArray = availabilityResponse?.data ? [availabilityResponse.data] : [];
+  const availabilityDataArray = availabilityResponse?.data
+    ? [availabilityResponse.data]
+    : [];
 
   // Extract unique colors and their color codes for the color selector
   const uniqueColorsWithCodes = Array.from(

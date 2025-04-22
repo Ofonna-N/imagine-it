@@ -12,7 +12,7 @@ import type {
   PrintfulV2MockupStylesResponse, // Added
   PrintfulV2CatalogProductPricesResponse,
   PrintfulV2CatalogVariantPricesResponse, // Add import for product pricing response
-  PrintfulV2CatalogVariantAvailabilityResponse // Add import for variant availability response
+  PrintfulV2CatalogVariantAvailabilityResponse, // Add import for variant availability response
 } from "../../types/printful";
 
 /**
