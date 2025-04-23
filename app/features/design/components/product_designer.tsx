@@ -35,6 +35,7 @@ import type {
   PrintfulV2MockupGeneratorTaskRequest,
   ProductOption,
   PrintfulV2MockupStyle,
+  PrintfulV2OrderItem,
 } from "~/types/printful";
 import { useQueryProductMockupStyles } from "../hooks/use_query_product_mockup_styles";
 import { useMutateCreateMockupTask } from "../hooks/use_mutate_create_mockup_task";
@@ -750,14 +751,16 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
                       (img) => img.mockup_url
                     );
 
-                    const orderItem = {
+                    const orderItem: PrintfulV2OrderItem & {
+                      mockupUrls: string[];
+                    } = {
                       source: "catalog",
                       catalog_variant_id: selectedVariant.id,
                       quantity: 1,
                       name: product.name,
                       placements: [
                         {
-                          placement: placementKey,
+                          placement: placementKey!,
                           technique: selectedTechnique,
                           layers: [
                             {
@@ -769,7 +772,7 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
                       ],
                       product_options: productOptions,
                       // Attach all generated mockup URLs for reference
-                      mockup_urls: allMockupUrls,
+                      mockupUrls: allMockupUrls,
                     };
                     // Print the mapped order item object
                     // eslint-disable-next-line no-console
