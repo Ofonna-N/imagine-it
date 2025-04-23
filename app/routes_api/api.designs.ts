@@ -188,7 +188,6 @@ export async function action({ request }: { request: Request }) {
     productId: productId ?? undefined,
     canvasData: canvasData ? JSON.parse(canvasData) : undefined,
     isPublic: false,
-    tags: [],
   });
   return new Response(JSON.stringify({ design }), {
     headers: { ...headers, "Content-Type": "application/json" },

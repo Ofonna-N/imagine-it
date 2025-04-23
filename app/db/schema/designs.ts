@@ -17,7 +17,6 @@ export const designsTable = pgTable("designs", {
   imageUrl: text("image_url").notNull(),
   productId: uuid("product_id"),
   isPublic: boolean("is_public").notNull().default(false),
-  tags: text("tags").array().notNull().default([]),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
   canvasData: json("canvas_data").notNull().default({}),
