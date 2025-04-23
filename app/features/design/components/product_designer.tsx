@@ -272,6 +272,7 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
     }
   }, [placementKey]);
 
+  console.log("taskResultResponse", taskResultResponse);
   // --- Memoized gallery images from mockup task response --- //
   const galleryImages = useMemo(() => {
     if (!taskResultResponse?.data) return [];
@@ -742,11 +743,37 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
                   color="primary"
                   size="large"
                   sx={{ mt: 2, minWidth: 200, fontWeight: 600 }}
-                  // TODO: Connect to cart logic
                   onClick={() => {
-                    // Placeholder: implement add to cart logic here
-                    // e.g., call a mutation or context function
-                    alert("Added to cart! (implement logic)");
+                    // Map the order_item payload from the current selection
+                    // Collect all mockup URLs from the generated gallery images
+                    const allMockupUrls = galleryImages.map(
+                      (img) => img.mockup_url
+                    );
+
+                    const orderItem = {
+                      source: "catalog",
+                      catalog_variant_id: selectedVariant.id,
+                      quantity: 1,
+                      name: product.name,
+                      placements: [
+                        {
+                          placement: placementKey,
+                          technique: selectedTechnique,
+                          layers: [
+                            {
+                              type: "file",
+                              url: imageUrl,
+                            },
+                          ],
+                        },
+                      ],
+                      product_options: productOptions,
+                      // Attach all generated mockup URLs for reference
+                      mockup_urls: allMockupUrls,
+                    };
+                    // Print the mapped order item object
+                    // eslint-disable-next-line no-console
+                    console.log("Mapped order_item payload:", orderItem);
                   }}
                 >
                   Add to Cart
