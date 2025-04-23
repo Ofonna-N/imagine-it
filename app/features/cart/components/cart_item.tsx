@@ -6,15 +6,20 @@ import {
   Card,
   CardMedia,
   CardContent,
+  Button,
 } from "@mui/material";
-import { FiTrash2, FiEdit } from "react-icons/fi";
+import { FiTrash2, FiEdit, FiImage } from "react-icons/fi";
 import { Link } from "react-router";
+import Dialog from "@mui/material/Dialog";
+import ImageList from "@mui/material/ImageList";
+import ImageListItem from "@mui/material/ImageListItem";
 import type { CartItem as CartItemType } from "~/db/schema/carts";
 import { useQueryVariantPrices } from "~/features/product/hooks/use_query_variant_prices";
 import type {
   PrintfulV2OrderItem,
   PrintfulV2CatalogVariantPricesPlacementOption,
 } from "~/types/printful";
+import { useState } from "react";
 
 interface CartItemProps {
   item: CartItemType;
@@ -66,15 +71,35 @@ export const CartItem: React.FC<CartItemProps> = ({
   }
   const itemTotal = (basePrice + placementOptionsTotal) * quantity;
 
+  const [galleryOpen, setGalleryOpen] = useState(false);
+
   return (
     <Card variant="outlined" sx={{ mb: 2, p: 2 }}>
       <Box sx={{ display: "flex", alignItems: "center" }}>
-        <CardMedia
-          component="img"
-          sx={{ width: 100, height: 100, objectFit: "contain" }}
-          image={previewImage}
-          alt={item_data.name ?? "Product Preview"}
-        />
+        <Box sx={{ position: "relative" }}>
+          <CardMedia
+            component="img"
+            sx={{ width: 100, height: 100, objectFit: "contain" }}
+            image={previewImage}
+            alt={item_data.name ?? "Product Preview"}
+          />
+          {mockup_urls.length > 1 && (
+            <IconButton
+              size="small"
+              sx={{
+                position: "absolute",
+                top: 4,
+                right: 4,
+                bgcolor: "background.paper",
+                boxShadow: 1,
+              }}
+              onClick={() => setGalleryOpen(true)}
+              aria-label="View all mockups"
+            >
+              <FiImage />
+            </IconButton>
+          )}
+        </Box>
         <CardContent sx={{ flex: 1, ml: 2 }}>
           <Box sx={{ display: "flex", justifyContent: "space-between" }}>
             <Typography variant="h6" component="div">
@@ -114,6 +139,38 @@ export const CartItem: React.FC<CartItemProps> = ({
           </Box>
         </CardContent>
       </Box>
+      {/* Gallery Dialog */}
+      <Dialog
+        open={galleryOpen}
+        onClose={() => setGalleryOpen(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <Box sx={{ p: 3 }}>
+          <Typography variant="h6" sx={{ mb: 2 }}>
+            Mockup Gallery
+          </Typography>
+          <ImageList cols={3} gap={8}>
+            {mockup_urls.map((url, idx) => (
+              <ImageListItem key={url + idx}>
+                <img
+                  src={url}
+                  alt={`Mockup ${idx + 1}`}
+                  style={{ width: "100%", borderRadius: 8 }}
+                />
+              </ImageListItem>
+            ))}
+          </ImageList>
+          <Button
+            onClick={() => setGalleryOpen(false)}
+            sx={{ mt: 2 }}
+            variant="outlined"
+            fullWidth
+          >
+            Close Gallery
+          </Button>
+        </Box>
+      </Dialog>
     </Card>
   );
 };
