@@ -89,7 +89,6 @@ export async function action({ request }: { request: Request }) {
   const file = formData.get("file") as Blob | null;
   const name = formData.get("name") as string;
   const imageUrl = formData.get("image_url") as string;
-  const previewUrl = formData.get("preview_url") as string | null;
   const productId = formData.get("product_id") as string | null;
   const canvasData = formData.get("canvas_data") as string | null;
 
@@ -180,68 +179,12 @@ export async function action({ request }: { request: Request }) {
     }
   }
 
-  // Optionally upload preview image
-  let storedPreviewUrl: string | undefined = undefined;
-  if (previewUrl) {
-    try {
-      const previewResponse = await fetch(previewUrl);
-      const previewType =
-        previewResponse.headers.get("content-type") ?? "image/png";
-      const previewExt = previewType.split("/")[1] ?? "png";
-      const previewBuffer = await previewResponse.arrayBuffer();
-      const previewStoragePath = getDesignStoragePath(userId, id, previewExt, {
-        preview: true,
-      });
-      const { error: previewError } = await supabase.storage
-        .from("imagine-it")
-        .upload(previewStoragePath, Buffer.from(previewBuffer), {
-          contentType: previewType,
-        });
-      if (previewError) {
-        return new Response(
-          JSON.stringify({
-            data: null,
-            error: {
-              statusCode: "500",
-              error: "PreviewUploadError",
-              message: previewError.message,
-            },
-          }),
-          {
-            headers: { ...headers, "Content-Type": "application/json" },
-            status: 500,
-          }
-        );
-      }
-      const {
-        data: { publicUrl: previewPublicUrl },
-      } = supabase.storage.from("imagine-it").getPublicUrl(previewStoragePath);
-      storedPreviewUrl = previewPublicUrl;
-    } catch (err: any) {
-      return new Response(
-        JSON.stringify({
-          data: null,
-          error: {
-            statusCode: "500",
-            error: "PreviewUploadException",
-            message: err.message ?? "Unexpected preview upload error",
-          },
-        }),
-        {
-          headers: { ...headers, "Content-Type": "application/json" },
-          status: 500,
-        }
-      );
-    }
-  }
-
   // Insert record referencing storage URLs
   const design = await createDesign({
     id,
     userId,
     name,
     imageUrl: storedImageUrl,
-    previewUrl: storedPreviewUrl,
     productId: productId ?? undefined,
     canvasData: canvasData ? JSON.parse(canvasData) : undefined,
     isPublic: false,

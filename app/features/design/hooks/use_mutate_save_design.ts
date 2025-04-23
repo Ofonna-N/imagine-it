@@ -5,7 +5,6 @@ export type SaveDesignInput = {
   name: string;
   image_url?: string;
   file?: File;
-  preview_url?: string;
   canvas_data?: string;
   product_id?: string;
 };
@@ -26,7 +25,6 @@ export function useMutateSaveDesign(
       } else if (input.image_url) {
         formData.append("image_url", input.image_url);
       }
-      if (input.preview_url) formData.append("preview_url", input.preview_url);
       if (input.product_id) formData.append("product_id", input.product_id);
       if (input.canvas_data) {
         formData.append("canvas_data", JSON.stringify(input.canvas_data));
