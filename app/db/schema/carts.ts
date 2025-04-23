@@ -21,7 +21,7 @@ export const carts = pgTable("carts", {
   user_id: uuid("user_id").notNull(), // Foreign key to users table
   created_at: timestamp("created_at").defaultNow().notNull(),
   updated_at: timestamp("updated_at").defaultNow().notNull(),
-});
+}).enableRLS(); // Enable RLS for security
 
 /**
  * cart_items table
@@ -36,7 +36,7 @@ export const cart_items = pgTable("cart_items", {
   item_data: jsonb("item_data").notNull(), // PrintfulV2OrderItem shape
   mockup_urls: jsonb("mockup_urls"), // Store array of generated mock image URLs
   created_at: timestamp("created_at").defaultNow().notNull(),
-});
+}).enableRLS(); // Enable RLS for security
 
 /**
  * recipients table
@@ -48,7 +48,7 @@ export const recipients = pgTable("recipients", {
   recipient_data: jsonb("recipient_data").notNull(), // PrintfulV2OrderRecipient shape
   created_at: timestamp("created_at").defaultNow().notNull(),
   updated_at: timestamp("updated_at").defaultNow().notNull(),
-});
+}).enableRLS(); // Enable RLS for security
 
 // Type inference for queries
 export type Cart = typeof carts.$inferSelect;
