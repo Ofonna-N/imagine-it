@@ -1,10 +1,15 @@
 import { Box, Typography, Paper, Button, Divider } from "@mui/material";
 import { FiShoppingBag, FiCreditCard } from "react-icons/fi";
 import { Link } from "react-router";
-import type { Cart } from "../types";
 
 interface CartSummaryProps {
-  cart: Cart;
+  cart: {
+    items: any[]; // Replace with actual type if available
+    subtotal: number;
+    shipping: number;
+    tax: number;
+    total: number;
+  };
 }
 
 export const CartSummary: React.FC<CartSummaryProps> = ({ cart }) => {
