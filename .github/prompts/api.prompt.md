@@ -26,11 +26,26 @@ Requirements for the generated code:
   - Use `useMutation` for data mutation hooks.
   - Follow the naming convention:
     - File names: Use snake_case (e.g., `user_profile.tsx`, `api_service.ts`)
-    - Component names: Use camelCase (e.g., `userProfile`, `productList`)
+    - hook names: Use camelCase (e.g., `userProfile`, `productList`)
     - Query hooks: `use_query_<resource_name>` (e.g., `use_query_users`)
     - Mutation hooks: `use_mutate_<resource_name>` (e.g., `use_mutate_create_user`)
   - Define clear TypeScript types for request parameters, response data, and query keys.
   - Wrap the TanStack Query hook calls in custom hooks as per the convention.
+  - **Mutation hooks must also define and use a unique `mutationKey`** in their `useMutation` configuration object. This ensures proper cache management, tracking, and debugging of mutations within TanStack Query. The `mutationKey` should be an array that uniquely identifies the mutation, typically including the resource name and relevant parameters or identifiers.
+  - Example:
+
+    ```typescript
+    const useMutateCreateUser = (
+      options?: UseMutationOptions<User, Error, CreateUserPayload>
+    ) => {
+      return useMutation({
+        mutationKey: ["createUser"],
+        mutationFn: (userData) => createUser(userData),
+        ...options,
+      });
+    };
+    ```
+
   - Examples:
 
     ```typescript
