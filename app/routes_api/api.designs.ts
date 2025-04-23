@@ -6,6 +6,18 @@ import {
   createDesign,
 } from "~/db/queries/designs_queries";
 
+// Returns the storage path for a design image or preview
+function getDesignStoragePath(
+  userId: string,
+  designId: string,
+  ext: string,
+  opts?: { preview?: boolean }
+) {
+  // If opts.preview is true, store as preview image
+  const suffix = opts?.preview ? `_preview` : "";
+  return `${userId}-designs/${designId}${suffix}.${ext}`;
+}
+
 /**
  * GET /api/designs
  * Returns the list of designs for the authenticated user
@@ -90,9 +102,10 @@ export async function action({ request }: { request: Request }) {
     const imageType = file.type || "image/png";
     const imageExt = imageType.split("/")[1] ?? "png";
     const buffer = await file.arrayBuffer();
+    const storagePath = getDesignStoragePath(userId, id, imageExt);
     const { error: uploadError } = await supabase.storage
       .from("imagine-it")
-      .upload(`designs/${id}.${imageExt}`, Buffer.from(buffer), {
+      .upload(storagePath, Buffer.from(buffer), {
         contentType: imageType,
       });
     console.log("uploadError:", uploadError);
@@ -114,9 +127,7 @@ export async function action({ request }: { request: Request }) {
     }
     const {
       data: { publicUrl },
-    } = supabase.storage
-      .from("imagine-it")
-      .getPublicUrl(`designs/${id}.${imageExt}`);
+    } = supabase.storage.from("imagine-it").getPublicUrl(storagePath);
     storedImageUrl = publicUrl;
   } else {
     try {
@@ -125,9 +136,10 @@ export async function action({ request }: { request: Request }) {
         imageResponse.headers.get("content-type") ?? "image/png";
       const imageExt = imageType.split("/")[1] ?? "png";
       const imageBuffer = await imageResponse.arrayBuffer();
+      const storagePath = getDesignStoragePath(userId, id, imageExt);
       const { error: uploadError } = await supabase.storage
         .from("imagine-it")
-        .upload(`designs/${id}.${imageExt}`, new Uint8Array(imageBuffer), {
+        .upload(storagePath, Buffer.from(imageBuffer), {
           contentType: imageType,
         });
       if (uploadError) {
@@ -148,9 +160,7 @@ export async function action({ request }: { request: Request }) {
       }
       const {
         data: { publicUrl },
-      } = supabase.storage
-        .from("imagine-it")
-        .getPublicUrl(`designs/${id}.${imageExt}`);
+      } = supabase.storage.from("imagine-it").getPublicUrl(storagePath);
       storedImageUrl = publicUrl;
     } catch (err: any) {
       return new Response(
@@ -179,13 +189,14 @@ export async function action({ request }: { request: Request }) {
         previewResponse.headers.get("content-type") ?? "image/png";
       const previewExt = previewType.split("/")[1] ?? "png";
       const previewBuffer = await previewResponse.arrayBuffer();
+      const previewStoragePath = getDesignStoragePath(userId, id, previewExt, {
+        preview: true,
+      });
       const { error: previewError } = await supabase.storage
         .from("imagine-it")
-        .upload(
-          `designs/${id}_preview.${previewExt}`,
-          new Uint8Array(previewBuffer),
-          { contentType: previewType }
-        );
+        .upload(previewStoragePath, Buffer.from(previewBuffer), {
+          contentType: previewType,
+        });
       if (previewError) {
         return new Response(
           JSON.stringify({
@@ -204,9 +215,7 @@ export async function action({ request }: { request: Request }) {
       }
       const {
         data: { publicUrl: previewPublicUrl },
-      } = supabase.storage
-        .from("imagine-it")
-        .getPublicUrl(`designs/${id}_preview.${previewExt}`);
+      } = supabase.storage.from("imagine-it").getPublicUrl(previewStoragePath);
       storedPreviewUrl = previewPublicUrl;
     } catch (err: any) {
       return new Response(
