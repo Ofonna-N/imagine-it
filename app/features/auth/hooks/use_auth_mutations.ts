@@ -27,6 +27,7 @@ export function useMutateAuthLogin() {
   const queryClient = useQueryClient();
 
   return useMutation({
+    mutationKey: ["login"], // Adding a mutation key for identification
     mutationFn: async (credentials: LoginFormValues) => {
       const response = await fetch("/api/auth/login", {
         method: "POST",
@@ -56,6 +57,7 @@ export const useLoginMutation = useMutateAuthLogin;
 // Signup mutation - rename to follow convention
 export function useMutateAuthSignup() {
   return useMutation({
+    mutationKey: ["signup"], // Adding a mutation key for identification
     mutationFn: async (
       { email, password }: Omit<SignupFormValues, "confirmPassword">,
       metadata?: Record<string, any>
@@ -86,6 +88,7 @@ export function useMutateAuthSignout() {
   const queryClient = useQueryClient();
 
   return useMutation({
+    mutationKey: ["signout"], // Adding a mutation key for identification
     mutationFn: async () => {
       const response = await fetch("/api/auth/signout", {
         method: "POST",
@@ -119,6 +122,7 @@ export function useMutateAuthOAuth() {
   const queryClient = useQueryClient();
 
   return useMutation({
+    mutationKey: ["oauth"], // Adding a mutation key for identification
     mutationFn: async (provider: OAuthProvider) => {
       const response = await fetch(`/api/auth/oauth/${provider}`, {
         method: "POST",

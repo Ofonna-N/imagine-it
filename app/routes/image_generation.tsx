@@ -17,7 +17,7 @@ const ImageGenerationPage: React.FC = () => {
         in product designs.
       </Typography>
       <Paper sx={{ p: 3 }}>
-        <ImageGenerator />
+        <ImageGenerator singleSelect={false} />
       </Paper>
     </Box>
   );

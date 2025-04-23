@@ -42,11 +42,18 @@ export const API_ROUTES = {
   MOCK_UP_STYLES: (id: string) => `/api/catalog-products/${id}/mockup-styles`,
   CATALOG_PRODUCT_PRICES: (id: string) => `/api/catalog-products/${id}/prices`,
   CATALOG_VARIANT_PRICES: (id: string) => `/api/catalog-variants/${id}/prices`, // Added for variant pricing endpoint
+  CATALOG_VARIANT_AVAILABILITY: (id: string) =>
+    `/api/catalog-variants/${id}/availability`, // Added for variant availability endpoint
   /**
    * POST /api/generate-image
    * Resource route for AI image generation
    */
   GENERATE_IMAGE: "/api/generate-image",
+  /**
+   * GET, POST /api/designs
+   * Resource routes for user designs
+   */
+  DESIGNS: "/api/designs",
 };
 
 // A flattened version combining all routes for easier imports

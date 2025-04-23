@@ -18,8 +18,10 @@ import {
   Card,
   CardMedia,
   Paper,
+  Stack,
+  Skeleton,
 } from "@mui/material";
-import { FiX, FiImage } from "react-icons/fi";
+import { FiX, FiImage, FiCheck } from "react-icons/fi";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation, Pagination } from "swiper/modules";
 import "swiper/css";
@@ -37,8 +39,8 @@ import type {
 import { useQueryProductMockupStyles } from "../hooks/use_query_product_mockup_styles";
 import { useMutateCreateMockupTask } from "../hooks/use_mutate_create_mockup_task";
 import { useQueryMockupTaskResult } from "../hooks/use_query_mockup_task_result";
-import { MOCK_STORAGE_IMAGE_URLS } from "~/constants/mock_storage_image_urls";
 import ImageGenerator from "./image_generator";
+import { DesignsGallery } from "./designs_gallery";
 
 interface ProductDesignerProps {
   open: boolean;
@@ -62,9 +64,7 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
   // --- State --- //
   // Single placement selection
   const [selectedPlacement, setSelectedPlacement] = useState<string>("");
-  const [imageUrl, setImageUrl] = useState<string>(
-    MOCK_STORAGE_IMAGE_URLS[0] ?? ""
-  );
+  const [imageUrl, setImageUrl] = useState<string>("");
   const [generatedTaskIds, setGeneratedTaskIds] = useState<number[] | null>(
     null
   );
@@ -272,6 +272,7 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
     }
   }, [placementKey]);
 
+  console.log("taskResultResponse", taskResultResponse);
   // --- Memoized gallery images from mockup task response --- //
   const galleryImages = useMemo(() => {
     if (!taskResultResponse?.data) return [];
@@ -364,6 +365,14 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
 
   // --- AI Image Modal State & Handlers --- //
   const [openImageGen, setOpenImageGen] = useState(false);
+  // --- Saved Designs Gallery State & Handlers --- //
+  const [openDesignsGallery, setOpenDesignsGallery] = useState(false);
+  const handleDesignSelected = (url: string) => {
+    setImageUrl(url);
+    setOpenDesignsGallery(false);
+  };
+
+  // --- AI Image Handler ---
   const handleImageGenerated = (url: string) => {
     setImageUrl(url);
     setOpenImageGen(false);
@@ -413,8 +422,8 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
       </Box>
     );
   };
-  console.log("selectedVariant", selectedVariant);
-  console.log("selectedplacementGroup", selectedPlacementGroup);
+  // console.log("selectedVariant", selectedVariant);
+  // console.log("selectedplacementGroup", selectedPlacementGroup);
   // console.log("selectedplacementGroup", selectedPlacementGroup);
   // console.log("mockupStyleGroups", mockupStyleGroups);
   // console.log("allavalablePlacements", availablePlacements);
@@ -440,6 +449,14 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
         </IconButton>
       </DialogTitle>
       <DialogContent dividers sx={{ bgcolor: "background.default" }}>
+        {/* Feedback for variants without placement options */}
+        {availablePlacements.length === 0 && (
+          <Alert severity="info" sx={{ mb: 2 }}>
+            This variant doesn’t support custom design placements for the
+            selected technique.
+          </Alert>
+        )}
+
         <Grid container spacing={4}>
           {/* Main Controls: Placement & AI Image */}
           <Grid size={{ xs: 12, md: 5 }}>
@@ -454,6 +471,7 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
                   value={selectedPlacement}
                   label="Placement"
                   onChange={(e) => handlePlacementChange(e.target.value)}
+                  disabled={!availablePlacements.length} // Disable when no placements
                   renderValue={(selected) => {
                     const group = availablePlacements.find(
                       (g) => getPlacementKey(g) === selected
@@ -497,32 +515,69 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
               <Typography variant="h6" gutterBottom>
                 2. AI Image
               </Typography>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: 2,
+                }}
+              >
+                {/* Image Preview */}
                 <Card
                   sx={{
                     width: 100,
                     height: 100,
-                    mr: 2,
                     boxShadow: 3,
                     border: imageUrl ? 2 : 1,
                     borderColor: imageUrl ? "primary.main" : "divider",
                   }}
                 >
-                  <CardMedia
-                    component="img"
-                    image={imageUrl}
-                    alt="AI Design Preview"
-                    sx={{ objectFit: "contain", width: "100%", height: "100%" }}
-                  />
+                  {imageUrl ? (
+                    <CardMedia
+                      component="img"
+                      image={imageUrl}
+                      alt="AI Design Preview"
+                      sx={{
+                        objectFit: "contain",
+                        width: "100%",
+                        height: "100%",
+                      }}
+                    />
+                  ) : (
+                    <Box
+                      sx={{
+                        width: "100%",
+                        height: "100%",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        bgcolor: "background.paper",
+                      }}
+                    >
+                      <FiImage size={48} color="grey" />
+                    </Box>
+                  )}
                 </Card>
-                <Button
-                  variant="outlined"
-                  startIcon={<FiImage />}
-                  onClick={() => setOpenImageGen(true)}
-                  sx={{ minWidth: 120 }}
-                >
-                  {imageUrl ? "Change Image" : "Generate AI Image"}
-                </Button>
+                {/* Action Buttons */}
+                <Stack spacing={1} sx={{ mt: 1 }}>
+                  <Button
+                    variant="outlined"
+                    startIcon={<FiImage />}
+                    onClick={() => setOpenImageGen(true)}
+                    sx={{ minWidth: 120 }}
+                  >
+                    {imageUrl ? "Change Image" : "Generate AI Image"}
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    startIcon={<FiCheck />}
+                    onClick={() => setOpenDesignsGallery(true)}
+                    sx={{ minWidth: 120 }}
+                  >
+                    Choose from My Designs
+                  </Button>
+                </Stack>
               </Box>
               <Typography
                 variant="caption"
@@ -633,16 +688,31 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
                 Preview
               </Typography>
               <Card sx={{ maxWidth: 350, width: "100%", mb: 2, boxShadow: 6 }}>
-                <CardMedia
-                  component="img"
-                  image={imageUrl}
-                  alt="Product Preview"
-                  sx={{
-                    objectFit: "contain",
-                    maxHeight: 300,
-                    bgcolor: "background.paper",
-                  }}
-                />
+                {imageUrl ? (
+                  <CardMedia
+                    component="img"
+                    image={imageUrl}
+                    alt="Product Preview"
+                    sx={{
+                      objectFit: "contain",
+                      maxHeight: 300,
+                      bgcolor: "background.paper",
+                    }}
+                  />
+                ) : (
+                  <Box
+                    sx={{
+                      width: "100%",
+                      height: 300,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      bgcolor: "background.paper",
+                    }}
+                  >
+                    <FiImage size={64} color="grey" />
+                  </Box>
+                )}
               </Card>
               <Button
                 variant="contained"
@@ -666,6 +736,49 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
                   ? "Generating..."
                   : "Generate Product Preview"}
               </Button>
+              {/* Add to Cart button appears directly under the Generate Product Preview button */}
+              {generatedMockupUrl && (
+                <Button
+                  variant="contained"
+                  color="primary"
+                  size="large"
+                  sx={{ mt: 2, minWidth: 200, fontWeight: 600 }}
+                  onClick={() => {
+                    // Map the order_item payload from the current selection
+                    // Collect all mockup URLs from the generated gallery images
+                    const allMockupUrls = galleryImages.map(
+                      (img) => img.mockup_url
+                    );
+
+                    const orderItem = {
+                      source: "catalog",
+                      catalog_variant_id: selectedVariant.id,
+                      quantity: 1,
+                      name: product.name,
+                      placements: [
+                        {
+                          placement: placementKey,
+                          technique: selectedTechnique,
+                          layers: [
+                            {
+                              type: "file",
+                              url: imageUrl,
+                            },
+                          ],
+                        },
+                      ],
+                      product_options: productOptions,
+                      // Attach all generated mockup URLs for reference
+                      mockup_urls: allMockupUrls,
+                    };
+                    // Print the mapped order item object
+                    // eslint-disable-next-line no-console
+                    console.log("Mapped order_item payload:", orderItem);
+                  }}
+                >
+                  Add to Cart
+                </Button>
+              )}
               {generatedMockupUrl && (
                 <Alert severity="success" sx={{ mt: 3 }}>
                   Mockup generated! Scroll down to see your preview.
@@ -694,6 +807,14 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
           </Button>
         </DialogActions>
       </Dialog>
+      {/* Saved Designs Gallery Modal */}
+      <DesignsGallery
+        open={openDesignsGallery}
+        onClose={() => setOpenDesignsGallery(false)}
+        productId={product.id.toString()}
+        variantId={selectedVariant.id.toString()}
+        onDesignSelect={(design) => handleDesignSelected(design.imageUrl)}
+      />
       {/* Full-screen gallery modal */}
       <Dialog
         fullScreen
