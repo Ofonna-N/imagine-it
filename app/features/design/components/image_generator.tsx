@@ -109,7 +109,7 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
     resetSaveDesign();
     let finalPrompt = prompt;
     if (artStyle) {
-      finalPrompt = `${prompt} art style must be(${artStyle})`;
+      finalPrompt = `${prompt}. art style must be (${artStyle})`;
     }
     generateImages({ prompt: finalPrompt, orientation });
   };
