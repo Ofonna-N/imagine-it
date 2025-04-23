@@ -1,5 +1,0 @@
-const MOCK_STORAGE_IMAGE_URLS = [
-  "https://bnrdhpyasurtcrananic.supabase.co/storage/v1/object/sign/imagine-it/Flux_Dev_Create_an_image_of_a_serene_cat_with_soft_fluffy_fur__0.jpg?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1cmwiOiJpbWFnaW5lLWl0L0ZsdXhfRGV2X0NyZWF0ZV9hbl9pbWFnZV9vZl9hX3NlcmVuZV9jYXRfd2l0aF9zb2Z0X2ZsdWZmeV9mdXJfXzAuanBnIiwiaWF0IjoxNzQ1Mjc0Nzc2LCJleHAiOjE3NDc4NjY3NzZ9.KC0eCNfIEAZ8X64QfzTl1c6qoihRu_CjlAnMeGtwxpU",
-];
-
-export { MOCK_STORAGE_IMAGE_URLS };
