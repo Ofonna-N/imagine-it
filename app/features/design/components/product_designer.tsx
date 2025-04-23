@@ -735,6 +735,23 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
                   ? "Generating..."
                   : "Generate Product Preview"}
               </Button>
+              {/* Add to Cart button appears directly under the Generate Product Preview button */}
+              {generatedMockupUrl && (
+                <Button
+                  variant="contained"
+                  color="primary"
+                  size="large"
+                  sx={{ mt: 2, minWidth: 200, fontWeight: 600 }}
+                  // TODO: Connect to cart logic
+                  onClick={() => {
+                    // Placeholder: implement add to cart logic here
+                    // e.g., call a mutation or context function
+                    alert("Added to cart! (implement logic)");
+                  }}
+                >
+                  Add to Cart
+                </Button>
+              )}
               {generatedMockupUrl && (
                 <Alert severity="success" sx={{ mt: 3 }}>
                   Mockup generated! Scroll down to see your preview.
