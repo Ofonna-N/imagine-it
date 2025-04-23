@@ -133,3 +133,37 @@ export async function getRecipient(userId: string): Promise<Recipient | null> {
     .limit(1)
     .then((r) => r[0] ?? null);
 }
+
+/**
+ * Update the quantity of a cart item
+ *
+ * PATCH /api/cart
+ * Utility: Updates the quantity of a specific cart item for the authenticated user.
+ */
+export async function updateCartItemQuantity({
+  userId,
+  itemId,
+  quantity,
+}: {
+  userId: string;
+  itemId: number;
+  quantity: number;
+}) {
+  // Fetch the cart item and ensure it belongs to the user
+  const cart = await getOrCreateCart(userId);
+  const item = await db
+    .select()
+    .from(cart_items)
+    .where(eq(cart_items.id, itemId))
+    .then((r) => r[0]);
+  if (!item || item.cart_id !== cart.id)
+    throw new Error("Unauthorized or not found");
+  // Update the quantity in item_data
+  const newItemData = { ...(item.item_data ?? {}), quantity };
+  const [updated] = await db
+    .update(cart_items)
+    .set({ item_data: newItemData })
+    .where(eq(cart_items.id, itemId))
+    .returning();
+  return updated;
+}

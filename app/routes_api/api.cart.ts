@@ -5,6 +5,7 @@ import {
   getCartItems,
   removeCartItem,
   clearCart,
+  updateCartItemQuantity,
 } from "../db/queries/carts_queries";
 import createSupabaseServerClient from "../services/supabase/supabase_client";
 import type { PrintfulV2OrderItem } from "../types/printful";
@@ -69,6 +70,29 @@ export async function action({ request }: ActionFunctionArgs) {
     return new Response(JSON.stringify(created), {
       headers: { "Content-Type": "application/json" },
     });
+  }
+
+  if (method === "PATCH") {
+    const { itemId, quantity } = await request.json();
+    if (!itemId || typeof quantity !== "number" || quantity < 1) {
+      return new Response(JSON.stringify({ error: "Invalid input" }), {
+        status: 400,
+      });
+    }
+    try {
+      const updated = await updateCartItemQuantity({
+        userId,
+        itemId,
+        quantity,
+      });
+      return new Response(JSON.stringify(updated), {
+        headers: { "Content-Type": "application/json" },
+      });
+    } catch (err) {
+      return new Response(JSON.stringify({ error: (err as Error).message }), {
+        status: 400,
+      });
+    }
   }
 
   if (method === "DELETE") {
