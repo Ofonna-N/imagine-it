@@ -54,13 +54,18 @@ export async function action({ request }: ActionFunctionArgs) {
   const method = request.method.toUpperCase();
 
   if (method === "POST") {
-    const { item, mockupUrls } = await request.json();
+    const { item, mockupUrls, designMeta } = await request.json();
     if (!item)
       return new Response(JSON.stringify({ error: "Missing item" }), {
         status: 400,
         headers: { "Content-Type": "application/json" },
       });
-    const created = await addCartItem({ userId, item, mockupUrls });
+    const created = await addCartItem({
+      userId,
+      item,
+      mockupUrls,
+      designMeta,
+    });
     return new Response(JSON.stringify(created), {
       headers: { "Content-Type": "application/json" },
     });
@@ -80,10 +85,13 @@ export async function action({ request }: ActionFunctionArgs) {
         headers: { "Content-Type": "application/json" },
       });
     }
-    return new Response(JSON.stringify({ error: "Missing itemId or clear flag" }), {
-      status: 400,
-      headers: { "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({ error: "Missing itemId or clear flag" }),
+      {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
   }
 
   return new Response(JSON.stringify({ error: "Method not allowed" }), {

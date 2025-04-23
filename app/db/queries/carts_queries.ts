@@ -34,10 +34,12 @@ export async function addCartItem({
   userId,
   item,
   mockupUrls,
+  designMeta,
 }: {
   userId: string;
   item: PrintfulV2OrderItem;
   mockupUrls?: string[];
+  designMeta?: any;
 }): Promise<CartItem> {
   const cart = await getOrCreateCart(userId);
   const [created] = await db
@@ -46,6 +48,7 @@ export async function addCartItem({
       cart_id: cart.id,
       item_data: item,
       mockup_urls: mockupUrls,
+      design_meta: designMeta,
     })
     .returning();
   return created;

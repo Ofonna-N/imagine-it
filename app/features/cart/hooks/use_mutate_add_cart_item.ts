@@ -18,18 +18,18 @@ export const useMutateAddCartItem = (
   options?: UseMutationOptions<
     CartItem,
     Error,
-    { item: PrintfulV2OrderItem; mockupUrls?: string[] }
+    { item: PrintfulV2OrderItem; mockupUrls?: string[]; designMeta?: any }
   >
 ) => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationKey: ["cart", "addItem"],
-    mutationFn: async ({ item, mockupUrls }) => {
+    mutationFn: async ({ item, mockupUrls, designMeta }) => {
       const res = await fetch(API_ROUTES.CART, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ item, mockupUrls }),
+        body: JSON.stringify({ item, mockupUrls, designMeta }),
       });
       if (!res.ok) throw new Error("Failed to add item to cart");
       return res.json();

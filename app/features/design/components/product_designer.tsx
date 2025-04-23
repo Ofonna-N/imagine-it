@@ -89,6 +89,13 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
     number[]
   >([]);
 
+  // --- State for selected design metadata --- //
+  const [selectedDesignMeta, setSelectedDesignMeta] = useState<{
+    designId: string;
+    designName: string;
+    designImageUrl: string;
+  } | null>(null);
+
   // console.log("Product Options:", productOptions);
   // --- Helper: Get required product options (excluding 'notes') --- //
   const requiredProductOptions = useMemo(() => {
@@ -377,14 +384,24 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
   const [openImageGen, setOpenImageGen] = useState(false);
   // --- Saved Designs Gallery State & Handlers --- //
   const [openDesignsGallery, setOpenDesignsGallery] = useState(false);
-  const handleDesignSelected = (url: string) => {
-    setImageUrl(url);
+  const handleDesignSelected = (design: {
+    id: string;
+    name: string;
+    imageUrl: string;
+  }) => {
+    setImageUrl(design.imageUrl);
+    setSelectedDesignMeta({
+      designId: design.id,
+      designName: design.name,
+      designImageUrl: design.imageUrl,
+    });
     setOpenDesignsGallery(false);
   };
 
   // --- AI Image Handler ---
   const handleImageGenerated = (url: string) => {
     setImageUrl(url);
+    setSelectedDesignMeta(null); // Clear design meta if generating a new image
     setOpenImageGen(false);
   };
 
@@ -441,6 +458,7 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
   // console.log("selectedmockupStyleIds", selectedMockupStyleIds);
   // console.log("placement", selectedPlacement);
   // --- Redesigned UI --- //
+
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle sx={{ m: 0, p: 2, fontWeight: 700 }}>
@@ -786,6 +804,7 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
                       addCartItem({
                         item: orderItem,
                         mockupUrls: variantMockupUrls,
+                        designMeta: selectedDesignMeta,
                       });
                     }}
                   >
@@ -837,7 +856,7 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
         onClose={() => setOpenDesignsGallery(false)}
         productId={product.id.toString()}
         variantId={selectedVariant.id.toString()}
-        onDesignSelect={(design) => handleDesignSelected(design.imageUrl)}
+        onDesignSelect={handleDesignSelected}
       />
       {/* Full-screen gallery modal */}
       <Dialog
