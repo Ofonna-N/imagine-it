@@ -2,15 +2,10 @@ import {
   pgTable,
   serial,
   integer,
-  text,
   jsonb,
   timestamp,
   uuid,
 } from "drizzle-orm/pg-core";
-import type {
-  PrintfulV2OrderItem,
-  PrintfulV2OrderRecipient,
-} from "~/types/printful";
 
 /**
  * carts table
@@ -36,7 +31,7 @@ export const cart_items = pgTable("cart_items", {
     .references(() => carts.id),
   item_data: jsonb("item_data").notNull(), // PrintfulV2OrderItem shape
   mockup_urls: jsonb("mockup_urls"), // Store array of generated mock image URLs
-  design_meta: jsonb("design_meta"), // { designId, designName, designImageUrl }
+  design_meta: jsonb("design_meta"), // <designId, designName, designImageUrl>
   created_at: timestamp("created_at").defaultNow().notNull(),
 }).enableRLS(); // Enable RLS for security
 
