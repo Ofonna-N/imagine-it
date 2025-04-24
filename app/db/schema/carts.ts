@@ -6,6 +6,10 @@ import {
   timestamp,
   uuid,
 } from "drizzle-orm/pg-core";
+import type {
+  PrintfulV2OrderItem,
+  PrintfulV2OrderRecipient,
+} from "~/types/printful";
 
 /**
  * carts table
@@ -29,9 +33,13 @@ export const cart_items = pgTable("cart_items", {
   cart_id: integer("cart_id")
     .notNull()
     .references(() => carts.id),
-  item_data: jsonb("item_data").notNull(), // PrintfulV2OrderItem shape
-  mockup_urls: jsonb("mockup_urls"), // Store array of generated mock image URLs
-  design_meta: jsonb("design_meta"), // <designId, designName, designImageUrl>
+  item_data: jsonb("item_data").notNull().$type<PrintfulV2OrderItem>(), // PrintfulV2OrderItem shape
+  mockup_urls: jsonb("mockup_urls").$type<string[]>(), // Store array of generated mock image URLs
+  design_meta: jsonb("design_meta").$type<{
+    designId: string;
+    designName: string;
+    designImageUrl: string;
+  }>(), // <designId, designName, designImageUrl>
   created_at: timestamp("created_at").defaultNow().notNull(),
 }).enableRLS(); // Enable RLS for security
 
@@ -42,7 +50,14 @@ export const cart_items = pgTable("cart_items", {
 export const recipients = pgTable("recipients", {
   id: serial("id").primaryKey(),
   user_id: uuid("user_id").notNull(),
-  recipient_data: jsonb("recipient_data").notNull(), // PrintfulV2OrderRecipient shape
+  // PrintfulV2OrderRecipient shape
+  /**
+   * Utility: Enforces type safety for recipient_data using PrintfulV2OrderRecipient.
+   * See: /types/printful.ts for PrintfulV2OrderRecipient definition.
+   */
+  recipient_data: jsonb("recipient_data")
+    .$type<PrintfulV2OrderRecipient>()
+    .notNull(),
   created_at: timestamp("created_at").defaultNow().notNull(),
   updated_at: timestamp("updated_at").defaultNow().notNull(),
 }).enableRLS(); // Enable RLS for security

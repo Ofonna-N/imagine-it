@@ -13,7 +13,6 @@ import Dialog from "@mui/material/Dialog";
 import ImageList from "@mui/material/ImageList";
 import ImageListItem from "@mui/material/ImageListItem";
 import type { CartItem as CartItemType } from "~/db/schema/carts";
-import type { PrintfulV2OrderItem } from "~/types/printful";
 import { useState, useEffect } from "react";
 import { useCartItemPrice } from "~/features/cart/hooks/use_cart_item_price";
 
@@ -31,12 +30,12 @@ export const CartItem: React.FC<CartItemProps> = ({
   setItemPrice,
 }) => {
   // Type assertions for API-driven cart item
-  const item_data = (item.item_data as PrintfulV2OrderItem) ?? {};
-  const mockup_urls = (item.mockup_urls as string[]) ?? [];
-  const design_meta = (item.design_meta as { designName?: string }) ?? {};
+  const item_data = item.item_data ?? {};
+  const mockup_urls = item.mockup_urls ?? [];
+  const design_meta = item.design_meta;
   const quantity = item_data.quantity ?? 1;
 
-  const designName = design_meta.designName ?? "(No Design)";
+  const designName = design_meta?.designName ?? "(No Design)";
   const previewImage =
     mockup_urls[0] ?? "https://via.placeholder.com/100x100?text=Preview";
 
