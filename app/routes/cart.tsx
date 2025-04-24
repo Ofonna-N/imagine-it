@@ -5,11 +5,10 @@ import { useQueryCart } from "../features/cart/hooks/use_query_cart";
 import { useMutateRemoveCartItem } from "../features/cart/hooks/use_mutate_remove_cart_item";
 import { useMutateClearCart } from "../features/cart/hooks/use_mutate_clear_cart";
 import { useMutateUpdateCartItemQuantity } from "../features/cart/hooks/use_mutate_update_cart_item_quantity";
-import type { PrintfulV2OrderItem } from "~/types/printful";
 import { useState, useCallback } from "react";
 
 export default function Cart() {
-  const { data: cartItems = [], isLoading } = useQueryCart();
+  const { data: cartItems = [] } = useQueryCart();
   const { mutate: removeItem } = useMutateRemoveCartItem();
   const { mutate: clearCart } = useMutateClearCart();
   const { mutate: updateQuantity } = useMutateUpdateCartItemQuantity();

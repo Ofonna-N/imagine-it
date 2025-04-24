@@ -8,17 +8,12 @@ import {
   CardContent,
   Button,
 } from "@mui/material";
-import { FiTrash2, FiEdit, FiImage } from "react-icons/fi";
-import { Link } from "react-router";
+import { FiTrash2, FiImage } from "react-icons/fi";
 import Dialog from "@mui/material/Dialog";
 import ImageList from "@mui/material/ImageList";
 import ImageListItem from "@mui/material/ImageListItem";
 import type { CartItem as CartItemType } from "~/db/schema/carts";
-import { useQueryVariantPrices } from "~/features/product/hooks/use_query_variant_prices";
-import type {
-  PrintfulV2OrderItem,
-  PrintfulV2CatalogVariantPricesPlacementOption,
-} from "~/types/printful";
+import type { PrintfulV2OrderItem } from "~/types/printful";
 import { useState, useEffect } from "react";
 import { useCartItemPrice } from "~/features/cart/hooks/use_cart_item_price";
 
@@ -40,18 +35,13 @@ export const CartItem: React.FC<CartItemProps> = ({
   const mockup_urls = (item.mockup_urls as string[]) ?? [];
   const design_meta = (item.design_meta as { designName?: string }) ?? {};
   const quantity = item_data.quantity ?? 1;
-  const variantId = item_data.catalog_variant_id?.toString() ?? "";
+
   const designName = design_meta.designName ?? "(No Design)";
   const previewImage =
     mockup_urls[0] ?? "https://via.placeholder.com/100x100?text=Preview";
 
   // Use the new price hook
-  const {
-    basePrice,
-    optionTotal,
-    total,
-    isLoading: isPriceLoading,
-  } = useCartItemPrice(item);
+  const { total, isLoading: isPriceLoading } = useCartItemPrice(item);
 
   // Lift price up
   useEffect(() => {
@@ -113,7 +103,15 @@ export const CartItem: React.FC<CartItemProps> = ({
                   onUpdateQuantity(item.id, newQuantity);
                 }
               }}
-              inputProps={{ min: 1 }}
+              slotProps={{
+                input: {
+                  slotProps: {
+                    input: {
+                      min: 1,
+                    },
+                  },
+                },
+              }}
               sx={{ width: "80px" }}
             />
             <Box sx={{ ml: 2 }}>
