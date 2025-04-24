@@ -17,18 +17,26 @@ import { z } from "zod";
 import { useForm, FormProvider, useFormContext } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
-const checkoutSchema = z.object({
-  shipping: z.object({
-    firstName: z.string().min(1, "First name is required"),
-    lastName: z.string().min(1, "Last name is required"),
+const orderRecipientSchema = z
+  .object({
+    name: z.string().min(1, "Name is required"),
+    company: z.string().optional(),
     address1: z.string().min(1, "Address is required"),
     address2: z.string().optional(),
     city: z.string().min(1, "City is required"),
-    state: z.string().min(1, "State is required"),
+    state_code: z.string().optional(),
+    state_name: z.string().optional(),
+    country_code: z.string().min(1, "Country code is required"),
+    country_name: z.string().optional(),
     zip: z.string().min(1, "Zip code is required"),
-    country: z.string().min(1, "Country is required"),
-    saveAddress: z.boolean().optional(),
-  }),
+    phone: z.string().optional(),
+    email: z.string().optional(),
+    tax_number: z.string().optional(),
+  })
+  .strict();
+
+const checkoutSchema = z.object({
+  shipping: orderRecipientSchema,
   payment: z.object({
     cardName: z.string().min(1, "Name on card is required"),
     cardNumber: z
@@ -72,34 +80,31 @@ const ShippingForm = () => {
         Shipping Address
       </Typography>
       <Grid container spacing={3}>
-        <Grid size={{ xs: 12, sm: 6 }}>
+        <Grid size={{ xs: 12 }}>
           <TextField
             required
-            id="firstName"
-            label="First name"
+            id="name"
+            label="Full Name"
             fullWidth
-            autoComplete="given-name"
-            {...register("shipping.firstName", {
-              required: "First name is required",
+            autoComplete="name"
+            {...register("shipping.name", {
+              required: "Name is required",
             })}
-            error={!!errors.shipping?.firstName}
-            helperText={errors.shipping?.firstName?.message ?? ""}
+            error={!!errors.shipping?.name}
+            helperText={errors.shipping?.name?.message ?? ""}
           />
         </Grid>
-        <Grid size={{ xs: 12, sm: 6 }}>
+        {/* <Grid size={{ xs: 12 }}>
           <TextField
-            required
-            id="lastName"
-            label="Last name"
+            id="company"
+            label="Company"
             fullWidth
-            autoComplete="family-name"
-            {...register("shipping.lastName", {
-              required: "Last name is required",
-            })}
-            error={!!errors.shipping?.lastName}
-            helperText={errors.shipping?.lastName?.message ?? ""}
+            autoComplete="organization"
+            {...register("shipping.company")}
+            error={!!errors.shipping?.company}
+            helperText={errors.shipping?.company?.message ?? ""}
           />
-        </Grid>
+        </Grid> */}
         <Grid size={{ xs: 12 }}>
           <TextField
             required
@@ -121,6 +126,8 @@ const ShippingForm = () => {
             fullWidth
             autoComplete="shipping address-line2"
             {...register("shipping.address2")}
+            error={!!errors.shipping?.address2}
+            helperText={errors.shipping?.address2?.message ?? ""}
           />
         </Grid>
         <Grid size={{ xs: 12, sm: 6 }}>
@@ -139,14 +146,46 @@ const ShippingForm = () => {
         </Grid>
         <Grid size={{ xs: 12, sm: 6 }}>
           <TextField
-            id="state"
-            label="State/Province/Region"
+            id="state_code"
+            label="State/Province Code"
             fullWidth
-            {...register("shipping.state", {
-              required: "State is required",
+            {...register("shipping.state_code")}
+            error={!!errors.shipping?.state_code}
+            helperText={errors.shipping?.state_code?.message ?? ""}
+          />
+        </Grid>
+        <Grid size={{ xs: 12, sm: 6 }}>
+          <TextField
+            id="state_name"
+            label="State/Province Name"
+            fullWidth
+            {...register("shipping.state_name")}
+            error={!!errors.shipping?.state_name}
+            helperText={errors.shipping?.state_name?.message ?? ""}
+          />
+        </Grid>
+        <Grid size={{ xs: 12, sm: 6 }}>
+          <TextField
+            required
+            id="country_code"
+            label="Country Code (e.g. US)"
+            fullWidth
+            autoComplete="shipping country"
+            {...register("shipping.country_code", {
+              required: "Country code is required",
             })}
-            error={!!errors.shipping?.state}
-            helperText={errors.shipping?.state?.message ?? ""}
+            error={!!errors.shipping?.country_code}
+            helperText={errors.shipping?.country_code?.message ?? ""}
+          />
+        </Grid>
+        <Grid size={{ xs: 12, sm: 6 }}>
+          <TextField
+            id="country_name"
+            label="Country Name"
+            fullWidth
+            {...register("shipping.country_name")}
+            error={!!errors.shipping?.country_name}
+            helperText={errors.shipping?.country_name?.message ?? ""}
           />
         </Grid>
         <Grid size={{ xs: 12, sm: 6 }}>
@@ -165,27 +204,34 @@ const ShippingForm = () => {
         </Grid>
         <Grid size={{ xs: 12, sm: 6 }}>
           <TextField
-            required
-            id="country"
-            label="Country"
+            id="phone"
+            label="Phone"
             fullWidth
-            autoComplete="shipping country"
-            {...register("shipping.country", {
-              required: "Country is required",
-            })}
-            error={!!errors.shipping?.country}
-            helperText={errors.shipping?.country?.message ?? ""}
+            autoComplete="tel"
+            {...register("shipping.phone")}
+            error={!!errors.shipping?.phone}
+            helperText={errors.shipping?.phone?.message ?? ""}
           />
         </Grid>
-        <Grid size={{ xs: 12 }}>
-          <FormControlLabel
-            control={
-              <Checkbox
-                color="secondary"
-                {...register("shipping.saveAddress")}
-              />
-            }
-            label="Use this address for payment details"
+        <Grid size={{ xs: 12, sm: 6 }}>
+          <TextField
+            id="email"
+            label="Email"
+            fullWidth
+            autoComplete="email"
+            {...register("shipping.email")}
+            error={!!errors.shipping?.email}
+            helperText={errors.shipping?.email?.message ?? ""}
+          />
+        </Grid>
+        <Grid size={{ xs: 12, sm: 6 }}>
+          <TextField
+            id="tax_number"
+            label="Tax Number"
+            fullWidth
+            {...register("shipping.tax_number")}
+            error={!!errors.shipping?.tax_number}
+            helperText={errors.shipping?.tax_number?.message ?? ""}
           />
         </Grid>
       </Grid>
@@ -317,9 +363,8 @@ const ReviewOrder = ({ formData }: { formData: CheckoutFormData }) => {
           <Typography variant="h6" gutterBottom>
             Shipping
           </Typography>
-          <Typography gutterBottom>
-            {formData.shipping.firstName} {formData.shipping.lastName}
-          </Typography>
+          <Typography gutterBottom>{formData.shipping.name}</Typography>
+          <Typography gutterBottom>{formData.shipping.company}</Typography>
           <Typography gutterBottom>
             {formData.shipping.address1}
             {formData.shipping.address2
@@ -327,10 +372,16 @@ const ReviewOrder = ({ formData }: { formData: CheckoutFormData }) => {
               : ""}
           </Typography>
           <Typography gutterBottom>
-            {formData.shipping.city}, {formData.shipping.state}{" "}
+            {formData.shipping.city},{" "}
+            {formData.shipping.state_code || formData.shipping.state_name}{" "}
             {formData.shipping.zip}
           </Typography>
-          <Typography gutterBottom>{formData.shipping.country}</Typography>
+          <Typography gutterBottom>
+            {formData.shipping.country_code} {formData.shipping.country_name}
+          </Typography>
+          <Typography gutterBottom>{formData.shipping.phone}</Typography>
+          <Typography gutterBottom>{formData.shipping.email}</Typography>
+          <Typography gutterBottom>{formData.shipping.tax_number}</Typography>
         </Grid>
         <Grid size={{ xs: 12, sm: 6 }}>
           <Typography variant="h6" gutterBottom>
@@ -408,15 +459,19 @@ export default function Checkout() {
     resolver: zodResolver(checkoutSchema),
     defaultValues: {
       shipping: {
-        firstName: "",
-        lastName: "",
+        name: "",
+        company: "",
         address1: "",
         address2: "",
         city: "",
-        state: "",
+        state_code: "",
+        state_name: "",
+        country_code: "",
+        country_name: "",
         zip: "",
-        country: "",
-        saveAddress: false,
+        phone: "",
+        email: "",
+        tax_number: "",
       },
       payment: {
         cardName: "",
