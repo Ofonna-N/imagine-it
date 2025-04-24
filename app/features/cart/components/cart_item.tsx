@@ -20,6 +20,7 @@ import type {
   PrintfulV2CatalogVariantPricesPlacementOption,
 } from "~/types/printful";
 import { useState, useEffect } from "react";
+import { useCartItemPrice } from "~/features/cart/hooks/use_cart_item_price";
 
 interface CartItemProps {
   item: CartItemType;
@@ -44,43 +45,22 @@ export const CartItem: React.FC<CartItemProps> = ({
   const previewImage =
     mockup_urls[0] ?? "https://via.placeholder.com/100x100?text=Preview";
 
-  // Fetch variant prices
-  const { data: variantPrices, isLoading: isPriceLoading } =
-    useQueryVariantPrices(variantId);
+  // Use the new price hook
+  const {
+    basePrice,
+    optionTotal,
+    total,
+    isLoading: isPriceLoading,
+  } = useCartItemPrice(item);
 
-  // Calculate price: base + sum of selected placement options
-  let basePrice = 0;
-  let placementOptionsTotal = 0;
-  if (variantPrices) {
-    // Use the first technique's price as base (or fallback)
-    const technique = variantPrices.variant.techniques[0];
-    basePrice = parseFloat(technique?.price ?? "0");
-    // Sum prices of selected placements (if any)
-    if (item_data.placements && Array.isArray(item_data.placements)) {
-      for (const placement of item_data.placements) {
-        // Find placement option in variantPrices.product.placements
-        const placementOption = variantPrices.product.placements.find(
-          (p) => p.id === placement.placement
-        );
-        //disable for now
-        // if (placementOption) {
-        //   placementOptionsTotal += parseFloat(placementOption.placement_options.find(
-        //     (option) => item_data.placements.some((p) => p.placement_options?.find(po => po.name === option.name))
-        //   )?.price ?? "0");
-        // }
-      }
-    }
-  }
-  const itemTotal = (basePrice + placementOptionsTotal) * quantity;
-
-  // Call setItemPrice when itemTotal changes
+  // Lift price up
   useEffect(() => {
-    setItemPrice(item.id, basePrice + placementOptionsTotal);
-    // Only update when price-relevant data changes
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [item.id, basePrice, placementOptionsTotal]);
+    setItemPrice(item.id, total);
+  }, [item.id, total, setItemPrice]);
 
   const [galleryOpen, setGalleryOpen] = useState(false);
+
+  const itemTotalDisplay = isPriceLoading ? "..." : `$${total.toFixed(2)}`;
 
   return (
     <Card variant="outlined" sx={{ mb: 2, p: 2 }}>
@@ -115,7 +95,7 @@ export const CartItem: React.FC<CartItemProps> = ({
               {item_data.name ?? "Product"}
             </Typography>
             <Typography variant="h6" component="div">
-              {isPriceLoading ? "..." : `$${itemTotal.toFixed(2)}`}
+              {itemTotalDisplay}
             </Typography>
           </Box>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
