@@ -35,10 +35,12 @@ import type {
   PrintfulV2MockupGeneratorTaskRequest,
   ProductOption,
   PrintfulV2MockupStyle,
+  PrintfulV2OrderItem,
 } from "~/types/printful";
 import { useQueryProductMockupStyles } from "../hooks/use_query_product_mockup_styles";
 import { useMutateCreateMockupTask } from "../hooks/use_mutate_create_mockup_task";
 import { useQueryMockupTaskResult } from "../hooks/use_query_mockup_task_result";
+import { useMutateAddCartItem } from "~/features/cart/hooks/use_mutate_add_cart_item";
 import ImageGenerator from "./image_generator";
 import { DesignsGallery } from "./designs_gallery";
 
@@ -86,6 +88,13 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
   const [selectedMockupStyleIds, setSelectedMockupStyleIds] = useState<
     number[]
   >([]);
+
+  // --- State for selected design metadata --- //
+  const [selectedDesignMeta, setSelectedDesignMeta] = useState<{
+    designId: string;
+    designName: string;
+    designImageUrl: string;
+  } | null>(null);
 
   // console.log("Product Options:", productOptions);
   // --- Helper: Get required product options (excluding 'notes') --- //
@@ -139,6 +148,15 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
     }
   );
   const taskResultData = taskResultResponse?.data?.[0];
+
+  // Add to Cart mutation hook
+  const {
+    mutate: addCartItem,
+    isPending: isAdding,
+    isSuccess: addSuccess,
+    error: addError,
+    reset: resetAdd,
+  } = useMutateAddCartItem();
 
   // --- Effects --- //
 
@@ -272,7 +290,6 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
     }
   }, [placementKey]);
 
-  console.log("taskResultResponse", taskResultResponse);
   // --- Memoized gallery images from mockup task response --- //
   const galleryImages = useMemo(() => {
     if (!taskResultResponse?.data) return [];
@@ -367,14 +384,24 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
   const [openImageGen, setOpenImageGen] = useState(false);
   // --- Saved Designs Gallery State & Handlers --- //
   const [openDesignsGallery, setOpenDesignsGallery] = useState(false);
-  const handleDesignSelected = (url: string) => {
-    setImageUrl(url);
+  const handleDesignSelected = (design: {
+    id: string;
+    name: string;
+    imageUrl: string;
+  }) => {
+    setImageUrl(design.imageUrl);
+    setSelectedDesignMeta({
+      designId: design.id,
+      designName: design.name,
+      designImageUrl: design.imageUrl,
+    });
     setOpenDesignsGallery(false);
   };
 
   // --- AI Image Handler ---
   const handleImageGenerated = (url: string) => {
     setImageUrl(url);
+    setSelectedDesignMeta(null); // Clear design meta if generating a new image
     setOpenImageGen(false);
   };
 
@@ -431,6 +458,7 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
   // console.log("selectedmockupStyleIds", selectedMockupStyleIds);
   // console.log("placement", selectedPlacement);
   // --- Redesigned UI --- //
+
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle sx={{ m: 0, p: 2, fontWeight: 700 }}>
@@ -738,46 +766,61 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
               </Button>
               {/* Add to Cart button appears directly under the Generate Product Preview button */}
               {generatedMockupUrl && (
-                <Button
-                  variant="contained"
-                  color="primary"
-                  size="large"
-                  sx={{ mt: 2, minWidth: 200, fontWeight: 600 }}
-                  onClick={() => {
-                    // Map the order_item payload from the current selection
-                    // Collect all mockup URLs from the generated gallery images
-                    const allMockupUrls = galleryImages.map(
-                      (img) => img.mockup_url
-                    );
+                <>
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    size="large"
+                    sx={{ mt: 2, minWidth: 200, fontWeight: 600 }}
+                    disabled={isAdding}
+                    onClick={() => {
+                      // Map the order_item payload from the current selection
+                      const orderItem: PrintfulV2OrderItem = {
+                        source: "catalog",
+                        catalog_variant_id: selectedVariant.id,
+                        quantity: 1,
+                        name: product.name,
+                        placements: [
+                          {
+                            placement: placementKey!,
+                            technique: selectedTechnique,
+                            layers: [
+                              {
+                                type: "file",
+                                url: imageUrl,
+                              },
+                            ],
+                          },
+                        ],
+                        product_options: productOptions,
+                      };
+                      // Collect all mockup URLs from the current gallery images for this variant
+                      const variantMockupUrls = galleryImages
+                        .filter(
+                          (img) => img.catalog_variant_id === selectedVariant.id
+                        )
+                        .map((img) => img.mockup_url);
 
-                    const orderItem = {
-                      source: "catalog",
-                      catalog_variant_id: selectedVariant.id,
-                      quantity: 1,
-                      name: product.name,
-                      placements: [
-                        {
-                          placement: placementKey,
-                          technique: selectedTechnique,
-                          layers: [
-                            {
-                              type: "file",
-                              url: imageUrl,
-                            },
-                          ],
-                        },
-                      ],
-                      product_options: productOptions,
-                      // Attach all generated mockup URLs for reference
-                      mockup_urls: allMockupUrls,
-                    };
-                    // Print the mapped order item object
-                    // eslint-disable-next-line no-console
-                    console.log("Mapped order_item payload:", orderItem);
-                  }}
-                >
-                  Add to Cart
-                </Button>
+                      addCartItem({
+                        item: orderItem,
+                        mockupUrls: variantMockupUrls,
+                        designMeta: selectedDesignMeta,
+                      });
+                    }}
+                  >
+                    {isAdding ? "Adding..." : "Add to Cart"}
+                  </Button>
+                  {addSuccess && (
+                    <Alert severity="success" sx={{ mt: 2 }} onClose={resetAdd}>
+                      Added to cart!
+                    </Alert>
+                  )}
+                  {addError && (
+                    <Alert severity="error" sx={{ mt: 2 }} onClose={resetAdd}>
+                      Failed to add to cart: {addError.message}
+                    </Alert>
+                  )}
+                </>
               )}
               {generatedMockupUrl && (
                 <Alert severity="success" sx={{ mt: 3 }}>
@@ -813,7 +856,7 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
         onClose={() => setOpenDesignsGallery(false)}
         productId={product.id.toString()}
         variantId={selectedVariant.id.toString()}
-        onDesignSelect={(design) => handleDesignSelected(design.imageUrl)}
+        onDesignSelect={handleDesignSelected}
       />
       {/* Full-screen gallery modal */}
       <Dialog

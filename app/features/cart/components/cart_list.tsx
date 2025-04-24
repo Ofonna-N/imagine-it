@@ -1,12 +1,13 @@
 import { Box, Typography, Button } from "@mui/material";
 import { CartItem } from "./cart_item";
-import type { Cart } from "../types";
+import type { CartItem as DBCartItem } from "~/db/schema/carts";
 
 interface CartListProps {
-  cart: Cart;
+  cart: { items: DBCartItem[] };
   onUpdateQuantity: (id: number, quantity: number) => void;
   onRemoveItem: (id: number) => void;
   onClearCart: () => void;
+  setItemPrice: (itemId: number, price: number) => void;
 }
 
 export const CartList: React.FC<CartListProps> = ({
@@ -14,6 +15,7 @@ export const CartList: React.FC<CartListProps> = ({
   onUpdateQuantity,
   onRemoveItem,
   onClearCart,
+  setItemPrice,
 }) => {
   if (cart.items.length === 0) {
     return (
@@ -40,12 +42,13 @@ export const CartList: React.FC<CartListProps> = ({
         </Button>
       </Box>
 
-      {cart.items.map((item) => (
+      {cart.items.map((item: DBCartItem) => (
         <CartItem
           key={item.id}
           item={item}
           onUpdateQuantity={onUpdateQuantity}
           onRemoveItem={onRemoveItem}
+          setItemPrice={setItemPrice}
         />
       ))}
     </Box>

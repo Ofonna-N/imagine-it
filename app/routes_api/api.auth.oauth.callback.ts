@@ -1,5 +1,5 @@
 import { redirect } from "react-router";
-import createSupabaseServerClient from "~/services/supabase/supabase_client";
+import createSupabaseServerClient from "~/services/supabase/supabase_client.server";
 import { insertOrCreateUserProfile } from "~/db/queries/user_profiles_queries";
 
 /**

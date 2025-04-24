@@ -16,7 +16,6 @@ import {
 import { z } from "zod";
 import { useForm, FormProvider, useFormContext } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useCart } from "../features/cart/hooks/use_cart";
 
 const checkoutSchema = z.object({
   shipping: z.object({
@@ -288,7 +287,24 @@ const PaymentForm = () => {
 };
 
 const ReviewOrder = ({ formData }: { formData: CheckoutFormData }) => {
-  const { cart } = useCart();
+  const cart = {
+    items: [
+      {
+        id: "1",
+        name: "Product 1",
+        imageUrl: "https://via.placeholder.com/60",
+        price: 29.99,
+        quantity: 2,
+      },
+      {
+        id: "2",
+        name: "Product 2",
+        imageUrl: "https://via.placeholder.com/60",
+        price: 19.99,
+        quantity: 1,
+      },
+    ],
+  };
   const typedCartItems = cart.items as unknown as CartItem[];
 
   return (

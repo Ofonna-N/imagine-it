@@ -54,6 +54,8 @@ export const API_ROUTES = {
    * Resource routes for user designs
    */
   DESIGNS: "/api/designs",
+  CART: "/api/cart", // GET, POST, DELETE
+  RECIPIENT: "/api/recipient", // GET, POST
 };
 
 // A flattened version combining all routes for easier imports

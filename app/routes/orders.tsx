@@ -1,8 +1,10 @@
 import { Box, Typography, Paper, CircularProgress } from "@mui/material";
-import { useOrders } from "../features/order/hooks/use_orders";
 
 export default function Orders() {
-  const { orders, loading } = useOrders();
+  const { orders, loading } = {
+    orders: [], // Replace with your actual data fetching logic
+    loading: false, // Replace with your actual loading state
+  };
 
   return (
     <Box sx={{ my: 4 }}>
