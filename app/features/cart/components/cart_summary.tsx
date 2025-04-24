@@ -6,61 +6,23 @@ interface CartSummaryProps {
   cart: {
     items: any[]; // Replace with actual type if available
     subtotal: number;
-    shipping: number;
-    tax: number;
-    total: number;
   };
 }
 
-export const CartSummary: React.FC<CartSummaryProps> = ({ cart }) => {
-  const { subtotal, shipping, tax, total } = cart;
-
+export const CartSummary: React.FC<CartSummaryProps> = ({
+  cart: { subtotal = 0, items = [] },
+}) => {
   return (
     <Paper sx={{ p: 3 }}>
       <Typography variant="h6" gutterBottom>
         Order Summary
       </Typography>
-
       <Box sx={{ my: 2 }}>
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            mb: 1,
-          }}
-        >
+        <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
           <Typography>Subtotal</Typography>
           <Typography>${subtotal.toFixed(2)}</Typography>
         </Box>
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            mb: 1,
-          }}
-        >
-          <Typography>Shipping</Typography>
-          <Typography>${shipping.toFixed(2)}</Typography>
-        </Box>
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            mb: 1,
-          }}
-        >
-          <Typography>Tax</Typography>
-          <Typography>${tax.toFixed(2)}</Typography>
-        </Box>
       </Box>
-
-      <Divider />
-
-      <Box sx={{ display: "flex", justifyContent: "space-between", my: 2 }}>
-        <Typography variant="h6">Total</Typography>
-        <Typography variant="h6">${total.toFixed(2)}</Typography>
-      </Box>
-
       <Button
         variant="contained"
         color="primary"
@@ -69,11 +31,10 @@ export const CartSummary: React.FC<CartSummaryProps> = ({ cart }) => {
         to="/checkout"
         startIcon={<FiCreditCard />}
         size="large"
-        disabled={cart.items.length === 0}
+        disabled={items.length === 0}
       >
         Proceed to Checkout
       </Button>
-
       <Button
         variant="text"
         fullWidth

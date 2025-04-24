@@ -6,6 +6,7 @@ import { useMutateRemoveCartItem } from "../features/cart/hooks/use_mutate_remov
 import { useMutateClearCart } from "../features/cart/hooks/use_mutate_clear_cart";
 import { useMutateUpdateCartItemQuantity } from "../features/cart/hooks/use_mutate_update_cart_item_quantity";
 import type { PrintfulV2OrderItem } from "~/types/printful";
+import { useState, useCallback } from "react";
 
 export default function Cart() {
   const { data: cartItems = [], isLoading } = useQueryCart();
@@ -13,20 +14,25 @@ export default function Cart() {
   const { mutate: clearCart } = useMutateClearCart();
   const { mutate: updateQuantity } = useMutateUpdateCartItemQuantity();
 
-  // Calculate cart summary (subtotal, etc.)
-  // The subtotal is now calculated in CartItem, so we sum up item totals here
-  // We'll use 0 as a placeholder since CartItem handles price display
-  const subtotal = 0;
-  const shipping = 5; // Placeholder
-  const tax = 0; // Placeholder
-  const total = subtotal + shipping + tax;
+  // State to track calculated prices for each cart item
+  const [itemPrices, setItemPrices] = useState<Record<number, number>>({});
+
+  // Callback to update the price for a specific cart item
+  const setItemPrice = useCallback((itemId: number, price: number) => {
+    setItemPrices((prev) => ({ ...prev, [itemId]: price }));
+  }, []);
+
+  // Calculate subtotal from lifted item prices
+  const subtotal = cartItems.reduce((sum, item) => {
+    const price = itemPrices[item.id] ?? 0;
+    const item_data = (item.item_data ?? {}) as { quantity?: number };
+    const quantity = item_data.quantity ?? 1;
+    return sum + price * quantity;
+  }, 0);
 
   const cart = {
     items: cartItems,
     subtotal,
-    shipping,
-    tax,
-    total,
   };
 
   return (
@@ -45,6 +51,7 @@ export default function Cart() {
                   updateQuantity({ itemId: id, quantity })
                 }
                 onClearCart={() => clearCart()}
+                setItemPrice={setItemPrice}
               />
             </Paper>
           </Grid>

@@ -19,18 +19,20 @@ import type {
   PrintfulV2OrderItem,
   PrintfulV2CatalogVariantPricesPlacementOption,
 } from "~/types/printful";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface CartItemProps {
   item: CartItemType;
   onUpdateQuantity: (id: number, quantity: number) => void;
   onRemoveItem: (id: number) => void;
+  setItemPrice: (itemId: number, price: number) => void;
 }
 
 export const CartItem: React.FC<CartItemProps> = ({
   item,
   onUpdateQuantity,
   onRemoveItem,
+  setItemPrice,
 }) => {
   // Type assertions for API-driven cart item
   const item_data = (item.item_data as PrintfulV2OrderItem) ?? {};
@@ -70,6 +72,13 @@ export const CartItem: React.FC<CartItemProps> = ({
     }
   }
   const itemTotal = (basePrice + placementOptionsTotal) * quantity;
+
+  // Call setItemPrice when itemTotal changes
+  useEffect(() => {
+    setItemPrice(item.id, basePrice + placementOptionsTotal);
+    // Only update when price-relevant data changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [item.id, basePrice, placementOptionsTotal]);
 
   const [galleryOpen, setGalleryOpen] = useState(false);
 

@@ -7,6 +7,7 @@ interface CartListProps {
   onUpdateQuantity: (id: number, quantity: number) => void;
   onRemoveItem: (id: number) => void;
   onClearCart: () => void;
+  setItemPrice: (itemId: number, price: number) => void;
 }
 
 export const CartList: React.FC<CartListProps> = ({
@@ -14,6 +15,7 @@ export const CartList: React.FC<CartListProps> = ({
   onUpdateQuantity,
   onRemoveItem,
   onClearCart,
+  setItemPrice,
 }) => {
   if (cart.items.length === 0) {
     return (
@@ -46,6 +48,7 @@ export const CartList: React.FC<CartListProps> = ({
           item={item}
           onUpdateQuantity={onUpdateQuantity}
           onRemoveItem={onRemoveItem}
+          setItemPrice={setItemPrice}
         />
       ))}
     </Box>
