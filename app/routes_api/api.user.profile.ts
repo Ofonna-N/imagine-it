@@ -1,5 +1,5 @@
 import { getUserProfileById } from "~/db/queries/user_profiles_queries";
-import createSupabaseServerClient from "~/services/supabase/supabase_client";
+import createSupabaseServerClient from "~/services/supabase/supabase_client.server";
 
 /**
  * Resource route to fetch the current user's profile

@@ -1,5 +1,5 @@
 import { insertOrCreateUserProfile } from "~/db/queries/user_profiles_queries";
-import createSupabaseServerClient from "~/services/supabase/supabase_client";
+import createSupabaseServerClient from "~/services/supabase/supabase_client.server";
 
 /**
  * Resource route for user registration
