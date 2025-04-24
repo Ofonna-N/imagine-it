@@ -19,7 +19,6 @@ import {
   CardMedia,
   Paper,
   Stack,
-  Skeleton,
 } from "@mui/material";
 import { FiX, FiImage, FiCheck } from "react-icons/fi";
 import { Swiper, SwiperSlide } from "swiper/react";
@@ -125,7 +124,6 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
       // The API returns an array, use the first task's ID
       const tasks = response.data;
       if (tasks && tasks.length > 0) {
-        // console.log("Mockup task created, ID:", tasks);
         setGeneratedMockupUrl(null); // Clear previous mockup
         setGeneratedTaskIds(tasks.map((t) => t.id)); // Set the current task ID for polling
       } else {
