@@ -1,6 +1,5 @@
 import { type ActionFunctionArgs } from "react-router";
 import {
-  getOrCreateCart,
   addCartItem,
   getCartItems,
   removeCartItem,
@@ -8,7 +7,6 @@ import {
   updateCartItemQuantity,
 } from "../db/queries/carts_queries";
 import createSupabaseServerClient from "../services/supabase/supabase_client.server";
-import type { PrintfulV2OrderItem } from "../types/printful";
 
 /**
  * Resource Route: /api/cart
