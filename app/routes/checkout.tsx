@@ -486,23 +486,15 @@ export default function Checkout() {
   const formData = watch();
 
   // Example cart and calculation for summary
+  // Example cart with 10 products for summary/demo purposes
   const cart = {
-    items: [
-      {
-        id: "1",
-        name: "Product 1",
-        imageUrl: "https://via.placeholder.com/60",
-        price: 29.99,
-        quantity: 2,
-      },
-      {
-        id: "2",
-        name: "Product 2",
-        imageUrl: "https://via.placeholder.com/60",
-        price: 19.99,
-        quantity: 1,
-      },
-    ],
+    items: Array.from({ length: 10 }, (_, i) => ({
+      id: (i + 1).toString(),
+      name: `Product ${i + 1}`,
+      imageUrl: `https://via.placeholder.com/60?text=Product+${i + 1}`,
+      price: 10 + i * 5, // Example price: 10, 15, 20, ...
+      quantity: (i % 3) + 1, // Quantities: 1, 2, 3, 1, 2, 3, ...
+    })),
   };
   const typedCartItems = cart.items as CartItem[];
   const subtotal = typedCartItems.reduce(
@@ -545,7 +537,6 @@ export default function Checkout() {
               <Grid size={{ xs: 12, md: 5 }}>
                 <Box sx={{ mb: 2 }}>
                   <PayPalButtons />
-                  <PayPalMarks />
                 </Box>
                 <Box>
                   <Typography variant="h6" gutterBottom>
