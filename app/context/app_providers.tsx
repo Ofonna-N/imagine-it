@@ -3,6 +3,7 @@ import { MuiProvider } from "./mui_provider";
 import { QueryProvider } from "./query_provider";
 import { AuthProvider } from "./auth_provider";
 import { SnackbarProvider } from "notistack";
+import PaypalProvider from "./paypal_provider";
 
 interface AppProvidersProps {
   children: ReactNode;
@@ -25,7 +26,7 @@ export function AppProviders({ children }: Readonly<AppProvidersProps>) {
               horizontal: "right",
             }}
           >
-            {children}
+            <PaypalProvider>{children}</PaypalProvider>
           </SnackbarProvider>
         </MuiProvider>
       </AuthProvider>

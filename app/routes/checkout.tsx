@@ -16,6 +16,7 @@ import {
 import { z } from "zod";
 import { useForm, FormProvider, useFormContext } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { PayPalButtons, PayPalMarks } from "@paypal/react-paypal-js";
 
 const orderRecipientSchema = z
   .object({
@@ -535,6 +536,8 @@ export default function Checkout() {
           <Typography component="h1" variant="h4" align="center">
             Checkout
           </Typography>
+          <PayPalButtons />
+          <PayPalMarks />
           <Stepper activeStep={activeStep} sx={{ pt: 3, pb: 5 }}>
             {steps.map((label) => (
               <Step key={label}>
