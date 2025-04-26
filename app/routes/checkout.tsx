@@ -451,11 +451,8 @@ const ReviewOrder = ({ formData }: { formData: CheckoutFormData }) => {
   );
 };
 
-const steps = ["Shipping address", "Payment details", "Review your order"];
-
 export default function Checkout() {
-  const [activeStep, setActiveStep] = useState(0);
-
+  // Only need shipping form and payment buttons/summary, so remove stepper and step logic
   const methods = useForm<CheckoutFormData>({
     resolver: zodResolver(checkoutSchema),
     defaultValues: {
@@ -485,45 +482,40 @@ export default function Checkout() {
     mode: "onChange",
   });
 
-  const { handleSubmit, watch, trigger } = methods;
+  const { handleSubmit, watch } = methods;
   const formData = watch();
 
-  const handleNext = async () => {
-    let isValid = false;
-
-    if (activeStep === 0) {
-      isValid = await trigger("shipping");
-    } else if (activeStep === 1) {
-      isValid = await trigger("payment");
-    } else {
-      isValid = true;
-    }
-
-    if (isValid) {
-      setActiveStep(activeStep + 1);
-    }
+  // Example cart and calculation for summary
+  const cart = {
+    items: [
+      {
+        id: "1",
+        name: "Product 1",
+        imageUrl: "https://via.placeholder.com/60",
+        price: 29.99,
+        quantity: 2,
+      },
+      {
+        id: "2",
+        name: "Product 2",
+        imageUrl: "https://via.placeholder.com/60",
+        price: 19.99,
+        quantity: 1,
+      },
+    ],
   };
-
-  const handleBack = () => {
-    setActiveStep(activeStep - 1);
-  };
+  const typedCartItems = cart.items as CartItem[];
+  const subtotal = typedCartItems.reduce(
+    (sum, item) => sum + item.price * item.quantity,
+    0
+  );
+  const shipping = 7.99; // Example static shipping
+  const tax = subtotal * 0.08; // Example 8% tax
+  const total = subtotal + shipping + tax;
 
   const onSubmit = (data: CheckoutFormData) => {
+    // Handle order submission
     console.log("Order submitted:", data);
-    setActiveStep(activeStep + 1);
-  };
-
-  const getStepContent = (step: number) => {
-    switch (step) {
-      case 0:
-        return <ShippingForm />;
-      case 1:
-        return <PaymentForm />;
-      case 2:
-        return <ReviewOrder formData={formData} />;
-      default:
-        throw new Error("Unknown step");
-    }
   };
 
   return (
@@ -533,59 +525,87 @@ export default function Checkout() {
           variant="outlined"
           sx={{ my: { xs: 3, md: 6 }, p: { xs: 2, md: 3 } }}
         >
-          <Typography component="h1" variant="h4" align="center">
+          <Typography component="h1" variant="h4" align="center" gutterBottom>
             Checkout
           </Typography>
-          <PayPalButtons />
-          <PayPalMarks />
-          <Stepper activeStep={activeStep} sx={{ pt: 3, pb: 5 }}>
-            {steps.map((label) => (
-              <Step key={label}>
-                <StepLabel>{label}</StepLabel>
-              </Step>
-            ))}
-          </Stepper>
-          {activeStep === steps.length ? (
-            <>
-              <Typography variant="h5" gutterBottom>
-                Thank you for your order.
-              </Typography>
-              <Typography variant="subtitle1">
-                Your order number is #2001539. We have emailed your order
-                confirmation, and will send you an update when your order has
-                shipped.
-              </Typography>
-            </>
-          ) : (
-            <form
-              onSubmit={
-                activeStep === steps.length - 1
-                  ? handleSubmit(onSubmit)
-                  : (e) => e.preventDefault()
-              }
-            >
-              {getStepContent(activeStep)}
-              <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
-                {activeStep !== 0 && (
-                  <Button onClick={handleBack} sx={{ mt: 3, ml: 1 }}>
-                    Back
-                  </Button>
-                )}
-                <Button
-                  variant="contained"
-                  color="primary"
-                  onClick={
-                    activeStep === steps.length - 1
-                      ? handleSubmit(onSubmit)
-                      : handleNext
-                  }
-                  sx={{ mt: 3, ml: 1 }}
+          <form onSubmit={handleSubmit(onSubmit)}>
+            <Grid container spacing={4}>
+              {/* Left: Shipping info */}
+              <Grid size={{ xs: 12, md: 7 }}>
+                <ShippingForm />
+                <Box
+                  sx={{ display: "flex", justifyContent: "flex-end", mt: 4 }}
                 >
-                  {activeStep === steps.length - 1 ? "Place order" : "Next"}
-                </Button>
-              </Box>
-            </form>
-          )}
+                  <Button type="submit" variant="contained" color="primary">
+                    Place Order
+                  </Button>
+                </Box>
+              </Grid>
+              {/* Right: Payment buttons and summary */}
+              <Grid size={{ xs: 12, md: 5 }}>
+                <Box sx={{ mb: 2 }}>
+                  <PayPalButtons />
+                  <PayPalMarks />
+                </Box>
+                <Box>
+                  <Typography variant="h6" gutterBottom>
+                    Order Summary
+                  </Typography>
+                  {typedCartItems.map((item) => (
+                    <Box
+                      key={item.id}
+                      sx={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        mb: 1,
+                      }}
+                    >
+                      <Typography>
+                        {item.name} x{item.quantity}
+                      </Typography>
+                      <Typography>
+                        ${(item.price * item.quantity).toFixed(2)}
+                      </Typography>
+                    </Box>
+                  ))}
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      mt: 2,
+                    }}
+                  >
+                    <Typography color="text.secondary">Subtotal</Typography>
+                    <Typography>${subtotal.toFixed(2)}</Typography>
+                  </Box>
+                  <Box
+                    sx={{ display: "flex", justifyContent: "space-between" }}
+                  >
+                    <Typography color="text.secondary">Shipping</Typography>
+                    <Typography>${shipping.toFixed(2)}</Typography>
+                  </Box>
+                  <Box
+                    sx={{ display: "flex", justifyContent: "space-between" }}
+                  >
+                    <Typography color="text.secondary">Tax</Typography>
+                    <Typography>${tax.toFixed(2)}</Typography>
+                  </Box>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      mt: 2,
+                      pt: 2,
+                      borderTop: "1px solid #eee",
+                    }}
+                  >
+                    <Typography variant="h6">Total</Typography>
+                    <Typography variant="h6">${total.toFixed(2)}</Typography>
+                  </Box>
+                </Box>
+              </Grid>
+            </Grid>
+          </form>
         </Paper>
       </Container>
     </FormProvider>
