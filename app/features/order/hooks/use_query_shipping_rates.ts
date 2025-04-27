@@ -13,7 +13,7 @@ import type {
  * @param options Optional TanStack Query mutation options.
  * @returns Mutation object for requesting shipping rates.
  */
-export const useQueryShippingRates = (
+export const useMutateShippingRates = (
   options?: UseMutationOptions<
     PrintfulV2ShippingRatesResponse,
     | PrintfulV2ShippingRatesErrorResponse400

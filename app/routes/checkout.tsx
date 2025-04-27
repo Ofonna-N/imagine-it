@@ -1,4 +1,3 @@
-import { useState } from "react";
 import {
   Box,
   Button,
@@ -7,16 +6,20 @@ import {
   FormControlLabel,
   Grid,
   Paper,
-  Step,
-  StepLabel,
-  Stepper,
   TextField,
   Typography,
 } from "@mui/material";
 import { z } from "zod";
 import { useForm, FormProvider, useFormContext } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { PayPalButtons, PayPalMarks } from "@paypal/react-paypal-js";
+import { PayPalButtons } from "@paypal/react-paypal-js";
+import { useQueryCart } from "~/features/cart/hooks/use_query_cart";
+import { useMutateShippingRates } from "~/features/order/hooks/use_query_shipping_rates";
+import { API_ROUTES } from "~/constants/route_paths";
+import { useEffect, useMemo } from "react";
+import { useCartItemPrice } from "~/features/cart/hooks/use_cart_item_price";
+import { CartSummaryItem } from "~/features/cart/components/cart_summary_item";
+import { useCartItemsWithPrices } from "~/features/cart/hooks/use_cart_items_with_prices";
 
 const orderRecipientSchema = z
   .object({
@@ -485,25 +488,42 @@ export default function Checkout() {
   const { handleSubmit, watch } = methods;
   const formData = watch();
 
-  // Example cart and calculation for summary
-  // Example cart with 10 products for summary/demo purposes
-  const cart = {
-    items: Array.from({ length: 10 }, (_, i) => ({
-      id: (i + 1).toString(),
-      name: `Product ${i + 1}`,
-      imageUrl: `https://via.placeholder.com/60?text=Product+${i + 1}`,
-      price: 10 + i * 5, // Example price: 10, 15, 20, ...
-      quantity: (i % 3) + 1, // Quantities: 1, 2, 3, 1, 2, 3, ...
-    })),
+  const { data: cartItems = [] } = useQueryCart();
+  const {
+    itemsWithPrices,
+    subtotal,
+    isLoading: isSubtotalLoading,
+  } = useCartItemsWithPrices(cartItems);
+  const shippingAddress = formData.shipping;
+
+  // Determine if shipping address is valid (basic check for required fields)
+  const isShippingAddressValid =
+    shippingAddress?.name &&
+    shippingAddress?.address1 &&
+    shippingAddress?.city &&
+    shippingAddress?.country_code &&
+    shippingAddress?.zip;
+
+  // Prepare shipping rates mutation
+  const shippingRatesMutation = useMutateShippingRates();
+
+  // Helper to trigger shipping rates fetch
+  const fetchShippingRates = () => {
+    if (!isShippingAddressValid || cartItems.length === 0) return;
+    const order_items = cartItems.map(
+      ({ mockup_urls, ...remainingItems }) => remainingItems.item_data
+    );
+    shippingRatesMutation.mutate({
+      recipient: shippingAddress,
+      order_items,
+    });
   };
-  const typedCartItems = cart.items as CartItem[];
-  const subtotal = typedCartItems.reduce(
-    (sum, item) => sum + item.price * item.quantity,
-    0
-  );
-  const shipping = 7.99; // Example static shipping
-  const tax = subtotal * 0.08; // Example 8% tax
-  const total = subtotal + shipping + tax;
+
+  // Fetch shipping rates when address or cart changes
+  useEffect(() => {
+    fetchShippingRates();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isShippingAddressValid, cartItems]);
 
   const onSubmit = (data: CheckoutFormData) => {
     // Handle order submission
@@ -542,22 +562,8 @@ export default function Checkout() {
                   <Typography variant="h6" gutterBottom>
                     Order Summary
                   </Typography>
-                  {typedCartItems.map((item) => (
-                    <Box
-                      key={item.id}
-                      sx={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        mb: 1,
-                      }}
-                    >
-                      <Typography>
-                        {item.name} x{item.quantity}
-                      </Typography>
-                      <Typography>
-                        ${(item.price * item.quantity).toFixed(2)}
-                      </Typography>
-                    </Box>
+                  {itemsWithPrices.map(({ item, total }) => (
+                    <CartSummaryItem key={item.id} item={item} total={total} />
                   ))}
                   <Box
                     sx={{
@@ -567,32 +573,28 @@ export default function Checkout() {
                     }}
                   >
                     <Typography color="text.secondary">Subtotal</Typography>
-                    <Typography>${subtotal.toFixed(2)}</Typography>
+                    <Typography>
+                      {isSubtotalLoading
+                        ? "Calculating..."
+                        : subtotal.toFixed(2)}
+                    </Typography>
                   </Box>
+
+                  {/* Shipping rates display */}
                   <Box
                     sx={{ display: "flex", justifyContent: "space-between" }}
                   >
                     <Typography color="text.secondary">Shipping</Typography>
-                    <Typography>${shipping.toFixed(2)}</Typography>
+                    <Typography>
+                      {shippingRatesMutation.isPending && "Calculating..."}
+                      {shippingRatesMutation.data?.data?.[0]?.rate
+                        ? `$${Number(
+                            shippingRatesMutation.data.data[0].rate
+                          ).toFixed(2)}`
+                        : !shippingRatesMutation.isPending && "N/A"}
+                    </Typography>
                   </Box>
-                  <Box
-                    sx={{ display: "flex", justifyContent: "space-between" }}
-                  >
-                    <Typography color="text.secondary">Tax</Typography>
-                    <Typography>${tax.toFixed(2)}</Typography>
-                  </Box>
-                  <Box
-                    sx={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      mt: 2,
-                      pt: 2,
-                      borderTop: "1px solid #eee",
-                    }}
-                  >
-                    <Typography variant="h6">Total</Typography>
-                    <Typography variant="h6">${total.toFixed(2)}</Typography>
-                  </Box>
+                  {/* ...existing tax and total display... */}
                 </Box>
               </Grid>
             </Grid>
