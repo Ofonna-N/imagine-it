@@ -536,7 +536,7 @@ export default function Checkout() {
               {/* Right: Payment buttons and summary */}
               <Grid size={{ xs: 12, md: 5 }}>
                 <Box sx={{ mb: 2 }}>
-                  <PayPalButtons />
+                  <PayPalButtons disabled />
                 </Box>
                 <Box>
                   <Typography variant="h6" gutterBottom>
