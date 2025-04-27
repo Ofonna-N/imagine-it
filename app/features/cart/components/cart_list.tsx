@@ -3,11 +3,10 @@ import { CartItem } from "./cart_item";
 import type { CartItem as DBCartItem } from "~/db/schema/carts";
 
 interface CartListProps {
-  cart: { items: DBCartItem[] };
+  cart: { items: (DBCartItem & { calculatedTotal?: number })[] };
   onUpdateQuantity: (id: number, quantity: number) => void;
   onRemoveItem: (id: number) => void;
   onClearCart: () => void;
-  setItemPrice: (itemId: number, price: number) => void;
 }
 
 export const CartList: React.FC<CartListProps> = ({
@@ -15,7 +14,6 @@ export const CartList: React.FC<CartListProps> = ({
   onUpdateQuantity,
   onRemoveItem,
   onClearCart,
-  setItemPrice,
 }) => {
   if (cart.items.length === 0) {
     return (
@@ -42,13 +40,13 @@ export const CartList: React.FC<CartListProps> = ({
         </Button>
       </Box>
 
-      {cart.items.map((item: DBCartItem) => (
+      {cart.items.map((item) => (
         <CartItem
           key={item.id}
           item={item}
           onUpdateQuantity={onUpdateQuantity}
           onRemoveItem={onRemoveItem}
-          setItemPrice={setItemPrice}
+          total={item.calculatedTotal}
         />
       ))}
     </Box>
