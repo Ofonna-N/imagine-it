@@ -56,6 +56,11 @@ export const API_ROUTES = {
   DESIGNS: "/api/designs",
   CART: "/api/cart", // GET, POST, DELETE
   RECIPIENT: "/api/recipient", // GET, POST
+  /**
+   * POST /api/shipping-rates
+   * Resource route for retrieving shipping rates
+   */
+  SHIPPING_RATES: "/api/shipping-rates", // POST
 };
 
 // A flattened version combining all routes for easier imports

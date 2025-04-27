@@ -107,4 +107,5 @@ export default [
   route(API_ROUTES.DESIGNS.slice(1), "routes_api/api.designs.ts"),
   route(API_ROUTES.CART.slice(1), "routes_api/api.cart.ts"),
   route(API_ROUTES.RECIPIENT.slice(1), "routes_api/api.recipient.ts"),
+  route(API_ROUTES.SHIPPING_RATES.slice(1), "routes_api/api.shipping_rates.ts"),
 ] satisfies RouteConfig;

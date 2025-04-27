@@ -2,18 +2,22 @@
  * Server-only utility functions for interacting with the Printful API v2
  */
 
+import type { PrintfulV2MockupStylesResponse } from "~/types/printful/catalog_mockup_styles_types";
+import type { PrintfulV2CatalogProductPricesResponse } from "~/types/printful/catalog_product_prices_types";
 import type {
+  PrintfulV2CatalogProduct,
   PrintfulV2CatalogProductResponse,
   PrintfulV2CatalogProductsResponse,
-  PrintfulV2CatalogProduct,
   PrintfulV2CatalogVariantsResponse,
-  PrintfulV2ProductAvailabilityResponse,
   PrintfulV2CategoriesResponse,
-  PrintfulV2MockupStylesResponse, // Added
-  PrintfulV2CatalogProductPricesResponse,
-  PrintfulV2CatalogVariantPricesResponse, // Add import for product pricing response
-  PrintfulV2CatalogVariantAvailabilityResponse, // Add import for variant availability response
-} from "../../types/printful";
+  PrintfulV2ProductAvailabilityResponse,
+} from "~/types/printful/catalog_product_types";
+import type { PrintfulV2CatalogVariantAvailabilityResponse } from "~/types/printful/catalog_variant_availability_types";
+import type { PrintfulV2CatalogVariantPricesResponse } from "~/types/printful/catalog_variant_prices_types";
+import type {
+  PrintfulV2ShippingRatesRequest,
+  PrintfulV2ShippingRatesResponse,
+} from "~/types/printful/shipping_rates_types";
 
 /**
  * Creates headers for Printful API requests
@@ -246,5 +250,24 @@ export async function fetchCatalogVariantAvailability(
   }
   return fetchFromPrintful<PrintfulV2CatalogVariantAvailabilityResponse>(
     endpoint
+  );
+}
+
+/**
+ * POST /v2/shipping-rates
+ * Utility: Fetches available shipping rates for a set of order items and recipient.
+ *
+ * @param payload - The request payload for shipping rates
+ * @returns The shipping rates response from Printful
+ */
+export async function fetchPrintfulShippingRates(
+  payload: PrintfulV2ShippingRatesRequest
+): Promise<PrintfulV2ShippingRatesResponse> {
+  return fetchFromPrintful<PrintfulV2ShippingRatesResponse>(
+    "/v2/shipping-rates",
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }
   );
 }
