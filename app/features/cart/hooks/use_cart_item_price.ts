@@ -1,6 +1,5 @@
 import { useQueryVariantPrices } from "~/features/product/hooks/use_query_variant_prices";
 import type { CartItem as CartItemType } from "~/db/schema/carts";
-import type { PrintfulV2OrderItem } from "~/types/printful";
 import { useMemo } from "react";
 
 /**
@@ -8,7 +7,7 @@ import { useMemo } from "react";
  * Returns base price, placement options total, and total price for the quantity.
  */
 export const useCartItemPrice = (item: CartItemType) => {
-  const itemData = item.item_data as PrintfulV2OrderItem;
+  const itemData = item.item_data;
   const variantId = itemData.catalog_variant_id?.toString() ?? "";
   const { data: variantPrices, isLoading } = useQueryVariantPrices(variantId);
 

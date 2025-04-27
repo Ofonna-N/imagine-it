@@ -1,6 +1,6 @@
 import { useQuery, type UseQueryOptions } from "@tanstack/react-query";
 import { API_ROUTES } from "~/constants/route_paths";
-import type { PrintfulV2CatalogVariantPricesData } from "~/types/printful";
+import type { PrintfulV2CatalogVariantPricesData } from "~/types/printful/catalog_variant_prices_types";
 
 /**
  * Fetches pricing information for a specific catalog variant via the API proxy.

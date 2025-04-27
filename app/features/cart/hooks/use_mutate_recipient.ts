@@ -4,7 +4,7 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { API_ROUTES } from "~/constants/route_paths";
-import type { PrintfulV2OrderRecipient } from "~/types/printful";
+import type { PrintfulV2OrderRecipient } from "~/types/printful/order_types";
 import type { Recipient } from "~/db/schema/carts";
 
 /**

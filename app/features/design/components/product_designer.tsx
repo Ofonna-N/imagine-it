@@ -27,21 +27,24 @@ import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
 import { motion } from "framer-motion";
-import type {
-  PrintfulV2CatalogProduct,
-  PrintfulV2CatalogVariant,
-  PrintfulV2MockupStyleGroup,
-  PrintfulV2MockupGeneratorTaskRequest,
-  ProductOption,
-  PrintfulV2MockupStyle,
-  PrintfulV2OrderItem,
-} from "~/types/printful";
+
 import { useQueryProductMockupStyles } from "../hooks/use_query_product_mockup_styles";
 import { useMutateCreateMockupTask } from "../hooks/use_mutate_create_mockup_task";
 import { useQueryMockupTaskResult } from "../hooks/use_query_mockup_task_result";
 import { useMutateAddCartItem } from "~/features/cart/hooks/use_mutate_add_cart_item";
 import ImageGenerator from "./image_generator";
 import { DesignsGallery } from "./designs_gallery";
+import type {
+  PrintfulV2MockupStyle,
+  PrintfulV2MockupStyleGroup,
+} from "~/types/printful/catalog_mockup_styles_types";
+import type { ProductOption } from "~/types/printful/product_option_types";
+import type {
+  PrintfulV2CatalogProduct,
+  PrintfulV2CatalogVariant,
+} from "~/types/printful/catalog_product_types";
+import type { PrintfulV2MockupGeneratorTaskRequest } from "~/types/printful/mockup_task_types";
+import type { PrintfulV2OrderItem } from "~/types/printful/order_types";
 
 interface ProductDesignerProps {
   open: boolean;

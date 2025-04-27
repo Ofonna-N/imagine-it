@@ -1,10 +1,10 @@
-import { db } from "../index";
-import { carts, cart_items, recipients } from "../schema/carts";
-import type { Cart, CartItem, Recipient } from "../schema/carts";
 import type {
   PrintfulV2OrderItem,
   PrintfulV2OrderRecipient,
-} from "~/types/printful";
+} from "~/types/printful/order_types";
+import { db } from "../index";
+import { carts, cart_items, recipients } from "../schema/carts";
+import type { Cart, CartItem, Recipient } from "../schema/carts";
 import { eq } from "drizzle-orm"; // Import eq for query conditions
 
 /**

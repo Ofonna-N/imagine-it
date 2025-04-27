@@ -9,7 +9,7 @@ import {
 import type {
   PrintfulV2OrderItem,
   PrintfulV2OrderRecipient,
-} from "~/types/printful";
+} from "~/types/printful/order_types";
 
 /**
  * carts table
