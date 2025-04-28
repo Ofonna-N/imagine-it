@@ -1,4 +1,6 @@
 import { type ActionFunctionArgs } from "react-router";
+import { getStoragePath } from "../utils/storage_path";
+import { randomUUID } from "crypto";
 import {
   addCartItem,
   getCartItems,
@@ -53,16 +55,65 @@ export async function action({ request }: ActionFunctionArgs) {
   const method = request.method.toUpperCase();
 
   if (method === "POST") {
+    // Accepts: item, mockupUrls (array of URLs or file data), designMeta
     const { item, mockupUrls, designMeta } = await request.json();
     if (!item)
       return new Response(JSON.stringify({ error: "Missing item" }), {
         status: 400,
         headers: { "Content-Type": "application/json" },
       });
+    // Upload mockup images to Supabase storage and collect new URLs
+    let storedMockupUrls: string[] = [];
+    if (Array.isArray(mockupUrls) && mockupUrls.length > 0) {
+      const { supabase } = createSupabaseServerClient({ request });
+      const userIdForStorage = userId;
+      // Use product_id and variant_id for traceable storage, fallback to UUID if missing
+      const productId = item.product_id ?? "unknown";
+      const variantId = item.variant_id ?? "unknown";
+      // Add a timestamp for uniqueness in case of duplicate cart items
+      const cartImageId = `${productId}_${variantId}_${Date.now()}`;
+      for (let i = 0; i < mockupUrls.length; i++) {
+        const url = mockupUrls[i];
+        try {
+          // Fetch the image data from the provided URL
+          const imageResponse = await fetch(url);
+          const imageType =
+            imageResponse.headers.get("content-type") ?? "image/png";
+          const imageExt = imageType.split("/")[1] ?? "png";
+          // Use imageKey (index) to ensure unique path for each image
+          const storagePath = getStoragePath(
+            userIdForStorage,
+            "cart-mockup",
+            cartImageId,
+            imageExt,
+            { imageKey: i }
+          );
+          const imageBuffer = await imageResponse.arrayBuffer();
+          const { error: uploadError } = await supabase.storage
+            .from("imagine-it")
+            .upload(storagePath, Buffer.from(imageBuffer), {
+              contentType: imageType,
+            });
+          if (uploadError) {
+            // Skip this image if upload fails
+            continue;
+          }
+          const {
+            data: { publicUrl },
+          } = supabase.storage.from("imagine-it").getPublicUrl(storagePath);
+          storedMockupUrls.push(publicUrl);
+        } catch (err) {
+          // Skip this image if fetch/upload fails
+          continue;
+        }
+      }
+      // Attach the cartImageId to the item for reference if needed
+      item.cartImageId = cartImageId;
+    }
     const created = await addCartItem({
       userId,
       item,
-      mockupUrls,
+      mockupUrls: storedMockupUrls.length > 0 ? storedMockupUrls : undefined,
       designMeta,
     });
     return new Response(JSON.stringify(created), {

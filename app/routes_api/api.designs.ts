@@ -5,18 +5,7 @@ import {
   getDesignByIdAndUser,
   createDesign,
 } from "~/db/queries/designs_queries";
-
-// Returns the storage path for a design image or preview
-function getDesignStoragePath(
-  userId: string,
-  designId: string,
-  ext: string,
-  opts?: { preview?: boolean }
-) {
-  // If opts.preview is true, store as preview image
-  const suffix = opts?.preview ? `_preview` : "";
-  return `${userId}-designs/${designId}${suffix}.${ext}`;
-}
+import { getStoragePath } from "../utils/storage_path";
 
 /**
  * GET /api/designs
@@ -101,13 +90,12 @@ export async function action({ request }: { request: Request }) {
     const imageType = file.type || "image/png";
     const imageExt = imageType.split("/")[1] ?? "png";
     const buffer = await file.arrayBuffer();
-    const storagePath = getDesignStoragePath(userId, id, imageExt);
+    const storagePath = getStoragePath(userId, "design", id, imageExt);
     const { error: uploadError } = await supabase.storage
       .from("imagine-it")
       .upload(storagePath, Buffer.from(buffer), {
         contentType: imageType,
       });
-    console.log("uploadError:", uploadError);
     if (uploadError) {
       return new Response(
         JSON.stringify({
@@ -135,7 +123,7 @@ export async function action({ request }: { request: Request }) {
         imageResponse.headers.get("content-type") ?? "image/png";
       const imageExt = imageType.split("/")[1] ?? "png";
       const imageBuffer = await imageResponse.arrayBuffer();
-      const storagePath = getDesignStoragePath(userId, id, imageExt);
+      const storagePath = getStoragePath(userId, "design", id, imageExt);
       const { error: uploadError } = await supabase.storage
         .from("imagine-it")
         .upload(storagePath, Buffer.from(imageBuffer), {
