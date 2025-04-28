@@ -147,12 +147,44 @@ export async function action({ request }: ActionFunctionArgs) {
   if (method === "DELETE") {
     const { itemId, clear } = await request.json();
     if (clear) {
+      // --- Begin: Delete all associated mockup images for all cart items ---
+      const { supabase } = createSupabaseServerClient({ request });
+      const cartItems = await getCartItems(userId);
+      for (const cartItem of cartItems) {
+        if (Array.isArray(cartItem.mockup_urls)) {
+          for (const url of cartItem.mockup_urls) {
+            const match = url.match(/\/public\/imagine-it\/(.+)$/);
+            const storagePath = match ? match[1] : null;
+            if (storagePath) {
+              await supabase.storage.from("imagine-it").remove([storagePath]);
+            }
+          }
+        }
+      }
+      // --- End: Delete all associated mockup images ---
       await clearCart(userId);
       return new Response(JSON.stringify({ success: true }), {
         headers: { "Content-Type": "application/json" },
       });
     }
     if (itemId) {
+      // --- Begin: Delete associated mockup images from Supabase storage ---
+      const { supabase } = createSupabaseServerClient({ request });
+      // Fetch the cart item to get its mockup_urls
+      const cartItems = await getCartItems(userId);
+      const cartItem = cartItems.find((item) => item.id === itemId);
+      if (cartItem && Array.isArray(cartItem.mockup_urls)) {
+        for (const url of cartItem.mockup_urls) {
+          // Supabase public URL: https://<project>.supabase.co/storage/v1/object/public/<bucket>/<path>
+          // Extract the path after '/public/<bucket>/'
+          const match = url.match(/\/public\/imagine-it\/(.+)$/);
+          const storagePath = match ? match[1] : null;
+          if (storagePath) {
+            await supabase.storage.from("imagine-it").remove([storagePath]);
+          }
+        }
+      }
+      // --- End: Delete associated mockup images ---
       await removeCartItem(itemId);
       return new Response(JSON.stringify({ success: true }), {
         headers: { "Content-Type": "application/json" },
