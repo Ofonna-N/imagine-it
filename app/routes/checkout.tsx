@@ -41,25 +41,6 @@ const orderRecipientSchema = z
 
 const checkoutSchema = z.object({
   shipping: orderRecipientSchema,
-  payment: z.object({
-    cardName: z.string().min(1, "Name on card is required"),
-    cardNumber: z
-      .string()
-      .min(1, "Card number is required")
-      .regex(/^[0-9]{16}$/, "Please enter a valid 16-digit card number"),
-    expDate: z
-      .string()
-      .min(1, "Expiry date is required")
-      .regex(
-        /^(0[1-9]|1[0-2])\/20[2-9][0-9]$/,
-        "Please enter a valid expiry date (MM/YYYY)"
-      ),
-    cvv: z
-      .string()
-      .min(1, "CVV is required")
-      .regex(/^[0-9]{3,4}$/, "CVV must be 3 or 4 digits"),
-    saveCard: z.boolean().optional(),
-  }),
 });
 
 type CheckoutFormData = z.infer<typeof checkoutSchema>;
@@ -243,220 +224,9 @@ const ShippingForm = () => {
   );
 };
 
-const PaymentForm = () => {
-  const {
-    register,
-    formState: { errors },
-  } = useFormContext<CheckoutFormData>();
-
-  return (
-    <Box>
-      <Typography variant="h6" gutterBottom>
-        Payment method
-      </Typography>
-      <Grid container spacing={3}>
-        <Grid size={{ xs: 12, md: 6 }}>
-          <TextField
-            required
-            id="cardName"
-            label="Name on card"
-            fullWidth
-            autoComplete="cc-name"
-            {...register("payment.cardName", {
-              required: "Name on card is required",
-            })}
-            error={!!errors.payment?.cardName}
-            helperText={errors.payment?.cardName?.message ?? ""}
-          />
-        </Grid>
-        <Grid size={{ xs: 12, md: 6 }}>
-          <TextField
-            required
-            id="cardNumber"
-            label="Card number"
-            fullWidth
-            autoComplete="cc-number"
-            {...register("payment.cardNumber", {
-              required: "Card number is required",
-              pattern: {
-                value: /^[0-9]{16}$/,
-                message: "Card number must be 16 digits",
-              },
-            })}
-            error={!!errors.payment?.cardNumber}
-            helperText={errors.payment?.cardNumber?.message ?? ""}
-          />
-        </Grid>
-        <Grid size={{ xs: 12, md: 6 }}>
-          <TextField
-            required
-            id="expDate"
-            label="Expiry date"
-            fullWidth
-            autoComplete="cc-exp"
-            {...register("payment.expDate", {
-              required: "Expiry date is required",
-              pattern: {
-                value: /^(0[1-9]|1[0-2])\/\d{2}$/,
-                message: "Expiry date must be in MM/YY format",
-              },
-            })}
-            error={!!errors.payment?.expDate}
-            helperText={errors.payment?.expDate?.message ?? ""}
-          />
-        </Grid>
-        <Grid size={{ xs: 12, md: 6 }}>
-          <TextField
-            required
-            id="cvv"
-            label="CVV"
-            fullWidth
-            autoComplete="cc-csc"
-            {...register("payment.cvv", {
-              required: "CVV is required",
-              pattern: {
-                value: /^[0-9]{3,4}$/,
-                message: "CVV must be 3 or 4 digits",
-              },
-            })}
-            error={!!errors.payment?.cvv}
-            helperText={errors.payment?.cvv?.message ?? ""}
-          />
-        </Grid>
-        <Grid size={{ xs: 12 }}>
-          <FormControlLabel
-            control={
-              <Checkbox color="secondary" {...register("payment.saveCard")} />
-            }
-            label="Remember credit card details for next time"
-          />
-        </Grid>
-      </Grid>
-    </Box>
-  );
-};
-
-const ReviewOrder = ({ formData }: { formData: CheckoutFormData }) => {
-  const cart = {
-    items: [
-      {
-        id: "1",
-        name: "Product 1",
-        imageUrl: "https://via.placeholder.com/60",
-        price: 29.99,
-        quantity: 2,
-      },
-      {
-        id: "2",
-        name: "Product 2",
-        imageUrl: "https://via.placeholder.com/60",
-        price: 19.99,
-        quantity: 1,
-      },
-    ],
-  };
-  const typedCartItems = cart.items as unknown as CartItem[];
-
-  return (
-    <Box>
-      <Typography variant="h6" gutterBottom>
-        Order Summary
-      </Typography>
-      <Grid container spacing={2}>
-        <Grid size={{ xs: 12, sm: 6 }}>
-          <Typography variant="h6" gutterBottom>
-            Shipping
-          </Typography>
-          <Typography gutterBottom>{formData.shipping.name}</Typography>
-          <Typography gutterBottom>{formData.shipping.company}</Typography>
-          <Typography gutterBottom>
-            {formData.shipping.address1}
-            {formData.shipping.address2
-              ? `, ${formData.shipping.address2}`
-              : ""}
-          </Typography>
-          <Typography gutterBottom>
-            {formData.shipping.city},{" "}
-            {formData.shipping.state_code || formData.shipping.state_name}{" "}
-            {formData.shipping.zip}
-          </Typography>
-          <Typography gutterBottom>
-            {formData.shipping.country_code} {formData.shipping.country_name}
-          </Typography>
-          <Typography gutterBottom>{formData.shipping.phone}</Typography>
-          <Typography gutterBottom>{formData.shipping.email}</Typography>
-          <Typography gutterBottom>{formData.shipping.tax_number}</Typography>
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6 }}>
-          <Typography variant="h6" gutterBottom>
-            Payment details
-          </Typography>
-          <Typography gutterBottom>
-            Card holder: {formData.payment.cardName}
-          </Typography>
-          <Typography gutterBottom>
-            Card number: **** **** ****
-            {formData.payment.cardNumber.slice(-4)}
-          </Typography>
-          <Typography gutterBottom>
-            Expiry date: {formData.payment.expDate}
-          </Typography>
-        </Grid>
-
-        <Grid size={{ xs: 12 }}>
-          <Typography variant="h6" gutterBottom>
-            Items
-          </Typography>
-          {typedCartItems.map((item) => (
-            <Box
-              key={item.id}
-              sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}
-            >
-              <Box sx={{ display: "flex", alignItems: "center" }}>
-                <Box
-                  component="img"
-                  src={item.imageUrl}
-                  alt={item.name}
-                  sx={{ width: 60, height: 60, mr: 2, objectFit: "cover" }}
-                />
-                <Box>
-                  <Typography variant="body1">{item.name}</Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Quantity: {item.quantity}
-                  </Typography>
-                </Box>
-              </Box>
-              <Typography variant="body1">
-                ${(item.price * item.quantity).toFixed(2)}
-              </Typography>
-            </Box>
-          ))}
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "space-between",
-              mt: 2,
-              pt: 2,
-              borderTop: "1px solid #eee",
-            }}
-          >
-            <Typography variant="h6">Total</Typography>
-            <Typography variant="h6">
-              $
-              {typedCartItems
-                .reduce((sum, item) => sum + item.price * item.quantity, 0)
-                .toFixed(2)}
-            </Typography>
-          </Box>
-        </Grid>
-      </Grid>
-    </Box>
-  );
-};
-
 export default function Checkout() {
   // Only need shipping form and payment buttons/summary, so remove stepper and step logic
-  const methods = useForm<CheckoutFormData>({
+  const shippingForm = useForm<CheckoutFormData>({
     resolver: zodResolver(checkoutSchema),
     defaultValues: {
       shipping: {
@@ -474,35 +244,27 @@ export default function Checkout() {
         email: "",
         tax_number: "",
       },
-      payment: {
-        cardName: "",
-        cardNumber: "",
-        expDate: "",
-        cvv: "",
-        saveCard: false,
-      },
     },
     mode: "onChange",
   });
 
-  const { handleSubmit, watch } = methods;
-  const formData = watch();
-
+  const { handleSubmit, watch } = shippingForm;
+  console.log("shippingForm", shippingForm.formState.errors);
   const { data: cartItems = [] } = useQueryCart();
   const {
     itemsWithPrices,
     subtotal,
     isLoading: isSubtotalLoading,
   } = useCartItemsWithPrices(cartItems);
-  const shippingAddress = formData.shipping;
+  const shippingAddress = watch("shipping");
 
   // Determine if shipping address is valid (basic check for required fields)
   const isShippingAddressValid =
-    shippingAddress?.name &&
-    shippingAddress?.address1 &&
-    shippingAddress?.city &&
-    shippingAddress?.country_code &&
-    shippingAddress?.zip;
+    !!shippingAddress?.name &&
+    !!shippingAddress?.address1 &&
+    !!shippingAddress?.city &&
+    !!shippingAddress?.country_code &&
+    !!shippingAddress?.zip;
 
   // Prepare shipping rates mutation
   const shippingRatesMutation = useMutateShippingRates();
@@ -521,8 +283,23 @@ export default function Checkout() {
 
   // Fetch shipping rates when address or cart changes
   useEffect(() => {
-    fetchShippingRates();
+    async function handleShippingRatesResponse() {
+      const shouldFetchRates =
+        (await shippingForm.trigger()) && shippingForm.formState.isDirty;
+      console.log("valida", await shippingForm.trigger());
+      console.log("dirty", shippingForm.formState.isDirty);
+      console.log("valid", shippingForm.formState.isValid);
+
+      if (shouldFetchRates) {
+        console.log("Fetching shipping rates...");
+        // fetchShippingRates();
+        shippingForm.setValue("shipping", shippingAddress, {
+          shouldDirty: false,
+        });
+      }
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
+    handleShippingRatesResponse();
   }, [isShippingAddressValid, cartItems]);
 
   const onSubmit = (data: CheckoutFormData) => {
@@ -531,7 +308,7 @@ export default function Checkout() {
   };
 
   return (
-    <FormProvider {...methods}>
+    <FormProvider {...shippingForm}>
       <Container component="main" maxWidth="md" sx={{ mb: 4 }}>
         <Paper
           variant="outlined"
