@@ -9,6 +9,7 @@ import {
   updateCartItemQuantity,
 } from "../db/queries/carts_queries";
 import createSupabaseServerClient from "../services/supabase/supabase_client.server";
+import type { PrintfulV2OrderItem } from "~/types/printful/order_types";
 
 /**
  * Resource Route: /api/cart
@@ -56,7 +57,15 @@ export async function action({ request }: ActionFunctionArgs) {
 
   if (method === "POST") {
     // Accepts: item, mockupUrls (array of URLs or file data), designMeta
-    const { item, mockupUrls, designMeta } = await request.json();
+    const {
+      item,
+      mockupUrls,
+      designMeta,
+    }: {
+      item: PrintfulV2OrderItem; // Define the type of item based on your application
+      mockupUrls?: string[];
+      designMeta?: any; // Define the type of designMeta based on your application
+    } = await request.json();
     if (!item)
       return new Response(JSON.stringify({ error: "Missing item" }), {
         status: 400,
@@ -68,10 +77,9 @@ export async function action({ request }: ActionFunctionArgs) {
       const { supabase } = createSupabaseServerClient({ request });
       const userIdForStorage = userId;
       // Use product_id and variant_id for traceable storage, fallback to UUID if missing
-      const productId = item.product_id ?? "unknown";
-      const variantId = item.variant_id ?? "unknown";
+      const variantId = item.catalog_variant_id ?? "unknown";
       // Add a timestamp for uniqueness in case of duplicate cart items
-      const cartImageId = `${productId}_${variantId}_${Date.now()}`;
+      const cartImageId = `${variantId}_${Date.now()}`;
       for (let i = 0; i < mockupUrls.length; i++) {
         const url = mockupUrls[i];
         try {
@@ -107,8 +115,6 @@ export async function action({ request }: ActionFunctionArgs) {
           continue;
         }
       }
-      // Attach the cartImageId to the item for reference if needed
-      item.cartImageId = cartImageId;
     }
     const created = await addCartItem({
       userId,
@@ -150,22 +156,36 @@ export async function action({ request }: ActionFunctionArgs) {
       // --- Begin: Delete all associated mockup images for all cart items ---
       const { supabase } = createSupabaseServerClient({ request });
       const cartItems = await getCartItems(userId);
+      const deleteErrors: { itemId: any; url: string; error: any }[] = [];
       for (const cartItem of cartItems) {
         if (Array.isArray(cartItem.mockup_urls)) {
           for (const url of cartItem.mockup_urls) {
             const match = url.match(/\/public\/imagine-it\/(.+)$/);
             const storagePath = match ? match[1] : null;
             if (storagePath) {
-              await supabase.storage.from("imagine-it").remove([storagePath]);
+              const { data, error } = await supabase.storage
+                .from("imagine-it")
+                .remove([storagePath]);
+              if (error) {
+                deleteErrors.push({ itemId: cartItem.id, url, error });
+              }
+              // Optionally log all deletions
+              // console.log("Deleted:", storagePath, "Error:", error);
             }
           }
         }
       }
       // --- End: Delete all associated mockup images ---
       await clearCart(userId);
-      return new Response(JSON.stringify({ success: true }), {
-        headers: { "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({
+          success: deleteErrors.length === 0,
+          errors: deleteErrors.length > 0 ? deleteErrors : undefined,
+        }),
+        {
+          headers: { "Content-Type": "application/json" },
+        }
+      );
     }
     if (itemId) {
       // --- Begin: Delete associated mockup images from Supabase storage ---
@@ -173,22 +193,35 @@ export async function action({ request }: ActionFunctionArgs) {
       // Fetch the cart item to get its mockup_urls
       const cartItems = await getCartItems(userId);
       const cartItem = cartItems.find((item) => item.id === itemId);
+      const deleteErrors: { url: string; error: any }[] = [];
       if (cartItem && Array.isArray(cartItem.mockup_urls)) {
         for (const url of cartItem.mockup_urls) {
           // Supabase public URL: https://<project>.supabase.co/storage/v1/object/public/<bucket>/<path>
           // Extract the path after '/public/<bucket>/'
           const match = url.match(/\/public\/imagine-it\/(.+)$/);
           const storagePath = match ? match[1] : null;
+          // console.log("Storage Path:", storagePath);
           if (storagePath) {
-            await supabase.storage.from("imagine-it").remove([storagePath]);
+            const { data, error } = await supabase.storage
+              .from("imagine-it")
+              .remove([storagePath]);
+            if (error) {
+              deleteErrors.push({ url, error });
+            }
           }
         }
       }
       // --- End: Delete associated mockup images ---
       await removeCartItem(itemId);
-      return new Response(JSON.stringify({ success: true }), {
-        headers: { "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({
+          success: deleteErrors.length === 0,
+          errors: deleteErrors.length > 0 ? deleteErrors : undefined,
+        }),
+        {
+          headers: { "Content-Type": "application/json" },
+        }
+      );
     }
     return new Response(
       JSON.stringify({ error: "Missing itemId or clear flag" }),

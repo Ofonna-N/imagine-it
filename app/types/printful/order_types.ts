@@ -18,11 +18,17 @@ export interface PrintfulV2OrderRecipient {
   tax_number?: string;
 }
 
+/**
+ * Represents an option for a layer in a placement (e.g., 3d_puff: true)
+ */
 export interface PrintfulV2OrderLayerOption {
   name: string;
   value: string | number | boolean | string[];
 }
 
+/**
+ * Represents the position and size of a layer in a placement.
+ */
 export interface PrintfulV2OrderLayerPosition {
   width: number;
   height: number;
@@ -30,6 +36,9 @@ export interface PrintfulV2OrderLayerPosition {
   left: number;
 }
 
+/**
+ * Represents a file/image layer for a placement.
+ */
 export interface PrintfulV2OrderLayer {
   type: "file";
   url: string;
@@ -37,11 +46,17 @@ export interface PrintfulV2OrderLayer {
   position?: PrintfulV2OrderLayerPosition;
 }
 
+/**
+ * Represents an option for a placement (e.g., unlimited_color: true)
+ */
 export interface PrintfulV2OrderPlacementOption {
   name: string;
   value: string | number | boolean | string[];
 }
 
+/**
+ * Represents a print placement on an item (e.g., front, back)
+ */
 export interface PrintfulV2OrderPlacement {
   placement: string;
   technique: string;
@@ -50,16 +65,20 @@ export interface PrintfulV2OrderPlacement {
   placement_options?: PrintfulV2OrderPlacementOption[];
 }
 
+/**
+ * Represents a product-level option (e.g., inside_pocket: true)
+ */
 export interface PrintfulV2OrderProductOption {
   name: string;
   value: string | number | boolean;
 }
 
+/**
+ * Represents a single item in the order.
+ */
 export interface PrintfulV2OrderItem {
   source: "catalog" | "template" | "product";
   catalog_variant_id?: number;
-  product_id?: number;
-  variant_id?: number;
   external_id?: string;
   quantity: number;
   retail_price?: string;
@@ -68,11 +87,17 @@ export interface PrintfulV2OrderItem {
   product_options?: PrintfulV2OrderProductOption[];
 }
 
+/**
+ * Represents gift message details for the order.
+ */
 export interface PrintfulV2OrderGift {
   subject: string;
   message: string;
 }
 
+/**
+ * Represents packing slip customization for the order.
+ */
 export interface PrintfulV2OrderPackingSlip {
   email?: string;
   phone?: string;
@@ -82,11 +107,17 @@ export interface PrintfulV2OrderPackingSlip {
   custom_order_id?: string;
 }
 
+/**
+ * Represents order-level customization (gift, packing slip).
+ */
 export interface PrintfulV2OrderCustomization {
   gift?: PrintfulV2OrderGift;
   packing_slip?: PrintfulV2OrderPackingSlip;
 }
 
+/**
+ * Represents retail costs for the order.
+ */
 export interface PrintfulV2OrderRetailCosts {
   currency: string;
   discount?: string;
@@ -94,6 +125,10 @@ export interface PrintfulV2OrderRetailCosts {
   tax?: string;
 }
 
+/**
+ * POST /v2/orders
+ * Utility: Represents the request payload for creating a new Printful order.
+ */
 export interface PrintfulV2CreateOrderRequest {
   external_id?: string;
   shipping: string;
