@@ -4,10 +4,6 @@ import {
   fetchCatalogProductById,
   fetchCatalogVariantsByProductId,
 } from "../services/printful/printful_api";
-import type {
-  PrintfulErrorResponse,
-  PrintfulV2CatalogVariant,
-} from "../types/printful";
 import {
   FiZap,
   FiInfo,
@@ -49,6 +45,8 @@ import {
   ToggleButton,
   CircularProgress,
 } from "@mui/material";
+import type { PrintfulV2CatalogVariant } from "~/types/printful/catalog_product_types";
+import type { PrintfulErrorResponse } from "~/types/printful/common_types";
 
 export async function loader({ params }: { params: { productId: string } }) {
   if (!params.productId) {

@@ -1,6 +1,6 @@
 import { useQuery, type UseQueryOptions } from "@tanstack/react-query";
 import { API_ROUTES } from "~/constants/route_paths";
-import type { PrintfulV2CatalogVariantAvailabilityResponse } from "~/types/printful";
+import type { PrintfulV2CatalogVariantAvailabilityResponse } from "~/types/printful/catalog_variant_availability_types";
 
 interface UseQueryCatalogVariantsAvailabilityOptions {
   variantId: string | null;

@@ -5,8 +5,8 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { API_ROUTES } from "~/constants/route_paths";
-import type { PrintfulV2OrderItem } from "~/types/printful";
 import type { CartItem } from "~/db/schema/carts";
+import type { PrintfulV2OrderItem } from "~/types/printful/order_types";
 
 /**
  * Mutation hook to add an item to the cart
