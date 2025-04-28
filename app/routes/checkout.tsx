@@ -17,9 +17,8 @@ import { useQueryCart } from "~/features/cart/hooks/use_query_cart";
 import { useMutateShippingRates } from "~/features/order/hooks/use_query_shipping_rates";
 import { API_ROUTES } from "~/constants/route_paths";
 import { useEffect, useMemo } from "react";
-import { useCartItemPrice } from "~/features/cart/hooks/use_cart_item_price";
-import { CartSummaryItem } from "~/features/cart/components/cart_summary_item";
 import { useCartItemsWithPrices } from "~/features/cart/hooks/use_cart_items_with_prices";
+import { CartSummaryItem } from "~/features/cart/components/cart_summary_item";
 
 const orderRecipientSchema = z
   .object({

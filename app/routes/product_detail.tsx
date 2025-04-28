@@ -21,7 +21,7 @@ import { motion } from "framer-motion";
 import { APP_ROUTES } from "../constants/route_paths";
 import type { Route } from "./+types/product_detail";
 import useQueryCatalogVariantsAvailability from "~/features/product/hooks/use_query_catalog_variants_availability";
-import { useQueryVariantPrices } from "~/features/product/hooks/use_query_variant_prices"; // Import variant pricing hook
+import { useQueryVariantsPrices } from "~/features/product/hooks/use_query_variants_prices"; // Import variant pricing hook
 import ProductDesigner from "~/features/design/components/product_designer"; // Import the new component
 import {
   Grid,
@@ -94,11 +94,12 @@ export default function ProductDetail() {
   // Fetch pricing data for the selected variant
 
   const {
-    data: variantPriceData,
+    data: variantsPricesData,
     isLoading: variantPriceLoading,
     error: variantPriceError,
-  } = useQueryVariantPrices(selectedVariant?.id?.toString());
+  } = useQueryVariantsPrices([selectedVariant?.id?.toString()]);
   // Find technique-specific pricing for display
+  const variantPriceData = variantsPricesData?.[0]; // Get the first item from the array
   const techniquePricing = useMemo(() => {
     return variantPriceData?.variant.techniques.find(
       (tech) => tech.technique_key === selectedTechnique
