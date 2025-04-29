@@ -8,17 +8,29 @@ import {
   Paper,
   TextField,
   Typography,
+  Stepper,
+  Step,
+  StepLabel,
+  alpha,
 } from "@mui/material";
 import { z } from "zod";
-import { useForm, FormProvider, useFormContext } from "react-hook-form";
+import {
+  useForm,
+  FormProvider,
+  useFormContext,
+  useFormState,
+} from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { PayPalButtons } from "@paypal/react-paypal-js";
 import { useQueryCart } from "~/features/cart/hooks/use_query_cart";
 import { useMutateShippingRates } from "~/features/order/hooks/use_query_shipping_rates";
 import { API_ROUTES } from "~/constants/route_paths";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useCartItemsWithPrices } from "~/features/cart/hooks/use_cart_items_with_prices";
 import { CartSummaryItem } from "~/features/cart/components/cart_summary_item";
+import { useQueryRecipient } from "~/features/cart/hooks/use_query_recipient";
+import { useMutateRecipient } from "~/features/cart/hooks/use_mutate_recipient";
+import debounce from "@mui/utils/debounce";
 
 const orderRecipientSchema = z
   .object({
@@ -34,7 +46,6 @@ const orderRecipientSchema = z
     zip: z.string().min(1, "Zip code is required"),
     phone: z.string().optional(),
     email: z.string().optional(),
-    tax_number: z.string().optional(),
   })
   .strict();
 
@@ -60,7 +71,7 @@ const ShippingForm = () => {
 
   return (
     <Box>
-      <Typography variant="h6" gutterBottom>
+      <Typography variant="h5" gutterBottom mb={2}>
         Shipping Address
       </Typography>
       <Grid container spacing={3}>
@@ -208,20 +219,12 @@ const ShippingForm = () => {
             helperText={errors.shipping?.email?.message ?? ""}
           />
         </Grid>
-        <Grid size={{ xs: 12, sm: 6 }}>
-          <TextField
-            id="tax_number"
-            label="Tax Number"
-            fullWidth
-            {...register("shipping.tax_number")}
-            error={!!errors.shipping?.tax_number}
-            helperText={errors.shipping?.tax_number?.message ?? ""}
-          />
-        </Grid>
       </Grid>
     </Box>
   );
 };
+
+const steps = ["Shipping Address", "Payment", "Review Order"];
 
 export default function Checkout() {
   // Only need shipping form and payment buttons/summary, so remove stepper and step logic
@@ -241,14 +244,17 @@ export default function Checkout() {
         zip: "",
         phone: "",
         email: "",
-        tax_number: "",
       },
     },
     mode: "onChange",
   });
 
   const { handleSubmit, watch } = shippingForm;
-  console.log("shippingForm", shippingForm.formState.errors);
+  console.log(
+    "shippingForm",
+    JSON.stringify(shippingForm.getValues().shipping)
+  );
+
   const { data: cartItems = [] } = useQueryCart();
   const {
     itemsWithPrices,
@@ -257,20 +263,91 @@ export default function Checkout() {
   } = useCartItemsWithPrices(cartItems);
   const shippingAddress = watch("shipping");
 
-  // Determine if shipping address is valid (basic check for required fields)
-  const isShippingAddressValid =
-    !!shippingAddress?.name &&
-    !!shippingAddress?.address1 &&
-    !!shippingAddress?.city &&
-    !!shippingAddress?.country_code &&
-    !!shippingAddress?.zip;
+  const { data: recipientData, isLoading: isRecipientLoading } =
+    useQueryRecipient();
+  console.log("recipient data", JSON.stringify(recipientData?.recipient_data));
+  console.log(
+    "shipping address is equal to recipient data",
+    JSON.stringify(recipientData?.recipient_data) ===
+      JSON.stringify(shippingForm.getValues().shipping)
+  );
+  const mutateRecipient = useMutateRecipient();
+  const [saveAsDefault, setSaveAsDefault] = useState(false);
+  const [shippingRatesRequested, setShippingRatesRequested] = useState(false);
+  const formState = useFormState({ control: shippingForm.control });
+  const [activeStep, setActiveStep] = useState(0);
+
+  // Step navigation handlers
+  const handleNext = async () => {
+    if (activeStep === 0) {
+      // Validate shipping address before moving to payment
+      const valid = await shippingForm.trigger("shipping");
+      if (!valid) return;
+    }
+    setActiveStep((prev) => prev + 1);
+  };
+  const handleBack = () => setActiveStep((prev) => prev - 1);
+
+  // Allow users to click on step numbers to navigate
+  const handleStepClick = async (step: number) => {
+    // Only allow going to a previous step or the current step without validation
+    if (step < activeStep) {
+      setActiveStep(step);
+      return;
+    }
+    // If moving forward, validate as needed
+    if (step === 1 && activeStep === 0) {
+      const valid = await shippingForm.trigger("shipping");
+      if (!valid) return;
+      setActiveStep(step);
+      return;
+    }
+    if (step === 2 && activeStep < 2) {
+      // Validate shipping before review
+      const valid = await shippingForm.trigger("shipping");
+      if (!valid) return;
+      setActiveStep(step);
+      return;
+    }
+  };
+
+  // Pre-fill form with recipient info on mount
+  useEffect(() => {
+    if (recipientData?.recipient_data) {
+      shippingForm.setValue("shipping", recipientData.recipient_data);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [recipientData]);
+
+  // Save recipient automatically if toggle is true and form is valid
+  useEffect(() => {
+    async function maybeSaveRecipient() {
+      if (saveAsDefault && formState.isValid) {
+        mutateRecipient.mutate({
+          recipient: shippingForm.getValues().shipping,
+        });
+      }
+    }
+    maybeSaveRecipient();
+    // Only run when saveAsDefault or form validity changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [saveAsDefault, formState.isValid]);
+
+  // Handler for fetching shipping rates
+  const handleFetchShippingRates = async () => {
+    const valid = await shippingForm.trigger("shipping");
+    if (valid && cartItems.length > 0) {
+      setShippingRatesRequested(true);
+      fetchShippingRates();
+    }
+  };
 
   // Prepare shipping rates mutation
   const shippingRatesMutation = useMutateShippingRates();
 
   // Helper to trigger shipping rates fetch
   const fetchShippingRates = () => {
-    if (!isShippingAddressValid || cartItems.length === 0) return;
+    if (!shippingAddress || cartItems.length === 0) return;
     const order_items = cartItems.map(
       ({ mockup_urls, ...remainingItems }) => remainingItems.item_data
     );
@@ -279,27 +356,6 @@ export default function Checkout() {
       order_items,
     });
   };
-
-  // Fetch shipping rates when address or cart changes
-  useEffect(() => {
-    async function handleShippingRatesResponse() {
-      const shouldFetchRates =
-        (await shippingForm.trigger()) && shippingForm.formState.isDirty;
-      console.log("valida", await shippingForm.trigger());
-      console.log("dirty", shippingForm.formState.isDirty);
-      console.log("valid", shippingForm.formState.isValid);
-
-      if (shouldFetchRates) {
-        console.log("Fetching shipping rates...");
-        // fetchShippingRates();
-        shippingForm.setValue("shipping", shippingAddress, {
-          shouldDirty: false,
-        });
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    handleShippingRatesResponse();
-  }, [isShippingAddressValid, cartItems]);
 
   const onSubmit = (data: CheckoutFormData) => {
     // Handle order submission
@@ -316,31 +372,95 @@ export default function Checkout() {
           <Typography component="h1" variant="h4" align="center" gutterBottom>
             Checkout
           </Typography>
+          <Stepper activeStep={activeStep} sx={{ mb: 4 }}>
+            {steps.map((label, idx) => (
+              <Step key={label}>
+                <StepLabel
+                  onClick={() => handleStepClick(idx)}
+                  sx={{
+                    cursor: "pointer",
+                    ":hover": {
+                      cursor: "pointer",
+                    },
+                    "&:hover svg": {
+                      boxShadow: "0 0 12px 4px rgba(25, 118, 210, 0.4)",
+                      filter: "brightness(1.15)",
+                      borderRadius: "50%", // Keep border radius on hover
+                    },
+                  }}
+                  slotProps={{
+                    label: {
+                      sx: {
+                        ":hover": {
+                          color: (theme) =>
+                            alpha(theme.palette.text.primary, 0.35), // Add alpha to text color
+                        },
+                      },
+                    },
+                  }}
+                >
+                  {label}
+                </StepLabel>
+              </Step>
+            ))}
+          </Stepper>
+          {isRecipientLoading && (
+            <Typography color="text.secondary">Loading address...</Typography>
+          )}
+          {mutateRecipient.isPending && (
+            <Typography color="text.secondary">Saving address...</Typography>
+          )}
+          {mutateRecipient.isError && (
+            <Typography color="error">Failed to save address</Typography>
+          )}
           <form onSubmit={handleSubmit(onSubmit)}>
             <Grid container spacing={4}>
-              {/* Left: Shipping info */}
-              <Grid size={{ xs: 12, md: 7 }}>
-                <ShippingForm />
-                <Box
-                  sx={{ display: "flex", justifyContent: "flex-end", mt: 4 }}
-                >
-                  <Button type="submit" variant="contained" color="primary">
-                    Place Order
-                  </Button>
-                </Box>
-              </Grid>
-              {/* Right: Payment buttons and summary */}
-              <Grid size={{ xs: 12, md: 5 }}>
-                <Box sx={{ mb: 2 }}>
-                  <PayPalButtons disabled />
-                </Box>
-                <Box>
-                  <Typography variant="h6" gutterBottom>
-                    Order Summary
-                  </Typography>
-                  {itemsWithPrices.map(({ item, total }) => (
-                    <CartSummaryItem key={item.id} item={item} total={total} />
-                  ))}
+              {/* Step 1: Shipping Address */}
+              {activeStep === 0 && (
+                <Grid size={12}>
+                  <ShippingForm />
+                  <Box
+                    sx={{
+                      alignItems: "center",
+                      mt: 2,
+                      display: shippingForm.formState.isValid ? "flex" : "none",
+                    }}
+                  >
+                    <Checkbox
+                      checked={
+                        JSON.stringify(recipientData?.recipient_data) ===
+                        JSON.stringify(shippingForm.getValues().shipping)
+                      }
+                      onChange={(e) => setSaveAsDefault(e.target.checked)}
+                      id="save-as-default"
+                    />
+                    <Typography
+                      htmlFor="save-as-default"
+                      component="label"
+                      sx={{ cursor: "pointer" }}
+                    >
+                      Save as default address
+                    </Typography>
+                  </Box>
+                  <Box
+                    sx={{ display: "flex", justifyContent: "flex-end", mt: 2 }}
+                  >
+                    <Button
+                      variant="contained"
+                      color="secondary"
+                      onClick={handleNext}
+                    >
+                      Next
+                    </Button>
+                  </Box>
+                </Grid>
+              )}
+              {/* Step 2: Payment */}
+              {activeStep === 1 && (
+                <Grid size={12}>
+                  <Box sx={{ mb: 2 }}>
+                    <PayPalButtons disabled />
+                  </Box>
                   <Box
                     sx={{
                       display: "flex",
@@ -348,31 +468,113 @@ export default function Checkout() {
                       mt: 2,
                     }}
                   >
-                    <Typography color="text.secondary">Subtotal</Typography>
-                    <Typography>
-                      {isSubtotalLoading
-                        ? "Calculating..."
-                        : subtotal.toFixed(2)}
-                    </Typography>
+                    <Button onClick={handleBack}>Back</Button>
+                    <Button
+                      variant="contained"
+                      color="secondary"
+                      onClick={handleNext}
+                    >
+                      Next
+                    </Button>
                   </Box>
-
-                  {/* Shipping rates display */}
-                  <Box
-                    sx={{ display: "flex", justifyContent: "space-between" }}
-                  >
-                    <Typography color="text.secondary">Shipping</Typography>
-                    <Typography>
-                      {shippingRatesMutation.isPending && "Calculating..."}
-                      {shippingRatesMutation.data?.data?.[0]?.rate
-                        ? `$${Number(
-                            shippingRatesMutation.data.data[0].rate
-                          ).toFixed(2)}`
-                        : !shippingRatesMutation.isPending && "N/A"}
+                </Grid>
+              )}
+              {/* Step 3: Review Order */}
+              {activeStep === 2 && (
+                <>
+                  <Grid size={{ xs: 12, md: 7 }}>
+                    <Typography variant="h6" gutterBottom>
+                      Review Order
                     </Typography>
-                  </Box>
-                  {/* ...existing tax and total display... */}
-                </Box>
-              </Grid>
+                    {/* Display summary of shipping, payment, and cart */}
+                    <Box sx={{ mb: 2 }}>
+                      <Typography variant="subtitle1">
+                        Shipping Address
+                      </Typography>
+                      <pre
+                        style={{
+                          padding: 8,
+                          borderRadius: 4,
+                        }}
+                      >
+                        {JSON.stringify(
+                          shippingForm.getValues().shipping,
+                          null,
+                          2
+                        )}
+                      </pre>
+                    </Box>
+                    <Box sx={{ mb: 2 }}>
+                      <Typography variant="subtitle1">Order Items</Typography>
+                      {itemsWithPrices.map(({ item, total }) => (
+                        <CartSummaryItem
+                          key={item.id}
+                          item={item}
+                          total={total}
+                        />
+                      ))}
+                    </Box>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        mt: 2,
+                      }}
+                    >
+                      <Button onClick={handleBack}>Back</Button>
+                      <Button type="submit" variant="contained" color="primary">
+                        Place Order
+                      </Button>
+                    </Box>
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 5 }}>
+                    <Box>
+                      <Typography variant="h6" gutterBottom>
+                        Order Summary
+                      </Typography>
+                      {itemsWithPrices.map(({ item, total }) => (
+                        <CartSummaryItem
+                          key={item.id}
+                          item={item}
+                          total={total}
+                        />
+                      ))}
+                      <Box
+                        sx={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          mt: 2,
+                        }}
+                      >
+                        <Typography color="text.secondary">Subtotal</Typography>
+                        <Typography>
+                          {isSubtotalLoading
+                            ? "Calculating..."
+                            : subtotal.toFixed(2)}
+                        </Typography>
+                      </Box>
+                      {/* Shipping rates display */}
+                      <Box
+                        sx={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                        }}
+                      >
+                        <Typography color="text.secondary">Shipping</Typography>
+                        <Typography>
+                          {shippingRatesMutation.isPending && "Calculating..."}
+                          {shippingRatesMutation.data?.data?.[0]?.rate
+                            ? `$${Number(
+                                shippingRatesMutation.data.data[0].rate
+                              ).toFixed(2)}`
+                            : !shippingRatesMutation.isPending && "N/A"}
+                        </Typography>
+                      </Box>
+                      {/* ...existing tax and total display... */}
+                    </Box>
+                  </Grid>
+                </>
+              )}
             </Grid>
           </form>
         </Paper>
