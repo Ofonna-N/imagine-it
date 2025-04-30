@@ -108,4 +108,8 @@ export default [
   route(API_ROUTES.CART.slice(1), "routes_api/api.cart.ts"),
   route(API_ROUTES.RECIPIENT.slice(1), "routes_api/api.recipient.ts"),
   route(API_ROUTES.SHIPPING_RATES.slice(1), "routes_api/api.shipping_rates.ts"),
+  route(
+    API_ROUTES.PAYPAL_CREATE_ORDER.slice(1),
+    "routes_api/api.paypal_create_order.ts"
+  ),
 ] satisfies RouteConfig;

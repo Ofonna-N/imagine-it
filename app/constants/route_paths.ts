@@ -61,6 +61,11 @@ export const API_ROUTES = {
    * Resource route for retrieving shipping rates
    */
   SHIPPING_RATES: "/api/shipping-rates", // POST
+  /**
+   * POST /api/paypal-create-order
+   * Resource route for creating a PayPal order with shipping info and cart items
+   */
+  PAYPAL_CREATE_ORDER: "/api/paypal-create-order",
 };
 
 // A flattened version combining all routes for easier imports

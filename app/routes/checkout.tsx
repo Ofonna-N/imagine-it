@@ -20,7 +20,7 @@ import {
   useFormState,
 } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { PayPalButtons } from "@paypal/react-paypal-js";
+import { PayPalButtons, usePayPalCardFields } from "@paypal/react-paypal-js";
 import { useQueryCart } from "~/features/cart/hooks/use_query_cart";
 import { useMutateShippingRates } from "~/features/order/hooks/use_query_shipping_rates";
 import { useEffect, useState } from "react";
@@ -28,7 +28,19 @@ import { useCartItemsWithPrices } from "~/features/cart/hooks/use_cart_items_wit
 import { CartSummaryItem } from "~/features/cart/components/cart_summary_item";
 import { useQueryRecipient } from "~/features/cart/hooks/use_query_recipient";
 import { useMutateRecipient } from "~/features/cart/hooks/use_mutate_recipient";
+import { useMutatePaypalCreateOrder } from "~/features/order/hooks/use_mutate_paypal_create_order";
+import Dialog from "@mui/material/Dialog";
+import CircularProgress from "@mui/material/CircularProgress";
+import {
+  PayPalCardFieldsProvider,
+  PayPalNameField,
+  PayPalNumberField,
+  PayPalExpiryField,
+  PayPalCVVField,
+} from "@paypal/react-paypal-js";
+import { grey } from "@mui/material/colors";
 
+// --- Schema and Types ---
 const orderRecipientSchema = z
   .object({
     name: z.string().min(1, "Name is required"),
@@ -52,26 +64,25 @@ const checkoutSchema = z.object({
 
 type CheckoutFormData = z.infer<typeof checkoutSchema>;
 
-interface CartItem {
-  id: string;
-  name: string;
-  imageUrl: string;
-  price: number;
-  quantity: number;
+// --- Tax Calculation Helper ---
+const TAX_RATE = 0.08; // 8% industry standard
+function calculateTax(subtotal: number): number {
+  return +(subtotal * TAX_RATE).toFixed(2);
 }
 
-const ShippingForm = () => {
+// --- Shipping Form Component ---
+function ShippingForm() {
   const {
     register,
     formState: { errors },
   } = useFormContext<CheckoutFormData>();
-
   return (
     <Box>
       <Typography variant="h5" gutterBottom mb={2}>
         Shipping Address
       </Typography>
       <Grid container spacing={3}>
+        {/* ...existing code for all address fields... */}
         <Grid size={{ xs: 12 }}>
           <TextField
             required
@@ -79,24 +90,12 @@ const ShippingForm = () => {
             label="Full Name"
             fullWidth
             autoComplete="name"
-            {...register("shipping.name", {
-              required: "Name is required",
-            })}
+            {...register("shipping.name", { required: "Name is required" })}
             error={!!errors.shipping?.name}
             helperText={errors.shipping?.name?.message ?? ""}
           />
         </Grid>
-        {/* <Grid size={{ xs: 12 }}>
-          <TextField
-            id="company"
-            label="Company"
-            fullWidth
-            autoComplete="organization"
-            {...register("shipping.company")}
-            error={!!errors.shipping?.company}
-            helperText={errors.shipping?.company?.message ?? ""}
-          />
-        </Grid> */}
+        {/* ...other address fields as before... */}
         <Grid size={{ xs: 12 }}>
           <TextField
             required
@@ -129,9 +128,7 @@ const ShippingForm = () => {
             label="City"
             fullWidth
             autoComplete="shipping address-level2"
-            {...register("shipping.city", {
-              required: "City is required",
-            })}
+            {...register("shipping.city", { required: "City is required" })}
             error={!!errors.shipping?.city}
             helperText={errors.shipping?.city?.message ?? ""}
           />
@@ -187,9 +184,7 @@ const ShippingForm = () => {
             label="Zip / Postal code"
             fullWidth
             autoComplete="shipping postal-code"
-            {...register("shipping.zip", {
-              required: "Zip code is required",
-            })}
+            {...register("shipping.zip", { required: "Zip code is required" })}
             error={!!errors.shipping?.zip}
             helperText={errors.shipping?.zip?.message ?? ""}
           />
@@ -219,12 +214,13 @@ const ShippingForm = () => {
       </Grid>
     </Box>
   );
-};
+}
 
-const steps = ["Shipping Address", "Payment", "Review Order"];
+// --- Stepper Steps ---
+const steps = ["Shipping Address", "Review Order"];
 
+// --- Main Checkout Component ---
 export default function Checkout() {
-  // Only need shipping form and payment buttons/summary, so remove stepper and step logic
   const shippingForm = useForm<CheckoutFormData>({
     resolver: zodResolver(checkoutSchema),
     defaultValues: {
@@ -245,13 +241,7 @@ export default function Checkout() {
     },
     mode: "onChange",
   });
-
   const { handleSubmit, watch } = shippingForm;
-  console.log(
-    "shippingForm",
-    JSON.stringify(shippingForm.getValues().shipping)
-  );
-
   const { data: cartItems = [] } = useQueryCart();
   const {
     itemsWithPrices,
@@ -259,48 +249,35 @@ export default function Checkout() {
     isLoading: isSubtotalLoading,
   } = useCartItemsWithPrices(cartItems);
   const shippingAddress = watch("shipping");
-
   const { data: recipientData, isLoading: isRecipientLoading } =
     useQueryRecipient();
-  console.log("recipient data", JSON.stringify(recipientData?.recipient_data));
-  console.log(
-    "shipping address is equal to recipient data",
-    JSON.stringify(recipientData?.recipient_data) ===
-      JSON.stringify(shippingForm.getValues().shipping)
-  );
   const mutateRecipient = useMutateRecipient();
   const [saveAsDefault, setSaveAsDefault] = useState(false);
-  const [shippingRatesRequested, setShippingRatesRequested] = useState(false);
   const formState = useFormState({ control: shippingForm.control });
   const [activeStep, setActiveStep] = useState(0);
-
+  const paypalOrderMutation = useMutatePaypalCreateOrder();
+  const [paypalDialogOpen, setPaypalDialogOpen] = useState(false);
+  const [paypalOrderId, setPaypalOrderId] = useState<string | null>(null);
+  const shippingRatesMutation = useMutateShippingRates();
+  const [shippingRate, setShippingRate] = useState<number | null>(null);
+  const [tax, setTax] = useState<number>(0);
+  const [total, setTotal] = useState<number>(0);
+  const { cardFieldsForm, fields } = usePayPalCardFields();
   // Step navigation handlers
   const handleNext = async () => {
     if (activeStep === 0) {
-      // Validate shipping address before moving to payment
       const valid = await shippingForm.trigger("shipping");
       if (!valid) return;
     }
     setActiveStep((prev) => prev + 1);
   };
   const handleBack = () => setActiveStep((prev) => prev - 1);
-
-  // Allow users to click on step numbers to navigate
   const handleStepClick = async (step: number) => {
-    // Only allow going to a previous step or the current step without validation
     if (step < activeStep) {
       setActiveStep(step);
       return;
     }
-    // If moving forward, validate as needed
     if (step === 1 && activeStep === 0) {
-      const valid = await shippingForm.trigger("shipping");
-      if (!valid) return;
-      setActiveStep(step);
-      return;
-    }
-    if (step === 2 && activeStep < 2) {
-      // Validate shipping before review
       const valid = await shippingForm.trigger("shipping");
       if (!valid) return;
       setActiveStep(step);
@@ -326,39 +303,80 @@ export default function Checkout() {
       }
     }
     maybeSaveRecipient();
-    // Only run when saveAsDefault or form validity changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [saveAsDefault, formState.isValid]);
 
-  // Handler for fetching shipping rates
-  const handleFetchShippingRates = async () => {
-    const valid = await shippingForm.trigger("shipping");
-    if (valid && cartItems.length > 0) {
-      setShippingRatesRequested(true);
-      fetchShippingRates();
+  // Fetch shipping rates when review step is entered
+  useEffect(() => {
+    if (activeStep === 1 && itemsWithPrices.length > 0) {
+      const order_items = itemsWithPrices.map(({ item }) => item.item_data);
+      shippingRatesMutation.mutate(
+        { recipient: shippingForm.getValues().shipping, order_items },
+        {
+          onSuccess: (data) => {
+            const rate = Number(data.data?.[0]?.rate || 0);
+            setShippingRate(rate);
+            const taxVal = calculateTax(subtotal);
+            setTax(taxVal);
+            setTotal(subtotal + rate + taxVal);
+          },
+        }
+      );
     }
+  }, [activeStep, itemsWithPrices, shippingForm, subtotal]);
+
+  // Handler for Place Order (open dialog, create order inside dialog)
+  const [paypalOrderLoading, setPaypalOrderLoading] = useState(false);
+  const [paypalOrderError, setPaypalOrderError] = useState<string | null>(null);
+
+  const handlePlaceOrder = () => {
+    setPaypalDialogOpen(true);
+    setPaypalOrderId(null);
+    setPaypalOrderError(null);
   };
 
-  // Prepare shipping rates mutation
-  const shippingRatesMutation = useMutateShippingRates();
+  // Create PayPal order when dialog opens
+  // useEffect(() => {
+  //   if (paypalDialogOpen && !paypalOrderId) {
+  //     (async () => {
+  //       setPaypalOrderLoading(true);
+  //       setPaypalOrderError(null);
+  //       try {
+  //         const shipping = shippingForm.getValues().shipping;
+  //         const items = itemsWithPrices.map(({ item, basePrice }) => ({
+  //           id: String(item.id),
+  //           name: item.item_data.name!,
+  //           price: basePrice,
+  //           quantity: item.item_data.quantity,
+  //         }));
+  //         const res = await paypalOrderMutation.mutateAsync({
+  //           shipping,
+  //           items,
+  //           currency: "USD",
+  //         });
+  //         setPaypalOrderId(res.orderId);
+  //       } catch (err: any) {
+  //         setPaypalOrderError(err.message || "Failed to create PayPal order");
+  //       } finally {
+  //         setPaypalOrderLoading(false);
+  //       }
+  //     })();
+  //   }
+  // }, [
+  //   paypalDialogOpen,
+  //   paypalOrderId,
+  //   shippingForm,
+  //   itemsWithPrices,
+  //   paypalOrderMutation,
+  // ]);
 
-  // Helper to trigger shipping rates fetch
-  const fetchShippingRates = () => {
-    if (!shippingAddress || cartItems.length === 0) return;
-    const order_items = cartItems.map(
-      ({ mockup_urls, ...remainingItems }) => remainingItems.item_data
-    );
-    shippingRatesMutation.mutate({
-      recipient: shippingAddress,
-      order_items,
-    });
+  // Handler for PayPal approval (trigger Printful order here)
+  const handlePaypalApprove = async (data: any, actions: any) => {
+    setPaypalDialogOpen(false);
+    // TODO: Trigger Printful order creation here
   };
 
-  const onSubmit = (data: CheckoutFormData) => {
-    // Handle order submission
-    console.log("Order submitted:", data);
-  };
-
+  // --- Render ---
   return (
     <FormProvider {...shippingForm}>
       <Container component="main" maxWidth="md" sx={{ mb: 4 }}>
@@ -376,13 +394,11 @@ export default function Checkout() {
                   onClick={() => handleStepClick(idx)}
                   sx={{
                     cursor: "pointer",
-                    ":hover": {
-                      cursor: "pointer",
-                    },
+                    ":hover": { cursor: "pointer" },
                     "&:hover svg": {
                       boxShadow: "0 0 12px 4px rgba(25, 118, 210, 0.4)",
                       filter: "brightness(1.15)",
-                      borderRadius: "50%", // Keep border radius on hover
+                      borderRadius: "50%",
                     },
                   }}
                   slotProps={{
@@ -390,7 +406,7 @@ export default function Checkout() {
                       sx: {
                         ":hover": {
                           color: (theme) =>
-                            alpha(theme.palette.text.primary, 0.35), // Add alpha to text color
+                            alpha(theme.palette.text.primary, 0.35),
                         },
                       },
                     },
@@ -410,7 +426,7 @@ export default function Checkout() {
           {mutateRecipient.isError && (
             <Typography color="error">Failed to save address</Typography>
           )}
-          <form onSubmit={handleSubmit(onSubmit)}>
+          <form>
             <Grid container spacing={4}>
               {/* Step 1: Shipping Address */}
               {activeStep === 0 && (
@@ -452,57 +468,51 @@ export default function Checkout() {
                   </Box>
                 </Grid>
               )}
-              {/* Step 2: Payment */}
+              {/* Step 2: Review Order */}
               {activeStep === 1 && (
-                <Grid size={12}>
-                  <Box sx={{ mb: 2 }}>
-                    <PayPalButtons disabled />
-                  </Box>
-                  <Box
-                    sx={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      mt: 2,
-                    }}
-                  >
-                    <Button onClick={handleBack}>Back</Button>
-                    <Button
-                      variant="contained"
-                      color="secondary"
-                      onClick={handleNext}
-                    >
-                      Next
-                    </Button>
-                  </Box>
-                </Grid>
-              )}
-              {/* Step 3: Review Order */}
-              {activeStep === 2 && (
-                <>
+                <Grid container spacing={4} sx={{ width: "100%" }}>
+                  {/* Left: Shipping & Items */}
                   <Grid size={{ xs: 12, md: 7 }}>
-                    <Typography variant="h6" gutterBottom>
-                      Review Order
-                    </Typography>
-                    {/* Display summary of shipping, payment, and cart */}
-                    <Box sx={{ mb: 2 }}>
-                      <Typography variant="subtitle1">
+                    <Paper variant="outlined" sx={{ p: 3, mb: 3 }}>
+                      <Typography variant="h6" gutterBottom>
                         Shipping Address
                       </Typography>
-                      <pre
-                        style={{
-                          padding: 8,
-                          borderRadius: 4,
-                        }}
-                      >
-                        {JSON.stringify(
-                          shippingForm.getValues().shipping,
-                          null,
-                          2
+                      <Box sx={{ mb: 2 }}>
+                        <Typography variant="body2" color="text.secondary">
+                          {shippingForm.getValues().shipping.name}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          {shippingForm.getValues().shipping.address1}
+                          {shippingForm.getValues().shipping.address2
+                            ? `, ${shippingForm.getValues().shipping.address2}`
+                            : ""}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          {shippingForm.getValues().shipping.city},{" "}
+                          {shippingForm.getValues().shipping.state_code ||
+                            shippingForm.getValues().shipping.state_name}{" "}
+                          {shippingForm.getValues().shipping.zip}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          {shippingForm.getValues().shipping.country_name ||
+                            shippingForm.getValues().shipping.country_code}
+                        </Typography>
+                        {shippingForm.getValues().shipping.phone && (
+                          <Typography variant="body2" color="text.secondary">
+                            Phone: {shippingForm.getValues().shipping.phone}
+                          </Typography>
                         )}
-                      </pre>
-                    </Box>
-                    <Box sx={{ mb: 2 }}>
-                      <Typography variant="subtitle1">Order Items</Typography>
+                        {shippingForm.getValues().shipping.email && (
+                          <Typography variant="body2" color="text.secondary">
+                            Email: {shippingForm.getValues().shipping.email}
+                          </Typography>
+                        )}
+                      </Box>
+                    </Paper>
+                    <Paper variant="outlined" sx={{ p: 3 }}>
+                      <Typography variant="h6" gutterBottom>
+                        Order Items
+                      </Typography>
                       {itemsWithPrices.map(({ item, total }) => (
                         <CartSummaryItem
                           key={item.id}
@@ -510,72 +520,221 @@ export default function Checkout() {
                           total={total}
                         />
                       ))}
-                    </Box>
+                    </Paper>
                     <Box
                       sx={{
                         display: "flex",
-                        justifyContent: "space-between",
-                        mt: 2,
+                        justifyContent: "flex-end",
+                        mt: 3,
                       }}
                     >
                       <Button onClick={handleBack}>Back</Button>
-                      <Button type="submit" variant="contained" color="primary">
-                        Place Order
-                      </Button>
                     </Box>
                   </Grid>
+                  {/* Right: Order Summary */}
                   <Grid size={{ xs: 12, md: 5 }}>
-                    <Box>
-                      <Typography variant="h6" gutterBottom>
+                    <Paper
+                      variant="outlined"
+                      sx={{
+                        p: 3,
+                        bgcolor: (theme) =>
+                          theme.palette.mode === "dark"
+                            ? grey["900"]
+                            : grey["50"],
+                        minWidth: 280,
+                      }}
+                    >
+                      <Typography
+                        variant="h6"
+                        gutterBottom
+                        color="text.primary"
+                      >
                         Order Summary
                       </Typography>
-                      {itemsWithPrices.map(({ item, total }) => (
-                        <CartSummaryItem
-                          key={item.id}
-                          item={item}
-                          total={total}
-                        />
-                      ))}
                       <Box
                         sx={{
                           display: "flex",
                           justifyContent: "space-between",
-                          mt: 2,
+                          mb: 1,
                         }}
                       >
                         <Typography color="text.secondary">Subtotal</Typography>
-                        <Typography>
+                        <Typography color="text.primary">
                           {isSubtotalLoading
                             ? "Calculating..."
-                            : subtotal.toFixed(2)}
+                            : `$${subtotal.toFixed(2)}`}
                         </Typography>
                       </Box>
-                      {/* Shipping rates display */}
                       <Box
                         sx={{
                           display: "flex",
                           justifyContent: "space-between",
+                          mb: 1,
                         }}
                       >
                         <Typography color="text.secondary">Shipping</Typography>
-                        <Typography>
-                          {shippingRatesMutation.isPending && "Calculating..."}
-                          {shippingRatesMutation.data?.data?.[0]?.rate
-                            ? `$${Number(
-                                shippingRatesMutation.data.data[0].rate
-                              ).toFixed(2)}`
-                            : !shippingRatesMutation.isPending && "N/A"}
+                        <Typography color="text.primary">
+                          {shippingRatesMutation.isPending
+                            ? "Calculating..."
+                            : shippingRate !== null
+                            ? `$${shippingRate.toFixed(2)}`
+                            : "N/A"}
                         </Typography>
                       </Box>
-                      {/* ...existing tax and total display... */}
-                    </Box>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          mb: 1,
+                        }}
+                      >
+                        <Typography color="text.secondary">Tax (8%)</Typography>
+                        <Typography color="text.primary">{`$${tax.toFixed(
+                          2
+                        )}`}</Typography>
+                      </Box>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          fontWeight: 600,
+                          mt: 2,
+                          mb: 2,
+                        }}
+                      >
+                        <Typography color="text.primary">Total</Typography>
+                        <Typography color="text.primary">
+                          {shippingRatesMutation.isPending
+                            ? "Calculating..."
+                            : `$${total.toFixed(2)}`}
+                        </Typography>
+                      </Box>
+                      <Button
+                        type="button"
+                        variant="contained"
+                        color="primary"
+                        fullWidth
+                        onClick={handlePlaceOrder}
+                        disabled={
+                          paypalOrderMutation.isPending ||
+                          !formState.isValid ||
+                          shippingRatesMutation.isPending ||
+                          shippingRate === null
+                        }
+                        sx={{ mt: 2 }}
+                      >
+                        Place Order
+                      </Button>
+                    </Paper>
                   </Grid>
-                </>
+                </Grid>
               )}
             </Grid>
           </form>
         </Paper>
       </Container>
+      {/* PayPal Dialog - only opens after Place Order */}
+      <Dialog
+        open={paypalDialogOpen}
+        onClose={() => setPaypalDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <Box sx={{ p: 3 }}>
+          <Typography variant="h6" gutterBottom>
+            Complete Payment
+          </Typography>
+          {paypalOrderLoading && (
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                minHeight: 120,
+              }}
+            >
+              <CircularProgress />
+            </Box>
+          )}
+          {paypalOrderError && (
+            <Typography color="error" sx={{ mt: 2 }}>
+              {paypalOrderError}
+            </Typography>
+          )}
+
+          <PayPalCardFieldsProvider
+            createOrder={() => Promise.resolve("paypalOrderId")}
+            onApprove={() => Promise.resolve()}
+            onError={(err) => {
+              // Handle PayPal card field errors here
+              console.error("PayPal CardFields error:", err);
+            }}
+            style={{
+              input: {
+                "font-size": "16px",
+                "font-family": "courier, monospace",
+                "font-weight": "lighter",
+                color: "#ccc",
+              },
+              ".invalid": { color: "purple" },
+            }}
+          >
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "center",
+                width: "100%",
+                alignItems: "center",
+              }}
+            >
+              <PayPalButtons style={{ disableMaxWidth: true }} />
+            </Box>
+            <Box sx={{ my: 2, textAlign: "center" }}>
+              <Typography variant="body1" color="text.secondary">
+                — OR —
+              </Typography>
+            </Box>
+            <Box sx={{ mb: 2, px: 2 }}>
+              <PayPalNameField
+                style={{
+                  input: { color: "blue" },
+                  ".invalid": { color: "purple" },
+                }}
+              />
+              <PayPalNumberField />
+              <PayPalExpiryField />
+              <PayPalCVVField />
+              <Button
+                variant="contained"
+                color="primary"
+                fullWidth
+                disabled={paypalOrderMutation.isPending || paypalOrderLoading}
+                onClick={async () => {
+                  if (!cardFieldsForm) {
+                    const childErrorMessage =
+                      "Unable to find any child components in the <PayPalCardFieldsProvider />";
+                    throw new Error(childErrorMessage);
+                  }
+                  const formState = await cardFieldsForm.getState();
+                  if (!formState.isFormValid) {
+                    return alert("The payment form is invalid");
+                  }
+                  setPaypalOrderLoading(true);
+                  // You may want to pass billingAddress if available
+                  cardFieldsForm.submit().catch(() => {
+                    setPaypalOrderLoading(false);
+                  });
+                }}
+                sx={{ mt: 2 }}
+              >
+                {paypalOrderMutation.isPending || paypalOrderLoading
+                  ? "Processing Payment..."
+                  : "Submit Payment"}
+              </Button>
+            </Box>
+          </PayPalCardFieldsProvider>
+        </Box>
+      </Dialog>
     </FormProvider>
   );
 }
