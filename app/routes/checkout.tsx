@@ -221,6 +221,57 @@ function ShippingForm() {
 // --- Stepper Steps ---
 const steps = ["Shipping Address", "Review Order"];
 
+// --- PayPal Card Fields Form Component ---
+function PayPalCardFieldsForm({
+  loading,
+  onSubmit,
+}: Readonly<{
+  loading: boolean;
+  onSubmit?: () => void;
+}>) {
+  const { cardFieldsForm } = usePayPalCardFields();
+
+  return (
+    <Box sx={{ mb: 2, px: 2 }}>
+      <PayPalNameField
+        style={{
+          input: { color: "blue" },
+          ".invalid": { color: "purple" },
+        }}
+      />
+      <PayPalNumberField />
+      <PayPalExpiryField />
+      <PayPalCVVField />
+      <Button
+        variant="contained"
+        color="primary"
+        fullWidth
+        disabled={loading}
+        onClick={async () => {
+          if (!cardFieldsForm) {
+            const childErrorMessage =
+              "Unable to find any child components in the <PayPalCardFieldsProvider />";
+            throw new Error(childErrorMessage);
+          }
+          const formState = await cardFieldsForm.getState();
+          if (!formState.isFormValid) {
+            return alert("The payment form is invalid");
+          }
+          if (onSubmit) {
+            onSubmit();
+          }
+          cardFieldsForm.submit().catch((err) => {
+            console.log("Error submitting PayPal card fields form", err);
+          });
+        }}
+        sx={{ mt: 2 }}
+      >
+        {loading ? "Processing Payment..." : "Submit Payment"}
+      </Button>
+    </Box>
+  );
+}
+
 // --- Main Checkout Component ---
 export default function Checkout() {
   const shippingForm = useForm<CheckoutFormData>({
@@ -265,7 +316,6 @@ export default function Checkout() {
   const [shippingRate, setShippingRate] = useState<number | null>(null);
   const [tax, setTax] = useState<number>(0);
   const [total, setTotal] = useState<number>(0);
-  const { cardFieldsForm, fields } = usePayPalCardFields();
   // Step navigation handlers
   const handleNext = async () => {
     if (activeStep === 0) {
@@ -704,44 +754,10 @@ export default function Checkout() {
                 — OR —
               </Typography>
             </Box>
-            <Box sx={{ mb: 2, px: 2 }}>
-              <PayPalNameField
-                style={{
-                  input: { color: "blue" },
-                  ".invalid": { color: "purple" },
-                }}
-              />
-              <PayPalNumberField />
-              <PayPalExpiryField />
-              <PayPalCVVField />
-              <Button
-                variant="contained"
-                color="primary"
-                fullWidth
-                disabled={paypalOrderMutation.isPending || paypalOrderLoading}
-                onClick={async () => {
-                  if (!cardFieldsForm) {
-                    const childErrorMessage =
-                      "Unable to find any child components in the <PayPalCardFieldsProvider />";
-                    throw new Error(childErrorMessage);
-                  }
-                  const formState = await cardFieldsForm.getState();
-                  if (!formState.isFormValid) {
-                    return alert("The payment form is invalid");
-                  }
-                  setPaypalOrderLoading(true);
-                  // You may want to pass billingAddress if available
-                  cardFieldsForm.submit().catch(() => {
-                    setPaypalOrderLoading(false);
-                  });
-                }}
-                sx={{ mt: 2 }}
-              >
-                {paypalOrderMutation.isPending || paypalOrderLoading
-                  ? "Processing Payment..."
-                  : "Submit Payment"}
-              </Button>
-            </Box>
+            {/* Use the extracted PayPalCardFieldsForm here */}
+            <PayPalCardFieldsForm
+              loading={paypalOrderMutation.isPending || paypalOrderLoading}
+            />
           </PayPalCardFieldsProvider>
         </Box>
       </Dialog>
