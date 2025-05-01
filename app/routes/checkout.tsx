@@ -20,7 +20,7 @@ import {
   useFormState,
 } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { PayPalButtons, usePayPalCardFields } from "@paypal/react-paypal-js";
+
 import { useQueryCart } from "~/features/cart/hooks/use_query_cart";
 import { useMutateShippingRates } from "~/features/order/hooks/use_query_shipping_rates";
 import { useEffect, useState } from "react";
@@ -37,6 +37,8 @@ import {
   PayPalNumberField,
   PayPalExpiryField,
   PayPalCVVField,
+  PayPalButtons,
+  usePayPalCardFields,
 } from "@paypal/react-paypal-js";
 import { grey } from "@mui/material/colors";
 
@@ -241,18 +243,19 @@ export default function Checkout() {
     },
     mode: "onChange",
   });
-  const { handleSubmit, watch } = shippingForm;
+
   const { data: cartItems = [] } = useQueryCart();
   const {
     itemsWithPrices,
     subtotal,
     isLoading: isSubtotalLoading,
   } = useCartItemsWithPrices(cartItems);
-  const shippingAddress = watch("shipping");
-  const { data: recipientData, isLoading: isRecipientLoading } =
-    useQueryRecipient();
+  const {
+    data: recipientData,
+    isLoading: isRecipientLoading,
+    status: recipientDataStatus,
+  } = useQueryRecipient();
   const mutateRecipient = useMutateRecipient();
-  const [saveAsDefault, setSaveAsDefault] = useState(false);
   const formState = useFormState({ control: shippingForm.control });
   const [activeStep, setActiveStep] = useState(0);
   const paypalOrderMutation = useMutatePaypalCreateOrder();
@@ -287,24 +290,16 @@ export default function Checkout() {
 
   // Pre-fill form with recipient info on mount
   useEffect(() => {
-    if (recipientData?.recipient_data) {
-      shippingForm.setValue("shipping", recipientData.recipient_data);
+    if (recipientDataStatus === "success" && recipientData?.recipient_data) {
+      shippingForm.reset({
+        shipping: recipientData.recipient_data,
+      });
     }
+    // if (recipientData?.recipient_data) {
+    //   shippingForm.setValue("shipping", recipientData.recipient_data);
+    // }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [recipientData]);
-
-  // Save recipient automatically if toggle is true and form is valid
-  useEffect(() => {
-    async function maybeSaveRecipient() {
-      if (saveAsDefault && formState.isValid) {
-        mutateRecipient.mutate({
-          recipient: shippingForm.getValues().shipping,
-        });
-      }
-    }
-    maybeSaveRecipient();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [saveAsDefault, formState.isValid]);
+  }, [recipientDataStatus]);
 
   // Fetch shipping rates when review step is entered
   useEffect(() => {
@@ -436,15 +431,30 @@ export default function Checkout() {
                     sx={{
                       alignItems: "center",
                       mt: 2,
-                      display: shippingForm.formState.isValid ? "flex" : "none",
+                      display: "flex",
+                      visibility: shippingForm.formState.isValid
+                        ? "visible"
+                        : "hidden",
                     }}
                   >
                     <Checkbox
+                      disabled={
+                        !shippingForm.formState.isValid || isRecipientLoading
+                      }
                       checked={
                         JSON.stringify(recipientData?.recipient_data) ===
-                        JSON.stringify(shippingForm.getValues().shipping)
+                        JSON.stringify(shippingForm.watch("shipping"))
                       }
-                      onChange={(e) => setSaveAsDefault(e.target.checked)}
+                      onChange={(e) => {
+                        if (
+                          e.target.checked &&
+                          shippingForm.formState.isValid
+                        ) {
+                          mutateRecipient.mutate({
+                            recipient: shippingForm.getValues().shipping,
+                          });
+                        }
+                      }}
                       id="save-as-default"
                     />
                     <Typography
