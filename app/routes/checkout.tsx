@@ -41,10 +41,6 @@ import {
   usePayPalCardFields,
 } from "@paypal/react-paypal-js";
 import { grey } from "@mui/material/colors";
-import type {
-  CreateOrderData,
-  CreateOrderActions,
-} from "@paypal/paypal-js/types/components/buttons";
 
 // --- Schema and Types ---
 const orderRecipientSchema = z
