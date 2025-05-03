@@ -18,6 +18,10 @@ import type {
   PrintfulV2ShippingRatesRequest,
   PrintfulV2ShippingRatesResponse,
 } from "~/types/printful/shipping_rates_types";
+import type {
+  PrintfulV2CreateOrderRequest,
+  PrintfulV2CreateOrderResponse,
+} from "~/types/printful/order_types";
 
 /**
  * Creates headers for Printful API requests
@@ -270,4 +274,19 @@ export async function fetchPrintfulShippingRates(
       body: JSON.stringify(payload),
     }
   );
+}
+
+/**
+ * POST /v2/orders
+ * Utility: Creates a new Printful order.
+ * @param body - The request payload for creating a Printful order
+ * @returns The Printful order creation response
+ */
+export async function createPrintfulOrder(
+  body: PrintfulV2CreateOrderRequest
+): Promise<PrintfulV2CreateOrderResponse> {
+  return fetchFromPrintful<PrintfulV2CreateOrderResponse>("/v2/orders", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
 }

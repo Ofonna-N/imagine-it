@@ -71,6 +71,11 @@ export const API_ROUTES = {
    * Resource route for capturing a PayPal order after approval
    */
   PAYPAL_CAPTURE_ORDER: "/api/paypal-capture-order",
+  /**
+   * POST /api/printful-order
+   * Resource route for creating a Printful order after payment
+   */
+  PRINTFUL_ORDER_CREATE: "/api/printful-order",
 };
 
 // A flattened version combining all routes for easier imports

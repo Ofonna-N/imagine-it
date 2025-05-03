@@ -43,6 +43,13 @@ import {
 } from "@paypal/react-paypal-js";
 import type { CreateOrderData } from "@paypal/paypal-js/types/components/buttons";
 import { grey } from "@mui/material/colors";
+import { useMutatePrintfulOrder } from "~/features/order/hooks/use_mutate_printful_order";
+import { useNavigate } from "react-router";
+import Radio from "@mui/material/Radio";
+import RadioGroup from "@mui/material/RadioGroup";
+import FormControlLabel from "@mui/material/FormControlLabel";
+import FormLabel from "@mui/material/FormLabel";
+import type { PrintfulV2ShippingRate } from "~/types/printful/shipping_rates_types";
 
 // --- Schema and Types ---
 const orderRecipientSchema = z
@@ -318,6 +325,13 @@ export default function Checkout() {
   const [shippingRate, setShippingRate] = useState<number | null>(null);
   const [tax, setTax] = useState<number>(0);
   const [total, setTotal] = useState<number>(0);
+  const printfulOrderMutation = useMutatePrintfulOrder();
+  const navigate = useNavigate();
+  const [shippingRates, setShippingRates] = useState<PrintfulV2ShippingRate[]>(
+    []
+  );
+  const [selectedShippingRate, setSelectedShippingRate] =
+    useState<PrintfulV2ShippingRate | null>(null);
   // Step navigation handlers
   const handleNext = async () => {
     if (activeStep === 0) {
@@ -361,7 +375,10 @@ export default function Checkout() {
         { recipient: shippingForm.getValues().shipping, order_items },
         {
           onSuccess: (data) => {
-            const rate = Number(data.data?.[0]?.rate || 0);
+            setShippingRates(data.data);
+            const firstRate = data.data[0] || null;
+            setSelectedShippingRate(firstRate);
+            const rate = Number(firstRate?.rate || 0);
             setShippingRate(rate);
             const taxVal = calculateTax(subtotal);
             setTax(taxVal);
@@ -403,7 +420,30 @@ export default function Checkout() {
   // Handler for PayPal approval (trigger Printful order here)
   const handlePaypalApprove = async (data: any, actions: any) => {
     setPaypalDialogOpen(false);
-    // TODO: Trigger Printful order creation here
+    if (!data.orderID) return;
+    try {
+      const captureResult = await paypalCaptureOrderMutation.mutateAsync({
+        orderId: data.orderID,
+      });
+      // Prepare Printful order payload
+      const shipping = shippingForm.getValues().shipping;
+      const order_items = itemsWithPrices.map(({ item }) => item.item_data);
+      const printfulPayload = {
+        shipping: selectedShippingRate?.shipping || "STANDARD",
+        recipient: shipping,
+        order_items,
+        // Add any additional fields as needed
+      };
+      // Create Printful order
+      const printfulOrder = await printfulOrderMutation.mutateAsync(
+        printfulPayload
+      );
+      // Redirect to thank you page with order info
+      navigate("/checkout/thank-you", { state: { order: printfulOrder } });
+    } catch (err) {
+      // Handle error (e.g., show error message)
+      alert("Order processing failed. Please contact support.");
+    }
   };
 
   // --- Render ---
@@ -553,6 +593,98 @@ export default function Checkout() {
                           </Typography>
                         )}
                       </Box>
+                    </Paper>
+                    <Paper variant="outlined" sx={{ p: 3, mb: 3 }}>
+                      <FormLabel component="legend">
+                        Select Shipping Method
+                      </FormLabel>
+                      <RadioGroup
+                        value={selectedShippingRate?.shipping || ""}
+                        onChange={(e) => {
+                          const rate = shippingRates.find(
+                            (r) => r.shipping === e.target.value
+                          );
+                          setSelectedShippingRate(rate || null);
+                          setShippingRate(Number(rate?.rate || 0));
+                          setTotal(subtotal + Number(rate?.rate || 0) + tax);
+                        }}
+                      >
+                        {shippingRates.length === 0 ? (
+                          <Typography
+                            color="text.secondary"
+                            sx={{ pl: 2, py: 2 }}
+                          >
+                            No shipping options available.
+                          </Typography>
+                        ) : (
+                          shippingRates.map((rate) => (
+                            <FormControlLabel
+                              key={rate.shipping}
+                              value={rate.shipping}
+                              control={<Radio />}
+                              label={
+                                <Box
+                                  sx={{
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    alignItems: "flex-start",
+                                  }}
+                                >
+                                  <Typography
+                                    variant="subtitle1"
+                                    sx={{ fontWeight: 500 }}
+                                  >
+                                    {rate.shipping.replace(/_/g, " ")}
+                                  </Typography>
+                                  <Typography
+                                    variant="body2"
+                                    color="text.secondary"
+                                  >
+                                    ${Number(rate.rate).toFixed(2)} &mdash;
+                                    Estimated delivery:{" "}
+                                    <b>
+                                      {rate.min_delivery_days}
+                                      {rate.max_delivery_days &&
+                                      rate.max_delivery_days !==
+                                        rate.min_delivery_days
+                                        ? `–${rate.max_delivery_days}`
+                                        : ""}
+                                      {" days"}
+                                    </b>
+                                  </Typography>
+                                </Box>
+                              }
+                              sx={{
+                                alignItems: "flex-start",
+                                py: 1.5,
+                                mx: 0,
+                                "& .MuiFormControlLabel-label": {
+                                  width: "100%",
+                                },
+                                borderRadius: 2,
+                                border: (theme) =>
+                                  `1px solid ${theme.palette.divider}`,
+                                mb: 1,
+                                pl: 2,
+                                pr: 1,
+                                backgroundColor: (theme) =>
+                                  theme.palette.mode === "dark"
+                                    ? "rgba(255,255,255,0.02)"
+                                    : "rgba(0,0,0,0.02)",
+                                "&.Mui-checked, &.Mui-selected": {
+                                  backgroundColor: (theme) =>
+                                    theme.palette.mode === "dark"
+                                      ? "rgba(25, 118, 210, 0.08)"
+                                      : "rgba(25, 118, 210, 0.08)",
+                                  borderColor: (theme) =>
+                                    theme.palette.primary.main,
+                                },
+                                transition: "background 0.2s, border 0.2s",
+                              }}
+                            />
+                          ))
+                        )}
+                      </RadioGroup>
                     </Paper>
                     <Paper variant="outlined" sx={{ p: 3 }}>
                       <Typography variant="h6" gutterBottom>
@@ -736,20 +868,7 @@ export default function Checkout() {
           >
             <PayPalButtons
               style={{ disableMaxWidth: true }}
-              onApprove={async (data) => {
-                console.log("PayPal order approved", data);
-                if (!data.orderID) return;
-                try {
-                  const captureResult =
-                    await paypalCaptureOrderMutation.mutateAsync({
-                      orderId: data.orderID,
-                    });
-                  // Handle success (e.g., show confirmation, trigger Printful order, etc.)
-                  setPaypalDialogOpen(false);
-                } catch (err) {
-                  // Handle error (e.g., show error message)
-                }
-              }}
+              onApprove={handlePaypalApprove}
               createOrder={async (createOrder) =>
                 await handlePaypalCreateOrder({
                   createOrder,
