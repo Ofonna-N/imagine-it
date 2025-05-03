@@ -20,7 +20,7 @@ export const orders = pgTable("orders", {
   created_at: timestamp("created_at").notNull().defaultNow(),
   total: integer("total").notNull(),
   summary: jsonb("summary").notNull(), // e.g., { items: [...], shipping: {...} }
-});
+}).enableRLS(); // Enable Row-Level Security (RLS) for security
 
 export type Order = typeof orders.$inferSelect;
 export type NewOrder = typeof orders.$inferInsert;
