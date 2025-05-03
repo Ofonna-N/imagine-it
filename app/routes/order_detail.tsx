@@ -11,29 +11,7 @@ import {
 import { useQueryUserOrders } from "~/features/order/hooks/use_query_user_orders";
 import ROUTE_PATHS from "~/constants/route_paths";
 import type { PrintfulV2GetOrderResponse } from "~/types/printful/order_types";
-
-const getUserOrderStatus = (status: string) => {
-  switch (status) {
-    case "draft":
-      return "Processing";
-    case "pending":
-      return "Pending";
-    case "failed":
-      return "Failed";
-    case "canceled":
-      return "Canceled";
-    case "inprocess":
-      return "In Fulfillment";
-    case "onhold":
-      return "On Hold";
-    case "partial":
-      return "Partially Fulfilled";
-    case "fulfilled":
-      return "Fulfilled";
-    default:
-      return status;
-  }
-};
+import { getUserOrderStatus } from "~/features/order/utils/order_status";
 
 export default function OrderDetail() {
   const { orderId } = useParams();
@@ -94,11 +72,11 @@ export default function OrderDetail() {
         </Typography>
         <Typography variant="body2">
           {order.recipient.city},{" "}
-          {order.recipient.state_code || order.recipient.state_name}{" "}
+          {order.recipient.state_code ?? order.recipient.state_name}{" "}
           {order.recipient.zip}
         </Typography>
         <Typography variant="body2">
-          {order.recipient.country_name || order.recipient.country_code}
+          {order.recipient.country_name ?? order.recipient.country_code}
         </Typography>
         <Divider sx={{ my: 2 }} />
         <Typography variant="h6" gutterBottom>
@@ -119,7 +97,7 @@ export default function OrderDetail() {
         <Typography variant="h6" gutterBottom>
           Order Total
         </Typography>
-        <Typography variant="body1">${order.costs?.total || "-"}</Typography>
+        <Typography variant="body1">${order.costs?.total ?? "-"}</Typography>
         <Box sx={{ textAlign: "center", mt: 4 }}>
           <Button component={Link} to={ROUTE_PATHS.ORDERS} variant="outlined">
             Back to Orders

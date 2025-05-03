@@ -7,32 +7,9 @@ import {
   Button,
 } from "@mui/material";
 import { useQueryUserOrders } from "~/features/order/hooks/use_query_user_orders";
-import { Link, useNavigate } from "react-router";
+import { useNavigate } from "react-router";
 import ROUTE_PATHS from "~/constants/route_paths";
-
-// Map Printful status to user-friendly status
-const getUserOrderStatus = (status: string) => {
-  switch (status) {
-    case "draft":
-      return "Processing";
-    case "pending":
-      return "Pending";
-    case "failed":
-      return "Failed";
-    case "canceled":
-      return "Canceled";
-    case "inprocess":
-      return "In Fulfillment";
-    case "onhold":
-      return "On Hold";
-    case "partial":
-      return "Partially Fulfilled";
-    case "fulfilled":
-      return "Fulfilled";
-    default:
-      return status;
-  }
-};
+import { getUserOrderStatus } from "~/features/order/utils/order_status";
 
 export default function Orders() {
   const { data, isLoading, isError } = useQueryUserOrders();

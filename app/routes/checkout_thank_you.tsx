@@ -1,6 +1,7 @@
 import { Box, Button, Container, Paper, Typography } from "@mui/material";
 import { Link, useLocation } from "react-router";
 import ROUTE_PATHS from "~/constants/route_paths";
+import { getUserOrderStatus } from "~/features/order/utils/order_status";
 
 /**
  * Thank You page after successful checkout/order
@@ -25,7 +26,7 @@ export default function CheckoutThankYou() {
               <strong>Order ID:</strong> {order.orderId}
             </Typography>
             <Typography variant="subtitle1">
-              <strong>Status:</strong> {order.status}
+              <strong>Status:</strong> {getUserOrderStatus(order.status)}
             </Typography>
             <Typography variant="subtitle1">
               <strong>Total:</strong> ${order.total}
