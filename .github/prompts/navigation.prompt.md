@@ -1,0 +1,6 @@
+- ## Navigation Convention
+-
+- - Declare all route paths in the `route_paths` constant. This serves as the single source of truth for route definitions.
+- - Reference these route paths in the `routes.ts` file to define or configure application routes.
+- - **Do not hard code route strings** anywhere in the source code. Always use the constants from `route_paths` for navigation.
+- - This approach ensures consistency, maintainability, and reduces the risk of navigation errors due to typos or mismatched paths.

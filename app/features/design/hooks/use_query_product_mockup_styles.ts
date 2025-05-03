@@ -1,9 +1,8 @@
 import { useQuery, type UseQueryOptions } from "@tanstack/react-query";
-import type {
-  PrintfulV2BaseResponse, // Corrected import
-  PrintfulV2MockupStyleGroup,
-} from "~/types/printful";
+
 import { API_ROUTES } from "~/constants/route_paths"; // Assuming API_ROUTES is defined here
+import type { PrintfulV2MockupStyleGroup } from "~/types/printful/catalog_mockup_styles_types";
+import type { PrintfulV2BaseResponse } from "~/types/printful/common_types";
 
 /**
  * Utility function to fetch mockup styles for a given product ID from the API proxy.

@@ -21,12 +21,17 @@ export default [
     // Shopping cart and checkout
     route(APP_ROUTES.CART.slice(1), "routes/cart.tsx"),
     route(APP_ROUTES.CHECKOUT.slice(1), "routes/checkout.tsx"),
+    route(
+      APP_ROUTES.CHECKOUT_THANK_YOU.slice(1),
+      "routes/checkout_thank_you.tsx"
+    ),
 
     // User account routes
     route(APP_ROUTES.MY_DESIGNS.slice(1), "routes/my_designs.tsx"),
     route(APP_ROUTES.ORDERS.slice(1), "routes/orders.tsx"),
     route(APP_ROUTES.ACCOUNT.slice(1), "routes/account.tsx"),
     route(APP_ROUTES.IMAGE_GENERATION.slice(1), "routes/image_generation.tsx"),
+    route(APP_ROUTES.ORDER_DETAIL.slice(1), "routes/order_detail.tsx"),
   ]),
 
   // API routes
@@ -107,4 +112,18 @@ export default [
   route(API_ROUTES.DESIGNS.slice(1), "routes_api/api.designs.ts"),
   route(API_ROUTES.CART.slice(1), "routes_api/api.cart.ts"),
   route(API_ROUTES.RECIPIENT.slice(1), "routes_api/api.recipient.ts"),
+  route(API_ROUTES.SHIPPING_RATES.slice(1), "routes_api/api.shipping_rates.ts"),
+  route(
+    API_ROUTES.PAYPAL_CREATE_ORDER.slice(1),
+    "routes_api/api.paypal_create_order.ts"
+  ),
+  route(
+    API_ROUTES.PAYPAL_CAPTURE_ORDER.slice(1),
+    "routes_api/api.paypal_capture_order.ts"
+  ),
+  route(
+    API_ROUTES.PRINTFUL_ORDER_CREATE.slice(1),
+    "routes_api/api.printful_order.ts"
+  ),
+  route(API_ROUTES.USER_ORDERS.slice(1), "routes_api/api.user_orders.ts"),
 ] satisfies RouteConfig;

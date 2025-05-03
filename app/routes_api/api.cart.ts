@@ -1,4 +1,6 @@
 import { type ActionFunctionArgs } from "react-router";
+import { getStoragePath } from "../utils/storage_path";
+import { randomUUID } from "crypto";
 import {
   addCartItem,
   getCartItems,
@@ -7,6 +9,7 @@ import {
   updateCartItemQuantity,
 } from "../db/queries/carts_queries";
 import createSupabaseServerClient from "../services/supabase/supabase_client.server";
+import type { PrintfulV2OrderItem } from "~/types/printful/order_types";
 
 /**
  * Resource Route: /api/cart
@@ -53,16 +56,70 @@ export async function action({ request }: ActionFunctionArgs) {
   const method = request.method.toUpperCase();
 
   if (method === "POST") {
-    const { item, mockupUrls, designMeta } = await request.json();
+    // Accepts: item, mockupUrls (array of URLs or file data), designMeta
+    const {
+      item,
+      mockupUrls,
+      designMeta,
+    }: {
+      item: PrintfulV2OrderItem; // Define the type of item based on your application
+      mockupUrls?: string[];
+      designMeta?: any; // Define the type of designMeta based on your application
+    } = await request.json();
     if (!item)
       return new Response(JSON.stringify({ error: "Missing item" }), {
         status: 400,
         headers: { "Content-Type": "application/json" },
       });
+    // Upload mockup images to Supabase storage and collect new URLs
+    let storedMockupUrls: string[] = [];
+    if (Array.isArray(mockupUrls) && mockupUrls.length > 0) {
+      const { supabase } = createSupabaseServerClient({ request });
+      const userIdForStorage = userId;
+      // Use product_id and variant_id for traceable storage, fallback to UUID if missing
+      const variantId = item.catalog_variant_id ?? "unknown";
+      // Add a timestamp for uniqueness in case of duplicate cart items
+      const cartImageId = `${variantId}_${Date.now()}`;
+      for (let i = 0; i < mockupUrls.length; i++) {
+        const url = mockupUrls[i];
+        try {
+          // Fetch the image data from the provided URL
+          const imageResponse = await fetch(url);
+          const imageType =
+            imageResponse.headers.get("content-type") ?? "image/png";
+          const imageExt = imageType.split("/")[1] ?? "png";
+          // Use imageKey (index) to ensure unique path for each image
+          const storagePath = getStoragePath(
+            userIdForStorage,
+            "cart-mockup",
+            cartImageId,
+            imageExt,
+            { imageKey: i }
+          );
+          const imageBuffer = await imageResponse.arrayBuffer();
+          const { error: uploadError } = await supabase.storage
+            .from("imagine-it")
+            .upload(storagePath, Buffer.from(imageBuffer), {
+              contentType: imageType,
+            });
+          if (uploadError) {
+            // Skip this image if upload fails
+            continue;
+          }
+          const {
+            data: { publicUrl },
+          } = supabase.storage.from("imagine-it").getPublicUrl(storagePath);
+          storedMockupUrls.push(publicUrl);
+        } catch (err) {
+          // Skip this image if fetch/upload fails
+          continue;
+        }
+      }
+    }
     const created = await addCartItem({
       userId,
       item,
-      mockupUrls,
+      mockupUrls: storedMockupUrls.length > 0 ? storedMockupUrls : undefined,
       designMeta,
     });
     return new Response(JSON.stringify(created), {
@@ -96,16 +153,75 @@ export async function action({ request }: ActionFunctionArgs) {
   if (method === "DELETE") {
     const { itemId, clear } = await request.json();
     if (clear) {
+      // --- Begin: Delete all associated mockup images for all cart items ---
+      const { supabase } = createSupabaseServerClient({ request });
+      const cartItems = await getCartItems(userId);
+      const deleteErrors: { itemId: any; url: string; error: any }[] = [];
+      for (const cartItem of cartItems) {
+        if (Array.isArray(cartItem.mockup_urls)) {
+          for (const url of cartItem.mockup_urls) {
+            const match = url.match(/\/public\/imagine-it\/(.+)$/);
+            const storagePath = match ? match[1] : null;
+            if (storagePath) {
+              const { data, error } = await supabase.storage
+                .from("imagine-it")
+                .remove([storagePath]);
+              if (error) {
+                deleteErrors.push({ itemId: cartItem.id, url, error });
+              }
+              // Optionally log all deletions
+              // console.log("Deleted:", storagePath, "Error:", error);
+            }
+          }
+        }
+      }
+      // --- End: Delete all associated mockup images ---
       await clearCart(userId);
-      return new Response(JSON.stringify({ success: true }), {
-        headers: { "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({
+          success: deleteErrors.length === 0,
+          errors: deleteErrors.length > 0 ? deleteErrors : undefined,
+        }),
+        {
+          headers: { "Content-Type": "application/json" },
+        }
+      );
     }
     if (itemId) {
+      // --- Begin: Delete associated mockup images from Supabase storage ---
+      const { supabase } = createSupabaseServerClient({ request });
+      // Fetch the cart item to get its mockup_urls
+      const cartItems = await getCartItems(userId);
+      const cartItem = cartItems.find((item) => item.id === itemId);
+      const deleteErrors: { url: string; error: any }[] = [];
+      if (cartItem && Array.isArray(cartItem.mockup_urls)) {
+        for (const url of cartItem.mockup_urls) {
+          // Supabase public URL: https://<project>.supabase.co/storage/v1/object/public/<bucket>/<path>
+          // Extract the path after '/public/<bucket>/'
+          const match = url.match(/\/public\/imagine-it\/(.+)$/);
+          const storagePath = match ? match[1] : null;
+          // console.log("Storage Path:", storagePath);
+          if (storagePath) {
+            const { data, error } = await supabase.storage
+              .from("imagine-it")
+              .remove([storagePath]);
+            if (error) {
+              deleteErrors.push({ url, error });
+            }
+          }
+        }
+      }
+      // --- End: Delete associated mockup images ---
       await removeCartItem(itemId);
-      return new Response(JSON.stringify({ success: true }), {
-        headers: { "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({
+          success: deleteErrors.length === 0,
+          errors: deleteErrors.length > 0 ? deleteErrors : undefined,
+        }),
+        {
+          headers: { "Content-Type": "application/json" },
+        }
+      );
     }
     return new Response(
       JSON.stringify({ error: "Missing itemId or clear flag" }),

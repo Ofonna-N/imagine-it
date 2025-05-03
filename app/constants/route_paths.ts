@@ -19,8 +19,10 @@ export const APP_ROUTES = {
   CART: "/cart",
   CHECKOUT: "/checkout",
   ORDERS: "/orders",
+  ORDER_DETAIL: "/orders/:orderId",
   ACCOUNT: "/account",
   IMAGE_GENERATION: "/image-generation", // Added for AI image generation route
+  CHECKOUT_THANK_YOU: "/checkout/thank-you",
 };
 
 // API endpoint routes
@@ -56,6 +58,31 @@ export const API_ROUTES = {
   DESIGNS: "/api/designs",
   CART: "/api/cart", // GET, POST, DELETE
   RECIPIENT: "/api/recipient", // GET, POST
+  /**
+   * POST /api/shipping-rates
+   * Resource route for retrieving shipping rates
+   */
+  SHIPPING_RATES: "/api/shipping-rates", // POST
+  /**
+   * POST /api/paypal-create-order
+   * Resource route for creating a PayPal order with shipping info and cart items
+   */
+  PAYPAL_CREATE_ORDER: "/api/paypal-create-order",
+  /**
+   * POST /api/paypal-capture-order
+   * Resource route for capturing a PayPal order after approval
+   */
+  PAYPAL_CAPTURE_ORDER: "/api/paypal-capture-order",
+  /**
+   * POST /api/printful-order
+   * Resource route for creating a Printful order after payment
+   */
+  PRINTFUL_ORDER_CREATE: "/api/printful-order",
+  /**
+   * GET /api/user-orders
+   * Resource route for fetching all Printful orders for the current user
+   */
+  USER_ORDERS: "/api/user-orders",
 };
 
 // A flattened version combining all routes for easier imports

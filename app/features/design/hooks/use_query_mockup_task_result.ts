@@ -4,12 +4,13 @@ import {
   keepPreviousData,
   type Query,
 } from "@tanstack/react-query";
-import type {
-  PrintfulV2BaseResponse,
-  PrintfulV2MockupGeneratorTask,
-  PrintfulErrorResponse,
-} from "~/types/printful";
+
 import { API_ROUTES } from "~/constants/route_paths";
+import type {
+  PrintfulErrorResponse,
+  PrintfulV2BaseResponse,
+} from "~/types/printful/common_types";
+import type { PrintfulV2MockupGeneratorTask } from "~/types/printful/mockup_task_types";
 
 /**
  * Utility function to fetch the status/result of a Printful mockup task.

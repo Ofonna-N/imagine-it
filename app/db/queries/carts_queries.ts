@@ -1,11 +1,11 @@
-import { db } from "../index";
-import { carts, cart_items, recipients } from "../schema/carts";
-import type { Cart, CartItem, Recipient } from "../schema/carts";
 import type {
   PrintfulV2OrderItem,
   PrintfulV2OrderRecipient,
-} from "~/types/printful";
-import { eq } from "drizzle-orm"; // Import eq for query conditions
+} from "~/types/printful/order_types";
+import { db } from "../index";
+import { carts, cart_items, recipients } from "../schema/carts";
+import type { Cart, CartItem, Recipient } from "../schema/carts";
+import { asc, eq } from "drizzle-orm"; // Import eq for query conditions
 
 /**
  * Get or create a cart for a user
@@ -65,7 +65,11 @@ export async function getCartItems(userId: string): Promise<CartItem[]> {
     .limit(1)
     .then((r) => r[0]);
   if (!cart) return [];
-  return db.select().from(cart_items).where(eq(cart_items.cart_id, cart.id));
+  return db
+    .select()
+    .from(cart_items)
+    .where(eq(cart_items.cart_id, cart.id))
+    .orderBy(asc(cart_items.created_at));
 }
 
 /**

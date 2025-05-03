@@ -1,11 +1,14 @@
 import { useMutation, type UseMutationOptions } from "@tanstack/react-query";
+
+import { API_ROUTES } from "~/constants/route_paths";
 import type {
+  PrintfulErrorResponse,
   PrintfulV2BaseResponse,
+} from "~/types/printful/common_types";
+import type {
   PrintfulV2MockupGeneratorTask,
   PrintfulV2MockupGeneratorTaskRequest,
-  PrintfulErrorResponse,
-} from "~/types/printful";
-import { API_ROUTES } from "~/constants/route_paths";
+} from "~/types/printful/mockup_task_types";
 
 /**
  * Utility function to create Printful mockup tasks via the API proxy.

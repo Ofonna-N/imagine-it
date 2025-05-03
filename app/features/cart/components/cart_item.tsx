@@ -13,44 +13,40 @@ import Dialog from "@mui/material/Dialog";
 import ImageList from "@mui/material/ImageList";
 import ImageListItem from "@mui/material/ImageListItem";
 import type { CartItem as CartItemType } from "~/db/schema/carts";
-import type { PrintfulV2OrderItem } from "~/types/printful";
-import { useState, useEffect } from "react";
-import { useCartItemPrice } from "~/features/cart/hooks/use_cart_item_price";
+import { useState } from "react";
 
 interface CartItemProps {
-  item: CartItemType;
+  item: CartItemType & { calculatedTotal?: number };
   onUpdateQuantity: (id: number, quantity: number) => void;
   onRemoveItem: (id: number) => void;
-  setItemPrice: (itemId: number, price: number) => void;
+  total?: number; // Optional prop for total price
 }
 
 export const CartItem: React.FC<CartItemProps> = ({
   item,
   onUpdateQuantity,
   onRemoveItem,
-  setItemPrice,
+  total, // Optional prop for total price
 }) => {
   // Type assertions for API-driven cart item
-  const item_data = (item.item_data as PrintfulV2OrderItem) ?? {};
-  const mockup_urls = (item.mockup_urls as string[]) ?? [];
-  const design_meta = (item.design_meta as { designName?: string }) ?? {};
+  const item_data = item.item_data ?? {};
+  const mockup_urls = item.mockup_urls ?? [];
+  const design_meta = item.design_meta;
   const quantity = item_data.quantity ?? 1;
 
-  const designName = design_meta.designName ?? "(No Design)";
+  const designName = design_meta?.designName ?? "(No Design)";
   const previewImage =
     mockup_urls[0] ?? "https://via.placeholder.com/100x100?text=Preview";
 
-  // Use the new price hook
-  const { total, isLoading: isPriceLoading } = useCartItemPrice(item);
-
-  // Lift price up
-  useEffect(() => {
-    setItemPrice(item.id, total);
-  }, [item.id, total, setItemPrice]);
-
   const [galleryOpen, setGalleryOpen] = useState(false);
 
-  const itemTotalDisplay = isPriceLoading ? "..." : `$${total.toFixed(2)}`;
+  // Use total prop if provided, otherwise fallback to calculatedTotal
+  const itemTotalDisplay =
+    typeof total === "number"
+      ? `$${total.toFixed(2)}`
+      : typeof item.calculatedTotal === "number"
+      ? `$${item.calculatedTotal.toFixed(2)}`
+      : "...";
 
   return (
     <Card variant="outlined" sx={{ mb: 2, p: 2 }}>
