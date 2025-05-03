@@ -1,0 +1,36 @@
+import { db } from "../index";
+import { orders, type Order, type NewOrder } from "../schema/orders";
+import type { PrintfulV2OrderResponseData } from "~/types/printful/order_types";
+
+/**
+ * Inserts a new order into the orders table after Printful order creation.
+ * @param params - Object containing userId and Printful order response data
+ * @returns The inserted order record
+ */
+export async function insertOrderAfterPrintful({
+  userId,
+  printfulOrderData,
+}: {
+  userId: string;
+  printfulOrderData: PrintfulV2OrderResponseData;
+}): Promise<Order> {
+  try {
+    const insertData: NewOrder = {
+      user_id: userId,
+      printful_order_id: printfulOrderData.id,
+      status: printfulOrderData.status,
+      total: Number(printfulOrderData.costs.total ?? 0),
+      summary: {
+        items: printfulOrderData.order_items,
+        shipping: printfulOrderData.recipient,
+        costs: printfulOrderData.costs,
+      },
+    };
+    const [order] = await db.insert(orders).values(insertData).returning();
+    return order;
+  } catch (err) {
+    // Log error without leaking sensitive info
+    console.error("Failed to insert order after Printful:", err);
+    throw new Error("Failed to save order. Please try again later.");
+  }
+}

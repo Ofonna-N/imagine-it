@@ -21,3 +21,6 @@ export const orders = pgTable("orders", {
   total: integer("total").notNull(),
   summary: jsonb("summary").notNull(), // e.g., { items: [...], shipping: {...} }
 });
+
+export type Order = typeof orders.$inferSelect;
+export type NewOrder = typeof orders.$inferInsert;

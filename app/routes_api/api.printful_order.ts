@@ -1,8 +1,7 @@
 import { type ActionFunctionArgs } from "react-router";
-import { db } from "~/db/index";
-import { orders } from "~/db/schema/orders";
 import createSupabaseServerClient from "~/services/supabase/supabase_client.server";
 import { createPrintfulOrder } from "~/services/printful/printful_api";
+import { insertOrderAfterPrintful } from "~/db/queries/orders_queries";
 import type { PrintfulV2CreateOrderRequest } from "~/types/printful/order_types";
 
 /**
@@ -42,19 +41,19 @@ export async function action({ request }: ActionFunctionArgs) {
       { status: 500, headers: { "Content-Type": "application/json" } }
     );
   }
-  // Store minimal order info in DB
+  // Store minimal order info in DB using the dedicated query
+  try {
+    await insertOrderAfterPrintful({
+      userId,
+      printfulOrderData: printfulOrder.data,
+    });
+  } catch (err: any) {
+    return new Response(
+      JSON.stringify({ error: err?.message ?? "Failed to save order." }),
+      { status: 500, headers: { "Content-Type": "application/json" } }
+    );
+  }
   const orderData = printfulOrder.data;
-  await db.insert(orders).values({
-    user_id: userId,
-    printful_order_id: orderData.id,
-    status: orderData.status,
-    total: Number(orderData.costs.total ?? 0),
-    summary: {
-      items: orderData.order_items,
-      shipping: orderData.recipient,
-      costs: orderData.costs,
-    },
-  });
   return new Response(
     JSON.stringify({
       orderId: orderData.id,
