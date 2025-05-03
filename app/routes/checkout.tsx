@@ -51,6 +51,7 @@ import FormControlLabel from "@mui/material/FormControlLabel";
 import FormLabel from "@mui/material/FormLabel";
 import type { PrintfulV2ShippingRate } from "~/types/printful/shipping_rates_types";
 import ROUTE_PATHS from "~/constants/route_paths";
+import { useMutateClearCart } from "~/features/cart/hooks/use_mutate_clear_cart";
 
 // --- Schema and Types ---
 const orderRecipientSchema = z
@@ -333,6 +334,7 @@ export default function Checkout() {
   );
   const [selectedShippingRate, setSelectedShippingRate] =
     useState<PrintfulV2ShippingRate | null>(null);
+  const clearCartMutation = useMutateClearCart();
   // Step navigation handlers
   const handleNext = async () => {
     if (activeStep === 0) {
@@ -439,6 +441,8 @@ export default function Checkout() {
       const printfulOrder = await printfulOrderMutation.mutateAsync(
         printfulPayload
       );
+      // Clear cart after successful order
+      await clearCartMutation.mutateAsync();
       // Redirect to thank you page with order info
       navigate(ROUTE_PATHS.CHECKOUT_THANK_YOU, {
         state: { order: printfulOrder },
