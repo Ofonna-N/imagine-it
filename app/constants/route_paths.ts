@@ -66,6 +66,11 @@ export const API_ROUTES = {
    * Resource route for creating a PayPal order with shipping info and cart items
    */
   PAYPAL_CREATE_ORDER: "/api/paypal-create-order",
+  /**
+   * POST /api/paypal-capture-order
+   * Resource route for capturing a PayPal order after approval
+   */
+  PAYPAL_CAPTURE_ORDER: "/api/paypal-capture-order",
 };
 
 // A flattened version combining all routes for easier imports

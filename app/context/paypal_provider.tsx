@@ -9,7 +9,7 @@ export default function PaypalProvider({
   const initialOptions: ReactPayPalScriptOptions = {
     clientId: import.meta.env.VITE_PAYPAL_CLIENT_ID,
     disableFunding: "paylater",
-    components: ["buttons", "card-fields"],
+    components: ["buttons"],
     enableFunding: "venmo",
   };
 

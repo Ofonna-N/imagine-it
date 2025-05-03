@@ -29,6 +29,7 @@ import { CartSummaryItem } from "~/features/cart/components/cart_summary_item";
 import { useQueryRecipient } from "~/features/cart/hooks/use_query_recipient";
 import { useMutateRecipient } from "~/features/cart/hooks/use_mutate_recipient";
 import { useMutatePaypalCreateOrder } from "~/features/order/hooks/use_mutate_paypal_create_order";
+import { useMutatePaypalCaptureOrder } from "~/features/order/hooks/use_mutate_paypal_capture_order";
 import Dialog from "@mui/material/Dialog";
 import CircularProgress from "@mui/material/CircularProgress";
 import {
@@ -40,6 +41,7 @@ import {
   PayPalButtons,
   usePayPalCardFields,
 } from "@paypal/react-paypal-js";
+import type { CreateOrderData } from "@paypal/paypal-js/types/components/buttons";
 import { grey } from "@mui/material/colors";
 
 // --- Schema and Types ---
@@ -310,6 +312,7 @@ export default function Checkout() {
   const formState = useFormState({ control: shippingForm.control });
   const [activeStep, setActiveStep] = useState(0);
   const paypalCreateOrderMutation = useMutatePaypalCreateOrder();
+  const paypalCaptureOrderMutation = useMutatePaypalCaptureOrder();
   const [paypalDialogOpen, setPaypalDialogOpen] = useState(false);
   const shippingRatesMutation = useMutateShippingRates();
   const [shippingRate, setShippingRate] = useState<number | null>(null);
@@ -373,7 +376,10 @@ export default function Checkout() {
     setPaypalDialogOpen(true);
   };
 
-  async function handlePaypalCreateOrder() {
+  async function handlePaypalCreateOrder(param: {
+    createOrder: CreateOrderData;
+  }) {
+    console.log("Creating PayPal order", param);
     const shipping = shippingForm.getValues().shipping;
     const items = itemsWithPrices.map(({ item, basePrice }) => ({
       id: String(item.id),
@@ -383,11 +389,15 @@ export default function Checkout() {
     }));
 
     const response = await paypalCreateOrderMutation.mutateAsync({
+      createOrderParam: param.createOrder,
       shipping,
       items,
       currency: "USD",
+      tax,
+      shippingCost: shippingRate ?? 0,
     });
 
+    console.log("PayPal order created", response);
     return response.orderId;
   }
   // Handler for PayPal approval (trigger Printful order here)
@@ -652,12 +662,12 @@ export default function Checkout() {
                         onClick={() => {
                           handlePlaceOrder();
                         }}
-                        disabled={
-                          paypalCreateOrderMutation.isPending ||
-                          !formState.isValid ||
-                          shippingRatesMutation.isPending ||
-                          shippingRate === null
-                        }
+                        // disabled={
+                        //   paypalCreateOrderMutation.isPending ||
+                        //   !formState.isValid ||
+                        //   shippingRatesMutation.isPending ||
+                        //   shippingRate === null
+                        // }
                         sx={{ mt: 2 }}
                       >
                         Place Order
@@ -699,7 +709,7 @@ export default function Checkout() {
             </Typography>
           )}
 
-          <PayPalCardFieldsProvider
+          {/* <PayPalCardFieldsProvider
             createOrder={handlePaypalCreateOrder}
             onApprove={() => Promise.resolve()}
             onError={(err) => {
@@ -715,42 +725,57 @@ export default function Checkout() {
               },
               ".invalid": { color: "purple" },
             }}
+          > */}
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "center",
+              width: "100%",
+              alignItems: "center",
+            }}
           >
-            <Box
-              sx={{
-                display: "flex",
-                justifyContent: "center",
-                width: "100%",
-                alignItems: "center",
+            <PayPalButtons
+              style={{ disableMaxWidth: true }}
+              onApprove={async (data) => {
+                console.log("PayPal order approved", data);
+                if (!data.orderID) return;
+                try {
+                  const captureResult =
+                    await paypalCaptureOrderMutation.mutateAsync({
+                      orderId: data.orderID,
+                    });
+                  // Handle success (e.g., show confirmation, trigger Printful order, etc.)
+                  setPaypalDialogOpen(false);
+                } catch (err) {
+                  // Handle error (e.g., show error message)
+                }
               }}
-            >
-              <PayPalButtons
-                style={{ disableMaxWidth: true }}
-                onApprove={async (data) => {
-                  console.log("PayPal button clicked", data);
-                }}
-                createOrder={handlePaypalCreateOrder}
-                onCancel={() => {
-                  console.log("PayPal order cancelled");
-                }}
-                onError={(err) => {
-                  console.error("PayPal button error:", err);
-                }}
-              />
-            </Box>
-            <Box sx={{ my: 2, textAlign: "center" }}>
+              createOrder={async (createOrder) =>
+                await handlePaypalCreateOrder({
+                  createOrder,
+                })
+              }
+              onCancel={() => {
+                console.log("PayPal order cancelled");
+              }}
+              onError={(err) => {
+                console.error("PayPal button error:", err);
+              }}
+            />
+          </Box>
+          {/* <Box sx={{ my: 2, textAlign: "center" }}>
               <Typography variant="body1" color="text.secondary">
                 — OR —
               </Typography>
             </Box>
-            {/* Use the extracted PayPalCardFieldsForm here */}
+      
             <PayPalCardFieldsForm
               loading={
                 paypalCreateOrderMutation.isPending ||
                 paypalCreateOrderMutation.isPending
               }
-            />
-          </PayPalCardFieldsProvider>
+            /> */}
+          {/* </PayPalCardFieldsProvider> */}
         </Box>
       </Dialog>
     </FormProvider>

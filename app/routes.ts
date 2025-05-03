@@ -112,4 +112,8 @@ export default [
     API_ROUTES.PAYPAL_CREATE_ORDER.slice(1),
     "routes_api/api.paypal_create_order.ts"
   ),
+  route(
+    API_ROUTES.PAYPAL_CAPTURE_ORDER.slice(1),
+    "routes_api/api.paypal_capture_order.ts"
+  ),
 ] satisfies RouteConfig;
