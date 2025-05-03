@@ -21,6 +21,7 @@ import type {
 import type {
   PrintfulV2CreateOrderRequest,
   PrintfulV2CreateOrderResponse,
+  PrintfulV2GetOrderResponse,
 } from "~/types/printful/order_types";
 
 /**
@@ -289,4 +290,16 @@ export async function createPrintfulOrder(
     method: "POST",
     body: JSON.stringify(body),
   });
+}
+
+/**
+ * Fetch a single Printful order by Printful order ID
+ */
+export async function fetchPrintfulOrderById(
+  printfulOrderId: number
+): Promise<PrintfulV2GetOrderResponse["data"]> {
+  const response = await fetchFromPrintful<PrintfulV2GetOrderResponse>(
+    `/v2/orders/${printfulOrderId}`
+  );
+  return response.data;
 }

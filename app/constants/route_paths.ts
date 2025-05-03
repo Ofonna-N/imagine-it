@@ -77,6 +77,11 @@ export const API_ROUTES = {
    * Resource route for creating a Printful order after payment
    */
   PRINTFUL_ORDER_CREATE: "/api/printful-order",
+  /**
+   * GET /api/user-orders
+   * Resource route for fetching all Printful orders for the current user
+   */
+  USER_ORDERS: "/api/user-orders",
 };
 
 // A flattened version combining all routes for easier imports

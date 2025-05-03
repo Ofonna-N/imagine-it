@@ -1,7 +1,7 @@
 import { type ActionFunctionArgs } from "react-router";
 import createSupabaseServerClient from "~/services/supabase/supabase_client.server";
 import { createPrintfulOrder } from "~/services/printful/printful_api";
-import { insertOrderAfterPrintful } from "~/db/queries/orders_queries";
+import { insertOrder } from "~/db/queries/orders_queries";
 import type { PrintfulV2CreateOrderRequest } from "~/types/printful/order_types";
 
 /**
@@ -43,7 +43,7 @@ export async function action({ request }: ActionFunctionArgs) {
   }
   // Store minimal order info in DB using the dedicated query
   try {
-    await insertOrderAfterPrintful({
+    await insertOrder({
       userId,
       printfulOrderData: printfulOrder.data,
     });

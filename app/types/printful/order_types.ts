@@ -191,3 +191,30 @@ export interface PrintfulV2OrderResponseData {
 export interface PrintfulV2CreateOrderResponse {
   data: PrintfulV2OrderResponseData;
 }
+
+/**
+ * GET /v2/orders/{order_id}
+ * Utility: Represents the response payload for fetching a single Printful order by ID.
+ */
+export interface PrintfulV2GetOrderResponse {
+  data: {
+    id: number;
+    external_id?: string;
+    store_id: number;
+    shipping: string;
+    status: string;
+    created_at: string;
+    updated_at: string;
+    recipient: PrintfulV2OrderRecipient;
+    costs: PrintfulV2OrderCosts;
+    retail_costs: PrintfulV2OrderCosts;
+    order_items: PrintfulV2OrderResponseItem[];
+    customization?: PrintfulV2OrderCustomization;
+    _links: import("./common_types").PrintfulV2Links & {
+      order_confirmation?: { href: string };
+      order_invoices?: { href: string };
+      order_items?: { href: string };
+      shipments?: { href: string };
+    };
+  };
+}

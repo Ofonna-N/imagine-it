@@ -124,4 +124,5 @@ export default [
     API_ROUTES.PRINTFUL_ORDER_CREATE.slice(1),
     "routes_api/api.printful_order.ts"
   ),
+  route(API_ROUTES.USER_ORDERS.slice(1), "routes_api/api.user_orders.ts"),
 ] satisfies RouteConfig;
