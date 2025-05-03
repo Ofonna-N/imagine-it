@@ -7,7 +7,7 @@ import {
   Button,
 } from "@mui/material";
 import { useQueryUserOrders } from "~/features/order/hooks/use_query_user_orders";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import ROUTE_PATHS from "~/constants/route_paths";
 
 // Map Printful status to user-friendly status
@@ -37,7 +37,7 @@ const getUserOrderStatus = (status: string) => {
 export default function Orders() {
   const { data, isLoading, isError } = useQueryUserOrders();
   const orders = data?.orders ?? [];
-
+  const navigate = useNavigate();
   return (
     <Box sx={{ my: 4 }}>
       <Typography variant="h4" component="h1" gutterBottom>
@@ -106,7 +106,7 @@ export default function Orders() {
                       </Box>
                       <Typography variant="body2" sx={{ mb: 1 }}>
                         {itemCount} {itemCount === 1 ? "item" : "items"} • $
-                        {order.costs?.total || "-"}
+                        {order.costs?.total ?? "-"}
                       </Typography>
                     </Grid>
                     <Grid
@@ -118,9 +118,12 @@ export default function Orders() {
                     >
                       <Button
                         variant="outlined"
-                        component={Link}
-                        to={`${ROUTE_PATHS.ORDERS}/${order.id}`}
                         sx={{ minWidth: 120 }}
+                        onClick={() => {
+                          navigate(`${ROUTE_PATHS.ORDERS}/${order.id}`, {
+                            state: { order },
+                          });
+                        }}
                       >
                         View Details
                       </Button>

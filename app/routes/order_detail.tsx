@@ -1,4 +1,4 @@
-import { useParams, Link } from "react-router";
+import { useParams, Link, useLocation } from "react-router";
 import {
   Box,
   Typography,
@@ -10,6 +10,7 @@ import {
 } from "@mui/material";
 import { useQueryUserOrders } from "~/features/order/hooks/use_query_user_orders";
 import ROUTE_PATHS from "~/constants/route_paths";
+import type { PrintfulV2GetOrderResponse } from "~/types/printful/order_types";
 
 const getUserOrderStatus = (status: string) => {
   switch (status) {
@@ -36,9 +37,16 @@ const getUserOrderStatus = (status: string) => {
 
 export default function OrderDetail() {
   const { orderId } = useParams();
-  const { data, isLoading, isError } = useQueryUserOrders();
+  const location = useLocation();
+  // Try to get the order from navigation state first for optimal UX
+  const orderFromState = location.state?.order;
+  const { data, isLoading, isError } = useQueryUserOrders({
+    enabled: !orderFromState, // Only fetch if not in state
+  });
   const orders = data?.orders ?? [];
-  const order = orders.find((o) => String(o.id) === String(orderId));
+  // Fallback: find the order in the fetched list if not in state (e.g. direct link)
+  const order: PrintfulV2GetOrderResponse["data"] =
+    orderFromState ?? orders.find((o) => String(o.id) === String(orderId));
 
   if (isLoading) {
     return (

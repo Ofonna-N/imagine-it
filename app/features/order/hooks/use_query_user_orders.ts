@@ -10,11 +10,13 @@ import type { PrintfulV2GetOrderResponse } from "~/types/printful/order_types";
  * @returns TanStack Query result containing an array of Printful order details
  */
 export const useQueryUserOrders = (
-  options?: UseQueryOptions<
-    { orders: PrintfulV2GetOrderResponse["data"][] },
-    Error,
-    { orders: PrintfulV2GetOrderResponse["data"][] },
-    ["userOrders"]
+  options?: Partial<
+    UseQueryOptions<
+      { orders: PrintfulV2GetOrderResponse["data"][] },
+      Error,
+      { orders: PrintfulV2GetOrderResponse["data"][] },
+      ["userOrders"]
+    >
   >
 ) => {
   return useQuery({
