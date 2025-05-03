@@ -50,6 +50,7 @@ import RadioGroup from "@mui/material/RadioGroup";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import FormLabel from "@mui/material/FormLabel";
 import type { PrintfulV2ShippingRate } from "~/types/printful/shipping_rates_types";
+import ROUTE_PATHS from "~/constants/route_paths";
 
 // --- Schema and Types ---
 const orderRecipientSchema = z
@@ -439,7 +440,9 @@ export default function Checkout() {
         printfulPayload
       );
       // Redirect to thank you page with order info
-      navigate("/checkout/thank-you", { state: { order: printfulOrder } });
+      navigate(ROUTE_PATHS.CHECKOUT_THANK_YOU, {
+        state: { order: printfulOrder },
+      });
     } catch (err) {
       // Handle error (e.g., show error message)
       alert("Order processing failed. Please contact support.");

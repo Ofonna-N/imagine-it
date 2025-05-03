@@ -21,6 +21,10 @@ export default [
     // Shopping cart and checkout
     route(APP_ROUTES.CART.slice(1), "routes/cart.tsx"),
     route(APP_ROUTES.CHECKOUT.slice(1), "routes/checkout.tsx"),
+    route(
+      APP_ROUTES.CHECKOUT_THANK_YOU.slice(1),
+      "routes/checkout_thank_you.tsx"
+    ),
 
     // User account routes
     route(APP_ROUTES.MY_DESIGNS.slice(1), "routes/my_designs.tsx"),

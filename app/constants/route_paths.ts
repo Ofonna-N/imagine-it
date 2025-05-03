@@ -21,6 +21,7 @@ export const APP_ROUTES = {
   ORDERS: "/orders",
   ACCOUNT: "/account",
   IMAGE_GENERATION: "/image-generation", // Added for AI image generation route
+  CHECKOUT_THANK_YOU: "/checkout/thank-you",
 };
 
 // API endpoint routes
