@@ -19,6 +19,7 @@ export const APP_ROUTES = {
   CART: "/cart",
   CHECKOUT: "/checkout",
   ORDERS: "/orders",
+  ORDER_DETAIL: "/orders/:orderId",
   ACCOUNT: "/account",
   IMAGE_GENERATION: "/image-generation", // Added for AI image generation route
   CHECKOUT_THANK_YOU: "/checkout/thank-you",

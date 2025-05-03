@@ -18,13 +18,7 @@ export async function insertOrder({
     const insertData: NewOrder = {
       user_id: userId,
       printful_order_id: printfulOrderData.id,
-      status: printfulOrderData.status,
-      total: Number(printfulOrderData.costs.total ?? 0),
-      summary: {
-        items: printfulOrderData.order_items,
-        shipping: printfulOrderData.recipient,
-        costs: printfulOrderData.costs,
-      },
+      // Only minimal fields needed
     };
     const [order] = await db.insert(orders).values(insertData).returning();
     return order;

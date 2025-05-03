@@ -27,6 +27,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
   try {
     orderIdRows = await getOrdersByUserId(userId);
   } catch (err) {
+    // Log the error for debugging purposes
+    console.error("Error fetching order IDs:", err);
     return new Response(
       JSON.stringify({ error: "Failed to fetch order IDs." }),
       { status: 500, headers: { "Content-Type": "application/json" } }
@@ -42,6 +44,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
       headers: { "Content-Type": "application/json" },
     });
   } catch (err) {
+    // Log the error for debugging purposes
+    console.error("Error fetching Printful order details:", err);
     return new Response(
       JSON.stringify({ error: "Failed to fetch Printful order details." }),
       { status: 502, headers: { "Content-Type": "application/json" } }
