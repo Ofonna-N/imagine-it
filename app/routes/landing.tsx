@@ -1,4 +1,3 @@
-import React, { useEffect } from "react";
 import {
   Box,
   Button,
@@ -10,15 +9,13 @@ import {
   Divider,
   Stack,
   useTheme,
-  AppBar,
-  Toolbar,
   Paper,
   Zoom,
   Fade,
   keyframes,
-  CardMedia, // Import CardMedia
+  CardMedia,
 } from "@mui/material";
-import { Link, useNavigate } from "react-router";
+import { useNavigate } from "react-router";
 import {
   FiArrowRight,
   FiLogIn,
@@ -26,7 +23,6 @@ import {
   FiStar,
   FiPackage,
   FiTruck,
-  FiCpu, // Added for AI step
 } from "react-icons/fi";
 // Import Swiper React components
 import { Swiper, SwiperSlide } from "swiper/react";
@@ -66,56 +62,6 @@ export default function LandingPage() {
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
-      {/* Modern navbar for landing page */}
-      <AppBar
-        position="static"
-        color="transparent"
-        elevation={0}
-        sx={{ borderBottom: `1px solid ${theme.palette.divider}` }}
-      >
-        <Toolbar>
-          <Typography
-            variant="h6"
-            sx={{
-              flexGrow: 1,
-              fontWeight: 700,
-              display: "flex",
-              alignItems: "center",
-              gap: 1,
-            }}
-          >
-            <Box
-              component="span"
-              sx={{
-                display: "inline-flex",
-                p: 1.2,
-                bgcolor: "primary.main",
-                color: "white",
-                borderRadius: "12px",
-              }}
-            >
-              <FiStar />
-            </Box>
-            Imagine It
-          </Typography>
-          <Button
-            variant="outlined"
-            startIcon={<FiLogIn />}
-            onClick={handleLogin}
-            sx={{ mr: 2 }}
-          >
-            Log In
-          </Button>
-          <Button
-            variant="contained"
-            startIcon={<FiUserPlus />}
-            onClick={handleSignup}
-          >
-            Sign Up
-          </Button>
-        </Toolbar>
-      </AppBar>
-
       <Container maxWidth="lg" sx={{ flexGrow: 1 }}>
         {/* Hero Section */}
         <Box
