@@ -1,13 +1,23 @@
 import React from "react";
-import { AppBar, Toolbar, Typography, Box, Button } from "@mui/material";
-import { FiStar, FiLogIn, FiUserPlus } from "react-icons/fi";
+import {
+  AppBar,
+  Toolbar,
+  Typography,
+  Box,
+  Button,
+  IconButton,
+} from "@mui/material";
+import { FiStar, FiLogIn, FiUserPlus, FiSun, FiMoon } from "react-icons/fi";
 import { useNavigate } from "react-router";
 import { AUTH_ROUTES } from "~/constants/route_paths";
+import { useColorScheme } from "~/context/theme_provider";
 
 export default function PublicNavbar() {
   const navigate = useNavigate();
+  const { mode, setMode } = useColorScheme();
   const handleLogin = () => navigate(AUTH_ROUTES.LOGIN);
   const handleSignup = () => navigate(AUTH_ROUTES.SIGNUP);
+  const toggleColorMode = () => setMode(mode === "light" ? "dark" : "light");
 
   return (
     <AppBar
@@ -53,9 +63,13 @@ export default function PublicNavbar() {
           variant="contained"
           startIcon={<FiUserPlus />}
           onClick={handleSignup}
+          sx={{ mr: 2 }}
         >
           Sign Up
         </Button>
+        <IconButton onClick={toggleColorMode} size="small" color="inherit">
+          {mode === "light" ? <FiMoon /> : <FiSun />}
+        </IconButton>
       </Toolbar>
     </AppBar>
   );
