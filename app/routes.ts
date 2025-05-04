@@ -7,7 +7,7 @@ export default [
   route(AUTH_ROUTES.SIGNUP.slice(1), "routes/signup.tsx"),
 
   // Main application layout - conditionally shows landing or protected content
-  layout("routes/layout.tsx", [
+  layout("routes/protected_layout.tsx", [
     // Home route is now at the root with ID for loader data access
     route(APP_ROUTES.HOME, "routes/home.tsx", { id: "home" }),
 

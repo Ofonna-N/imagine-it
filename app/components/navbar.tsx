@@ -1,11 +1,5 @@
 import { useState } from "react";
-import {
-  Outlet,
-  Link,
-  useLocation,
-  useNavigate,
-  useLoaderData,
-} from "react-router";
+import { Outlet, Link, useLocation, useNavigate } from "react-router";
 import {
   AppBar,
   Box,
@@ -19,11 +13,9 @@ import {
   ListItemText,
   Toolbar,
   Typography,
-  Container,
   Menu,
   MenuItem,
   Avatar,
-  Tooltip,
   Stack,
   alpha,
 } from "@mui/material";
@@ -39,27 +31,16 @@ import {
 import { NAV_ITEMS, PATHS } from "~/constants/navigation";
 import { useAuth } from "~/context/auth_provider";
 import { useColorScheme } from "~/context/theme_provider";
-import { LandingComponent } from "~/components/landing_component";
-import { checkAuthAndRedirect } from "~/features/auth/utils/auth_redirects";
-import type { Route } from "./+types/layout";
 
 const drawerWidth = 240;
 
-export async function loader({ request }: Route.LoaderArgs) {
-  // Use the utility function but don't redirect either way
-  return await checkAuthAndRedirect(request, null, null);
-}
-
-export default function Layout() {
-  // Get authentication status from loader data
-  const { isAuthenticated, user } = useLoaderData<typeof loader>();
+export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [userMenuAnchor, setUserMenuAnchor] = useState<null | HTMLElement>(
     null
   );
   const location = useLocation();
   const navigate = useNavigate();
-  // Only signOut is needed from auth context now
   const { signOut } = useAuth();
   const { mode, setMode } = useColorScheme();
   const cartItemsCount = 0; // Placeholder for cart items count
@@ -86,21 +67,9 @@ export default function Layout() {
     setMode(mode === "light" ? "dark" : "light");
   };
 
-  // If not authenticated, show landing page
-  // No need to check loading state anymore as we rely on server authentication
-  if (!isAuthenticated) {
-    return <LandingComponent />;
-  }
-
   const drawer = (
-    <div>
-      <Toolbar
-        sx={{
-          display: "flex",
-          justifyContent: "center",
-          py: 2,
-        }}
-      >
+    <Box>
+      <Toolbar sx={{ display: "flex", justifyContent: "center", py: 2 }}>
         <Typography
           variant="h6"
           noWrap
@@ -129,13 +98,7 @@ export default function Layout() {
           Imagine It
         </Typography>
       </Toolbar>
-      <Divider
-        sx={{
-          my: -1,
-          backgroundColor: "divider",
-        }}
-      />
-
+      <Divider sx={{ my: -1, backgroundColor: "divider" }} />
       <List sx={{ px: 2, py: 1 }}>
         {NAV_ITEMS.map((item) => (
           <ListItem key={item.text} disablePadding sx={{ mb: 0.5 }}>
@@ -167,9 +130,7 @@ export default function Layout() {
                     theme.palette.mode === "light"
                       ? "rgba(0,0,0,0.04)"
                       : "rgba(255,255,255,0.08)",
-                  "&::before": {
-                    width: "3px",
-                  },
+                  "&::before": { width: "3px" },
                   "& .MuiListItemIcon-root": {
                     color: "primary.light",
                     transform: "translateX(2px)",
@@ -181,9 +142,7 @@ export default function Layout() {
                       ? alpha(theme.palette.primary.main, 0.08)
                       : alpha(theme.palette.primary.main, 0.16),
                   borderLeft: "none",
-                  "&::before": {
-                    width: "3px",
-                  },
+                  "&::before": { width: "3px" },
                   "&:hover": {
                     backgroundColor: (theme) =>
                       theme.palette.mode === "light"
@@ -227,11 +186,11 @@ export default function Layout() {
           </ListItem>
         ))}
       </List>
-    </div>
+    </Box>
   );
 
   return (
-    <Box sx={{ display: "flex" }}>
+    <>
       <AppBar
         position="fixed"
         elevation={0}
@@ -267,7 +226,6 @@ export default function Layout() {
             Imagine It
           </Typography>
 
-          {/* Action Buttons - Right-aligned */}
           <Stack
             direction="row"
             spacing={1}
@@ -277,12 +235,10 @@ export default function Layout() {
               alignItems: "center",
             }}
           >
-            {/* Theme toggle button */}
             <IconButton onClick={toggleColorMode} size="small" sx={{ ml: 1 }}>
               {mode === "light" ? <FiMoon /> : <FiSun />}
             </IconButton>
 
-            {/* Shopping cart button */}
             <IconButton
               component={Link}
               to={PATHS.CART}
@@ -313,19 +269,8 @@ export default function Layout() {
               )}
             </IconButton>
 
-            {/* User menu button */}
-            <IconButton
-              className="navigation-action" // Add this class
-              size="small"
-              onClick={handleUserMenuOpen}
-            >
-              <Avatar
-                sx={{ width: 32, height: 32 }}
-                alt={user?.email?.charAt(0).toUpperCase() ?? "U"}
-                src={user?.user_metadata?.avatar_url}
-              >
-                {user?.email?.charAt(0).toUpperCase() ?? "U"}
-              </Avatar>
+            <IconButton size="small" onClick={handleUserMenuOpen}>
+              <Avatar sx={{ width: 32, height: 32 }} alt="User" />
             </IconButton>
           </Stack>
 
@@ -333,12 +278,7 @@ export default function Layout() {
             anchorEl={userMenuAnchor}
             open={Boolean(userMenuAnchor)}
             onClose={handleUserMenuClose}
-            slotProps={{
-              paper: {
-                elevation: 3,
-                sx: { minWidth: 180 },
-              },
-            }}
+            slotProps={{ paper: { elevation: 3, sx: { minWidth: 180 } } }}
             transformOrigin={{ horizontal: "right", vertical: "top" }}
             anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
           >
@@ -371,9 +311,7 @@ export default function Layout() {
           variant="temporary"
           open={mobileOpen}
           onClose={handleDrawerToggle}
-          ModalProps={{
-            keepMounted: true, // Better open performance on mobile
-          }}
+          ModalProps={{ keepMounted: true }}
           sx={{
             display: { xs: "block", sm: "none" },
             "& .MuiDrawer-paper": {
@@ -398,19 +336,7 @@ export default function Layout() {
           {drawer}
         </Drawer>
       </Box>
-      <Box
-        component="main"
-        sx={{
-          flexGrow: 1,
-          p: 3,
-          width: { sm: `calc(100% - ${drawerWidth}px)` },
-          marginTop: "64px",
-        }}
-      >
-        <Container maxWidth="lg">
-          <Outlet />
-        </Container>
-      </Box>
-    </Box>
+      {/* Close Box nav and fragment */}
+    </>
   );
 }

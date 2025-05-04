@@ -6,12 +6,14 @@ import createSupabaseServerClient from "~/services/supabase/supabase_client.serv
  * @param request Current request object
  * @param redirectAuthenticatedTo Path to redirect authenticated users to (usually "/")
  * @param redirectUnauthenticatedTo Path to redirect unauthenticated users to (or null to not redirect)
+ * @param throwRedirect Flag to control whether redirects are thrown or returned
  * @returns Object containing authentication status
  */
 export async function checkAuthAndRedirect(
   request: Request,
   redirectAuthenticatedTo: string | null = "/",
-  redirectUnauthenticatedTo: string | null = null
+  redirectUnauthenticatedTo: string | null = null,
+  throwRedirect: boolean = true
 ) {
   try {
     const { supabase } = createSupabaseServerClient({ request });
@@ -23,12 +25,22 @@ export async function checkAuthAndRedirect(
 
     // Redirect authenticated users away from login/signup pages
     if (isAuthenticated && redirectAuthenticatedTo) {
-      throw redirect(redirectAuthenticatedTo);
+      if (throwRedirect) {
+        throw redirect(redirectAuthenticatedTo);
+      }
+      return { isAuthenticated, user, redirectTo: redirectAuthenticatedTo };
     }
 
     // Redirect unauthenticated users away from protected pages
     if (!isAuthenticated && redirectUnauthenticatedTo) {
-      throw redirect(redirectUnauthenticatedTo);
+      if (throwRedirect) {
+        throw redirect(redirectUnauthenticatedTo);
+      }
+      return {
+        isAuthenticated,
+        user: null,
+        redirectTo: redirectUnauthenticatedTo,
+      };
     }
 
     return {
@@ -36,9 +48,8 @@ export async function checkAuthAndRedirect(
       user: {
         id: user?.id ?? null,
         email: user?.email ?? null,
-        user_metadata: user?.user_metadata || null,
-        created_at: user?.user_metadata?.created_at || null,
-        // Add any other user properties you need
+        user_metadata: user?.user_metadata ?? null,
+        created_at: user?.user_metadata?.created_at ?? null,
       },
     };
   } catch (error) {
