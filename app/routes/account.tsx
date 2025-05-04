@@ -18,7 +18,7 @@ import { FiEdit, FiCamera } from "react-icons/fi";
 import { useAuth } from "~/context/auth_provider";
 import { useNavigate, useLoaderData } from "react-router";
 import { checkAuthAndRedirect } from "~/features/auth/utils/auth_redirects";
-import type { Route } from "./+types/layout";
+import type { Route } from "./+types/account";
 
 // Add loader to get authenticated user data
 export async function loader({ request }: Route.LoaderArgs) {

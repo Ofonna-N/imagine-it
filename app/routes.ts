@@ -2,13 +2,13 @@ import { type RouteConfig, route, layout } from "@react-router/dev/routes";
 import { API_ROUTES, APP_ROUTES, AUTH_ROUTES } from "./constants/route_paths";
 
 export default [
-  layout("routes/public_layout.tsx", [
+  layout("layouts/public_layout.tsx", [
     // Public authentication routes
     route(AUTH_ROUTES.LOGIN.slice(1), "routes/login.tsx"),
     route(AUTH_ROUTES.SIGNUP.slice(1), "routes/signup.tsx"),
 
     // Protected routes under authenticated layout
-    layout("routes/protected_layout.tsx", [
+    layout("layouts/protected_layout.tsx", [
       route(APP_ROUTES.HOME.slice(1), "routes/home.tsx", { id: "home" }),
       route(APP_ROUTES.PRODUCTS.slice(1), "routes/product_listing.tsx"),
       route(
