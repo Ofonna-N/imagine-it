@@ -30,6 +30,7 @@ export default function ProtectedLayout() {
           p: 3,
           width: { sm: `calc(100% - ${drawerWidth}px)` },
           marginTop: "64px",
+          ml: { sm: `${drawerWidth}px` }, // Add left margin for permanent drawer
         }}
       >
         <Container maxWidth="lg">
