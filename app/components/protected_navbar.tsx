@@ -35,7 +35,7 @@ import { useColorScheme } from "~/context/theme_provider";
 
 const drawerWidth = 240;
 
-export default function Navbar() {
+export default function ProtectedNavbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [userMenuAnchor, setUserMenuAnchor] = useState<null | HTMLElement>(
     null

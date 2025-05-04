@@ -1,6 +1,6 @@
 import { useLoaderData, Outlet } from "react-router";
 import { Box, Container } from "@mui/material";
-import Navbar from "~/components/navbar";
+import ProtectedNavbar from "~/components/protected_navbar";
 import { LandingComponent } from "~/components/landing_component";
 import { checkAuthAndRedirect } from "~/features/auth/utils/auth_redirects";
 import type { Route } from "./+types/protected_layout";
@@ -22,7 +22,7 @@ export default function ProtectedLayout() {
 
   return (
     <>
-      <Navbar />
+      <ProtectedNavbar />
       <Box
         component="main"
         sx={{
