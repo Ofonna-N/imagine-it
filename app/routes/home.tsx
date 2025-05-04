@@ -28,6 +28,7 @@ import {
 import { Link, useRevalidator, useLoaderData } from "react-router";
 import { queryClient } from "~/context/query_provider";
 import { motion, AnimatePresence } from "framer-motion";
+import { APP_ROUTES, API_ROUTES } from "~/constants/route_paths"; // Import route constants
 
 // Define the pulse animation using MUI's keyframes
 const pulseAnimation = keyframes`
@@ -62,7 +63,7 @@ export async function clientLoader() {
   const products = await queryClient.fetchQuery({
     queryKey: ["featuredProducts"],
     queryFn: async () => {
-      const response = await fetch("/api/products/featured");
+      const response = await fetch(API_ROUTES.FEATURED_PRODUCTS); // Use constant
       return response.json();
     },
     staleTime: 10 * 60 * 1000, // 10 minutes
@@ -236,7 +237,7 @@ export default function Home() {
               variant="contained"
               size="large"
               component={Link}
-              to="/design-playground"
+              to={APP_ROUTES.IMAGE_GENERATION}
               startIcon={<FiZap />}
               sx={{
                 py: 1.5,
@@ -253,7 +254,7 @@ export default function Home() {
               variant="outlined"
               size="large"
               component={Link}
-              to="/products"
+              to={APP_ROUTES.PRODUCTS}
               startIcon={<FiShoppingBag />}
               sx={{
                 py: 1.5,
@@ -386,7 +387,7 @@ export default function Home() {
               <Button
                 variant="contained"
                 component={Link}
-                to="/products"
+                to={APP_ROUTES.PRODUCTS}
                 startIcon={<FiShoppingBag />}
                 sx={{
                   px: 3,

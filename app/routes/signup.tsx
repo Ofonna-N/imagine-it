@@ -23,7 +23,8 @@ import {
 import { checkAuthAndRedirect } from "~/features/auth/utils/auth_redirects";
 import { SocialSignIn } from "~/features/auth/components/social_signin";
 import { useSnackbar } from "notistack";
-import type { Route } from "./+types/layout";
+import type { Route } from "./+types/signup";
+import { APP_ROUTES, AUTH_ROUTES } from "~/constants/route_paths"; // Import route constants
 
 // Add animation for visual feedback
 const iconPulse = keyframes`
@@ -35,7 +36,7 @@ const iconPulse = keyframes`
 // Add loader function that checks if user is already authenticated
 export async function loader({ request }: Route.LoaderArgs) {
   // Redirect to home if already authenticated
-  return await checkAuthAndRedirect(request, "/");
+  return await checkAuthAndRedirect(request, APP_ROUTES.HOME);
 }
 
 export default function SignupPage() {
@@ -73,7 +74,7 @@ export default function SignupPage() {
           );
 
           // Redirect after a delay
-          setTimeout(() => navigate("/"), 5000);
+          setTimeout(() => navigate(APP_ROUTES.HOME), 5000);
         },
       }
     );
@@ -272,7 +273,7 @@ export default function SignupPage() {
                   Already have an account?{" "}
                   <MuiLink
                     component={Link}
-                    to="/login"
+                    to={AUTH_ROUTES.LOGIN} // Use AUTH_ROUTES
                     sx={{
                       fontWeight: 600,
                       "&:hover": {

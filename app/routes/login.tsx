@@ -21,12 +21,13 @@ import {
 } from "~/features/auth/hooks/use_auth_mutations";
 import { SocialSignIn } from "~/features/auth/components/social_signin";
 import { checkAuthAndRedirect } from "~/features/auth/utils/auth_redirects";
-import type { Route } from "./+types/layout";
+import type { Route } from "./+types/login";
+import { APP_ROUTES, AUTH_ROUTES } from "~/constants/route_paths"; // Import route constants
 
 // Add loader function that checks if user is already authenticated
 export async function loader({ request }: Route.LoaderArgs) {
   // Redirect to home if already authenticated
-  return await checkAuthAndRedirect(request, "/");
+  return await checkAuthAndRedirect(request, APP_ROUTES.HOME);
 }
 
 export default function LoginPage() {
@@ -49,7 +50,7 @@ export default function LoginPage() {
   const onSubmit = (data: LoginFormValues) => {
     login.mutate(data, {
       onSuccess: () => {
-        navigate("/");
+        navigate(APP_ROUTES.HOME);
       },
     });
   };
@@ -202,7 +203,7 @@ export default function LoginPage() {
                 Don't have an account?{" "}
                 <MuiLink
                   component={Link}
-                  to="/signup"
+                  to={AUTH_ROUTES.SIGNUP} // Use AUTH_ROUTES
                   sx={{
                     fontWeight: 600,
                     "&:hover": {

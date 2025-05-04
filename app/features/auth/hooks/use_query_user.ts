@@ -1,5 +1,6 @@
 import { useQuery, type UseQueryOptions } from "@tanstack/react-query";
 import type { User } from "@supabase/supabase-js";
+import { API_ROUTES } from "~/constants/route_paths"; // Import API route constants
 
 type CompactUserProfile = Pick<User, "id" | "email" | "user_metadata">;
 
@@ -41,7 +42,8 @@ export function useQueryUser({
   return useQuery({
     queryKey: ["user", params],
     queryFn: async () => {
-      const response = await fetch("/api/auth/session", {
+      const response = await fetch(API_ROUTES.AUTH.SESSION, {
+        // Use constant
         credentials: "include",
       });
 
@@ -52,7 +54,7 @@ export function useQueryUser({
 
       try {
         const data = await response.json();
-        return { user: data.user || null };
+        return { user: data.user ?? null };
       } catch (error) {
         // Handle JSON parsing errors or other issues
         console.error("Error fetching or parsing user session:", error);

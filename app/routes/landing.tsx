@@ -34,6 +34,7 @@ import "swiper/css/effect-fade";
 // Import required Swiper modules
 import { Autoplay, Pagination, Navigation, EffectFade } from "swiper/modules";
 import heroImg1 from "~/assets/hero-img-1.jpg";
+import { AUTH_ROUTES } from "~/constants/route_paths";
 
 // Define animations
 const floatAnimation = keyframes`
@@ -53,11 +54,11 @@ export default function LandingPage() {
   const navigate = useNavigate();
 
   const handleLogin = () => {
-    navigate("/login");
+    navigate(AUTH_ROUTES.LOGIN);
   };
 
   const handleSignup = () => {
-    navigate("/signup");
+    navigate(AUTH_ROUTES.SIGNUP);
   };
 
   return (

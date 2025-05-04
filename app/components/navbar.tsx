@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Outlet, Link, useLocation, useNavigate } from "react-router";
+import { Link, useLocation, useNavigate } from "react-router";
 import {
   AppBar,
   Box,
@@ -28,7 +28,8 @@ import {
   FiMoon,
   FiImage,
 } from "react-icons/fi";
-import { NAV_ITEMS, PATHS } from "~/constants/navigation";
+import { NAV_ITEMS } from "~/constants/navigation";
+import { APP_ROUTES } from "~/constants/route_paths";
 import { useAuth } from "~/context/auth_provider";
 import { useColorScheme } from "~/context/theme_provider";
 
@@ -60,7 +61,7 @@ export default function Navbar() {
   const handleSignOut = async () => {
     handleUserMenuClose();
     await signOut();
-    navigate("/");
+    navigate(APP_ROUTES.HOME);
   };
 
   const toggleColorMode = () => {
@@ -106,8 +107,10 @@ export default function Navbar() {
               component={Link}
               to={item.path}
               selected={
+                // Use APP_ROUTES for path comparison
                 location.pathname === item.path ||
-                (item.path !== "/" && location.pathname.startsWith(item.path))
+                (item.path !== APP_ROUTES.HOME &&
+                  location.pathname.startsWith(item.path))
               }
               sx={{
                 borderRadius: 0,
@@ -241,7 +244,7 @@ export default function Navbar() {
 
             <IconButton
               component={Link}
-              to={PATHS.CART}
+              to={APP_ROUTES.CART}
               size="small"
               sx={{ position: "relative" }}
             >
@@ -284,7 +287,7 @@ export default function Navbar() {
           >
             <MenuItem
               component={Link}
-              to="/account"
+              to={APP_ROUTES.ACCOUNT}
               onClick={handleUserMenuClose}
             >
               <ListItemIcon>

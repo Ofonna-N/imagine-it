@@ -18,12 +18,13 @@ import { FiEdit, FiCamera } from "react-icons/fi";
 import { useAuth } from "~/context/auth_provider";
 import { useNavigate, useLoaderData } from "react-router";
 import { checkAuthAndRedirect } from "~/features/auth/utils/auth_redirects";
+import { AUTH_ROUTES } from "~/constants/route_paths"; // Import AUTH_ROUTES
 import type { Route } from "./+types/account";
 
 // Add loader to get authenticated user data
 export async function loader({ request }: Route.LoaderArgs) {
   // Redirect to login if not authenticated
-  return await checkAuthAndRedirect(request, null, "/login");
+  return await checkAuthAndRedirect(request, null, AUTH_ROUTES.LOGIN);
 }
 
 export default function AccountPage() {
@@ -34,16 +35,16 @@ export default function AccountPage() {
 
   // Example user details - replace with actual user data in a real implementation
   const userDetails = {
-    name: user?.user_metadata?.name || user?.email?.split("@")[0] || "User",
+    name: user?.user_metadata?.name ?? user?.email?.split("@")[0] ?? "User",
     email: user?.email ?? "user@example.com",
-    memberSince: new Date(user?.created_at || Date.now()).toLocaleDateString(),
-    shippingAddress: user?.user_metadata?.shipping_address || "None added yet",
-    paymentMethods: user?.user_metadata?.payment_methods || [],
+    memberSince: new Date(user?.created_at ?? Date.now()).toLocaleDateString(),
+    shippingAddress: user?.user_metadata?.shipping_address ?? "None added yet",
+    paymentMethods: user?.user_metadata?.payment_methods ?? [],
   };
 
   const handleLogout = async () => {
     await signOut();
-    navigate("/login");
+    navigate(AUTH_ROUTES.LOGIN);
   };
 
   const toggleEdit = () => {
