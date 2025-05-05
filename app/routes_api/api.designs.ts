@@ -19,15 +19,16 @@ export async function loader({ request }: { request: Request }) {
   // If requesting a single design by ID
   if (designId) {
     const {
-      data: { session },
-    } = await supabase.auth.getSession();
-    if (!session?.user) {
+      data: { user },
+      error,
+    } = await supabase.auth.getUser();
+    if (error || !user) {
       return new Response(JSON.stringify({ design: null }), {
         headers: { ...headers, "Content-Type": "application/json" },
         status: 401,
       });
     }
-    const userId = session.user.id;
+    const userId = user.id;
 
     const design = await getDesignByIdAndUser(designId, userId);
     return new Response(JSON.stringify({ design }), {
@@ -38,16 +39,17 @@ export async function loader({ request }: { request: Request }) {
 
   // Existing list loader logic...
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
 
-  if (!session?.user) {
+  if (error || !user) {
     return new Response(JSON.stringify({ designs: [] }), {
       headers: { ...headers, "Content-Type": "application/json" },
       status: 401,
     });
   }
-  const userId = session.user.id;
+  const userId = user.id;
 
   const designs = await getDesignsByUserId(userId);
   return new Response(JSON.stringify({ designs }), {
@@ -63,16 +65,17 @@ export async function loader({ request }: { request: Request }) {
 export async function action({ request }: { request: Request }) {
   const { headers, supabase } = createSupabaseServerClient({ request });
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
 
-  if (!session?.user) {
+  if (error || !user) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
       headers: { ...headers, "Content-Type": "application/json" },
       status: 401,
     });
   }
-  const userId = session.user.id;
+  const userId = user.id;
 
   const formData = await request.formData();
   const file = formData.get("file") as Blob | null;

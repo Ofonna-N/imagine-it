@@ -12,10 +12,11 @@ export async function action({ request }: ActionFunctionArgs) {
   // Use Supabase server client to get user session
   const { supabase } = createSupabaseServerClient({ request });
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  const userId = session?.user?.id;
-  if (!userId) {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
+  const userId = user?.id;
+  if (error || !userId) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
       status: 401,
       headers: { "Content-Type": "application/json" },

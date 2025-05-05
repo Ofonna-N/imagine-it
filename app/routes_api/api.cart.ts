@@ -1,6 +1,5 @@
 import { type ActionFunctionArgs } from "react-router";
 import { getStoragePath } from "../utils/storage_path";
-import { randomUUID } from "crypto";
 import {
   addCartItem,
   getCartItems,
@@ -24,11 +23,11 @@ import type { PrintfulV2OrderItem } from "~/types/printful/order_types";
 async function getUserIdFromRequest(request: Request): Promise<string | null> {
   const { supabase } = createSupabaseServerClient({ request });
   const {
-    data: { session },
+    data: { user },
     error,
-  } = await supabase.auth.getSession();
-  if (error || !session?.user?.id) return null;
-  return session.user.id;
+  } = await supabase.auth.getUser();
+  if (error || !user?.id) return null;
+  return user.id;
 }
 
 export async function loader({ request }: { request: Request }) {
