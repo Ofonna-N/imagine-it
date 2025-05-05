@@ -9,7 +9,7 @@ import {
 } from "@mui/material";
 import { Link } from "react-router";
 import { FiEdit } from "react-icons/fi";
-import type { PrintfulV2CatalogProduct } from "~/types/printful";
+import type { PrintfulV2CatalogProduct } from "~/types/printful/catalog_product_types";
 
 interface ProductCardProps {
   readonly product: PrintfulV2CatalogProduct;

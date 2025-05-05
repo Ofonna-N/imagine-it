@@ -1,7 +1,7 @@
 import { Box, Grid, Typography } from "@mui/material";
 import { ProductCard } from "./product_card";
 import { motion } from "framer-motion";
-import type { PrintfulV2CatalogProduct } from "~/types/printful";
+import type { PrintfulV2CatalogProduct } from "~/types/printful/catalog_product_types";
 
 interface ProductGridProps {
   catalogProducts: PrintfulV2CatalogProduct[];

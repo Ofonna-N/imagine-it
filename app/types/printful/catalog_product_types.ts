@@ -137,3 +137,37 @@ export interface PrintfulV2Category {
 // Catalog categories list response (v2)
 export interface PrintfulV2CategoriesResponse
   extends PrintfulV2BaseResponse<PrintfulV2Category[]> {}
+
+// V1 API Product type definition
+/**
+ * GET /products
+ * Utility: Represents a single product returned by the Printful v1 API.
+ */
+export type PrintfulV1CatalogProduct = {
+  id: number;
+  main_category_id: number;
+  type: string;
+  type_name: string;
+  title: string;
+  brand?: string;
+  model?: string;
+  image: string;
+  variant_count: number;
+  currency: string;
+  files: any[];
+  options: any[];
+  is_discontinued: boolean;
+  avg_fulfillment_time: number;
+  description?: string;
+  techniques: any[];
+  origin_country: string;
+};
+
+/**
+ * GET /products
+ * Utility: Represents the response payload for the Printful v1 products endpoint.
+ */
+export type PrintfulV1CatalogProductResponse = {
+  code: number;
+  result: PrintfulV1CatalogProduct[];
+};

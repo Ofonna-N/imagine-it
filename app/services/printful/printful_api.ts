@@ -11,6 +11,7 @@ import type {
   PrintfulV2CatalogVariantsResponse,
   PrintfulV2CategoriesResponse,
   PrintfulV2ProductAvailabilityResponse,
+  PrintfulV1CatalogProductResponse,
 } from "~/types/printful/catalog_product_types";
 import type { PrintfulV2CatalogVariantAvailabilityResponse } from "~/types/printful/catalog_variant_availability_types";
 import type { PrintfulV2CatalogVariantPricesResponse } from "~/types/printful/catalog_variant_prices_types";
@@ -302,4 +303,25 @@ export async function fetchPrintfulOrderById(
     `/v2/orders/${printfulOrderId}`
   );
   return response.data;
+}
+
+/**
+ * GET /products
+ * Utility: Fetches all catalog products from the Printful v1 API.
+ * Returns an array of PrintfulV1CatalogProduct objects.
+ */
+export async function fetchV1CatalogProducts(params?: {
+  categoryIds?: string;
+}) {
+  // GET /products
+  // Utility: Fetches all catalog products from the Printful v1 API.
+  // Accepts an optional categoryId query parameter via params object.
+  // Returns an array of PrintfulV1CatalogProduct objects.
+  let endpoint = "/products";
+  if (params?.categoryIds) {
+    const queryParams = new URLSearchParams();
+    queryParams.append("category_id", params.categoryIds);
+    endpoint += `?${queryParams.toString()}`;
+  }
+  return fetchFromPrintful<PrintfulV1CatalogProductResponse>(endpoint);
 }
