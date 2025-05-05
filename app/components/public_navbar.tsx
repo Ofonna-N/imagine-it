@@ -9,7 +9,7 @@ import {
 } from "@mui/material";
 import { FiStar, FiLogIn, FiUserPlus, FiSun, FiMoon } from "react-icons/fi";
 import { useNavigate } from "react-router";
-import { AUTH_ROUTES } from "~/constants/route_paths";
+import { AUTH_ROUTES, APP_ROUTES } from "~/constants/route_paths";
 import { useColorScheme } from "~/context/theme_provider";
 
 export default function PublicNavbar() {
@@ -18,6 +18,7 @@ export default function PublicNavbar() {
   const handleLogin = () => navigate(AUTH_ROUTES.LOGIN);
   const handleSignup = () => navigate(AUTH_ROUTES.SIGNUP);
   const toggleColorMode = () => setMode(mode === "light" ? "dark" : "light");
+  const handleLogoClick = () => navigate(APP_ROUTES.HOME);
 
   return (
     <AppBar
@@ -29,12 +30,16 @@ export default function PublicNavbar() {
       <Toolbar>
         <Typography
           variant="h6"
+          onClick={handleLogoClick}
           sx={{
             flexGrow: 1,
             fontWeight: 700,
             display: "flex",
             alignItems: "center",
             gap: 1,
+            cursor: "pointer",
+            transition: "color 0.2s",
+            "&:hover": { color: "primary.main" },
           }}
         >
           <Box
