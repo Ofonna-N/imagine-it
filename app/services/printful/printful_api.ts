@@ -210,11 +210,12 @@ export async function fetchCatalogProductMockupStyles(
 ) {
   // Build endpoint with optional placements filter
   let endpoint = `/v2/catalog-products/${productId}/mockup-styles`;
+  const params = new URLSearchParams();
+  params.append("limit", "100");
   if (placements && placements.length > 0) {
-    const params = new URLSearchParams();
     params.append("placements", placements.join(","));
-    endpoint += `?${params.toString()}`;
   }
+  endpoint += `?${params.toString()}`;
   return fetchFromPrintful<PrintfulV2MockupStylesResponse>(endpoint);
 }
 
