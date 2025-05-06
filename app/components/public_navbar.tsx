@@ -10,7 +10,7 @@ import {
 import { FiStar, FiLogIn, FiUserPlus, FiSun, FiMoon } from "react-icons/fi";
 import { useNavigate } from "react-router";
 import { AUTH_ROUTES, APP_ROUTES } from "~/constants/route_paths";
-import { useColorScheme } from "~/context/theme_provider";
+import { useColorScheme } from "~/context/mui_theme_provider";
 
 export default function PublicNavbar() {
   const navigate = useNavigate();

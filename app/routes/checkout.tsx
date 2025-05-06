@@ -33,7 +33,6 @@ import { useMutatePaypalCaptureOrder } from "~/features/order/hooks/use_mutate_p
 import Dialog from "@mui/material/Dialog";
 import CircularProgress from "@mui/material/CircularProgress";
 import {
-  PayPalCardFieldsProvider,
   PayPalNameField,
   PayPalNumberField,
   PayPalExpiryField,
@@ -318,7 +317,6 @@ export default function Checkout() {
     status: recipientDataStatus,
   } = useQueryRecipient();
   const mutateRecipient = useMutateRecipient();
-  const formState = useFormState({ control: shippingForm.control });
   const [activeStep, setActiveStep] = useState(0);
   const paypalCreateOrderMutation = useMutatePaypalCreateOrder();
   const paypalCaptureOrderMutation = useMutatePaypalCaptureOrder();
@@ -353,7 +351,6 @@ export default function Checkout() {
       const valid = await shippingForm.trigger("shipping");
       if (!valid) return;
       setActiveStep(step);
-      return;
     }
   };
 
@@ -425,7 +422,7 @@ export default function Checkout() {
     setPaypalDialogOpen(false);
     if (!data.orderID) return;
     try {
-      const captureResult = await paypalCaptureOrderMutation.mutateAsync({
+      await paypalCaptureOrderMutation.mutateAsync({
         orderId: data.orderID,
       });
       // Prepare Printful order payload
@@ -448,8 +445,13 @@ export default function Checkout() {
         state: { order: printfulOrder },
       });
     } catch (err) {
-      // Handle error (e.g., show error message)
-      alert("Order processing failed. Please contact support.");
+      // Handle error by setting an error state to display in the UI
+      setPaypalDialogOpen(false);
+      // Optionally, you can set an error state and show a Snackbar or Typography in your component
+      // For demonstration, we'll log the error and you should display it in the UI as needed
+      console.error("Order processing failed:", err);
+      // Optionally, set an error state here and display it in the UI
+      // setOrderError("Order processing failed. Please contact support.");
     }
   };
 
@@ -606,14 +608,14 @@ export default function Checkout() {
                         Select Shipping Method
                       </FormLabel>
                       <RadioGroup
-                        value={selectedShippingRate?.shipping || ""}
+                        value={selectedShippingRate?.shipping ?? ""}
                         onChange={(e) => {
                           const rate = shippingRates.find(
                             (r) => r.shipping === e.target.value
                           );
                           setSelectedShippingRate(rate || null);
-                          setShippingRate(Number(rate?.rate || 0));
-                          setTotal(subtotal + Number(rate?.rate || 0) + tax);
+                          setShippingRate(Number(rate?.rate ?? 0));
+                          setTotal(subtotal + Number(rate?.rate ?? 0) + tax);
                         }}
                       >
                         {shippingRates.length === 0 ? (
@@ -661,33 +663,36 @@ export default function Checkout() {
                                   </Typography>
                                 </Box>
                               }
-                              sx={{
-                                alignItems: "flex-start",
-                                py: 1.5,
-                                mx: 0,
-                                "& .MuiFormControlLabel-label": {
-                                  width: "100%",
+                              sx={[
+                                {
+                                  alignItems: "flex-start",
+                                  py: 1.5,
+                                  mx: 0,
+                                  "& .MuiFormControlLabel-label": {
+                                    width: "100%",
+                                  },
+                                  borderRadius: 2,
+                                  border: (theme) =>
+                                    `1px solid ${theme.palette.divider}`,
+                                  mb: 1,
+                                  pl: 2,
+                                  pr: 1,
+                                  backgroundColor: "rgba(0,0,0,0.02)",
+                                  transition: "background 0.2s, border 0.2s",
                                 },
-                                borderRadius: 2,
-                                border: (theme) =>
-                                  `1px solid ${theme.palette.divider}`,
-                                mb: 1,
-                                pl: 2,
-                                pr: 1,
-                                backgroundColor: (theme) =>
-                                  theme.palette.mode === "dark"
-                                    ? "rgba(255,255,255,0.02)"
-                                    : "rgba(0,0,0,0.02)",
-                                "&.Mui-checked, &.Mui-selected": {
-                                  backgroundColor: (theme) =>
-                                    theme.palette.mode === "dark"
-                                      ? "rgba(25, 118, 210, 0.08)"
-                                      : "rgba(25, 118, 210, 0.08)",
-                                  borderColor: (theme) =>
-                                    theme.palette.primary.main,
-                                },
-                                transition: "background 0.2s, border 0.2s",
-                              }}
+                                (theme) =>
+                                  theme.applyStyles("dark", {
+                                    backgroundColor: "rgba(255,255,255,0.02)",
+                                  }),
+                                (theme) =>
+                                  theme.applyStyles("dark", {
+                                    "&.Mui-checked, &.Mui-selected": {
+                                      backgroundColor:
+                                        "rgba(25, 118, 210, 0.08)",
+                                      borderColor: theme.palette.primary.main,
+                                    },
+                                  }),
+                              ]}
                             />
                           ))
                         )}

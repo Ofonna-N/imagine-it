@@ -31,7 +31,7 @@ import {
 import { NAV_ITEMS } from "~/constants/navigation";
 import { APP_ROUTES } from "~/constants/route_paths";
 import { useAuth } from "~/context/auth_provider";
-import { useColorScheme } from "~/context/theme_provider";
+import { useColorScheme } from "~/context/mui_theme_provider";
 
 const drawerWidth = 240;
 
@@ -112,56 +112,66 @@ export default function ProtectedNavbar() {
                 (item.path !== APP_ROUTES.HOME &&
                   location.pathname.startsWith(item.path))
               }
-              sx={{
-                borderRadius: 0,
-                py: 1.75,
-                borderLeft: "3px solid transparent",
-                transition: "all 0.2s ease",
-                position: "relative",
-                "&::before": {
-                  content: '""',
-                  position: "absolute",
-                  left: 0,
-                  top: 0,
-                  bottom: 0,
-                  width: 0,
-                  backgroundColor: "primary.main",
-                  transition: "width 0.2s ease",
-                },
-                "&:hover": {
-                  backgroundColor: (theme) =>
-                    theme.palette.mode === "light"
-                      ? "rgba(0,0,0,0.04)"
-                      : "rgba(255,255,255,0.08)",
-                  "&::before": { width: "3px" },
-                  "& .MuiListItemIcon-root": {
-                    color: "primary.light",
-                    transform: "translateX(2px)",
+              sx={[
+                {
+                  borderRadius: 0,
+                  py: 1.75,
+                  borderLeft: "3px solid transparent",
+                  transition: "all 0.2s ease",
+                  position: "relative",
+                  "&::before": {
+                    content: '""',
+                    position: "absolute",
+                    left: 0,
+                    top: 0,
+                    bottom: 0,
+                    width: 0,
+                    backgroundColor: "primary.main",
+                    transition: "width 0.2s ease",
                   },
-                },
-                "&.Mui-selected": {
-                  backgroundColor: (theme) =>
-                    theme.palette.mode === "light"
-                      ? alpha(theme.palette.primary.main, 0.08)
-                      : alpha(theme.palette.primary.main, 0.16),
-                  borderLeft: "none",
-                  "&::before": { width: "3px" },
                   "&:hover": {
+                    backgroundColor: "rgba(0,0,0,0.04)",
+                    "&::before": { width: "3px" },
+                    "& .MuiListItemIcon-root": {
+                      color: "primary.light",
+                      transform: "translateX(2px)",
+                    },
+                  },
+                  "&.Mui-selected": {
                     backgroundColor: (theme) =>
-                      theme.palette.mode === "light"
-                        ? alpha(theme.palette.primary.main, 0.12)
-                        : alpha(theme.palette.primary.main, 0.24),
-                  },
-                  "& .MuiListItemIcon-root": {
-                    color: "primary.main",
-                    transform: "translateX(2px) scale(1.1)",
-                  },
-                  "& .MuiListItemText-primary": {
-                    fontWeight: 600,
-                    color: "primary.main",
+                      alpha(theme.palette.primary.main, 0.08),
+                    borderLeft: "none",
+                    "&::before": { width: "3px" },
+                    "&:hover": {
+                      backgroundColor: (theme) =>
+                        alpha(theme.palette.primary.main, 0.12),
+                    },
+                    "& .MuiListItemIcon-root": {
+                      color: "primary.main",
+                      transform: "translateX(2px) scale(1.1)",
+                    },
+                    "& .MuiListItemText-primary": {
+                      fontWeight: 600,
+                      color: "primary.main",
+                    },
                   },
                 },
-              }}
+                (theme) =>
+                  theme.applyStyles("dark", {
+                    "&:hover": {
+                      backgroundColor: "rgba(255,255,255,0.08)",
+                    },
+                    "&.Mui-selected": {
+                      backgroundColor: alpha(theme.palette.primary.main, 0.16),
+                      "&:hover": {
+                        backgroundColor: alpha(
+                          theme.palette.primary.main,
+                          0.24
+                        ),
+                      },
+                    },
+                  }),
+              ]}
             >
               <ListItemIcon
                 sx={{

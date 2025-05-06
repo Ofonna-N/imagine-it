@@ -467,12 +467,14 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
         <IconButton
           aria-label="close"
           onClick={onClose}
-          sx={{
-            position: "absolute",
-            right: 8,
-            top: 8,
-            color: (theme) => theme.palette.grey[500],
-          }}
+          sx={[
+            {
+              position: "absolute",
+              right: 8,
+              top: 8,
+              color: (theme) => theme.palette.grey[500],
+            },
+          ]}
         >
           <FiX />
         </IconButton>

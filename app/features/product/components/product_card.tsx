@@ -65,19 +65,22 @@ export function ProductCard({ product, featured = false }: ProductCardProps) {
         color="primary"
         size="small"
         icon={<FiEdit size={12} />}
-        sx={{
-          position: "absolute",
-          top: featured ? 40 : 8,
-          right: 8,
-          zIndex: 10,
-          fontWeight: 600,
-          background: (theme) =>
-            theme.palette.mode === "light"
-              ? "rgba(121, 40, 202, 0.9)"
-              : "rgba(182, 101, 255, 0.9)",
-          color: "#FFF",
-          boxShadow: "0 4px 12px rgba(121, 40, 202, 0.3)",
-        }}
+        sx={[
+          {
+            position: "absolute",
+            top: featured ? 40 : 8,
+            right: 8,
+            zIndex: 10,
+            fontWeight: 600,
+            background: "rgba(121, 40, 202, 0.9)",
+            color: "#FFF",
+            boxShadow: "0 4px 12px rgba(121, 40, 202, 0.3)",
+          },
+          (theme) =>
+            theme.applyStyles("dark", {
+              background: "rgba(182, 101, 255, 0.9)",
+            }),
+        ]}
       />
 
       <CardActionArea
@@ -160,22 +163,25 @@ export function ProductCard({ product, featured = false }: ProductCardProps) {
             <Typography
               variant="caption"
               color="text.secondary"
-              sx={{
-                display: "block",
-                textAlign: "center",
-                fontSize: "0.75rem",
-                fontWeight: 500,
-                px: 1,
-                py: 0.25,
-                mx: "auto",
-                borderRadius: "4px",
-                width: "fit-content",
-                mb: 0.75,
-                bgcolor: (theme) =>
-                  theme.palette.mode === "light"
-                    ? "rgba(0,0,0,0.04)"
-                    : "rgba(255,255,255,0.08)",
-              }}
+              sx={[
+                {
+                  display: "block",
+                  textAlign: "center",
+                  fontSize: "0.75rem",
+                  fontWeight: 500,
+                  px: 1,
+                  py: 0.25,
+                  mx: "auto",
+                  borderRadius: "4px",
+                  width: "fit-content",
+                  mb: 0.75,
+                  bgcolor: "rgba(0,0,0,0.04)",
+                },
+                (theme) =>
+                  theme.applyStyles("dark", {
+                    bgcolor: "rgba(255,255,255,0.08)",
+                  }),
+              ]}
             >
               {product.type}
             </Typography>
