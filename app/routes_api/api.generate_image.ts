@@ -53,8 +53,8 @@ export async function action({ request }: { request: Request }) {
         prompt: body.prompt,
         seed,
         resolution,
-        output_format: "png",
-        speed_mode: "Lightly Juiced 🍊 (more consistent)",
+        output_format: "webp",
+        speed_mode: "Juiced 🔥 (more speed)",
       } as PRUNAAI_HIDREAM_L1_FAST_SCHEMA["input"],
     });
 
