@@ -24,6 +24,8 @@ import type {
   PrintfulV2CreateOrderResponse,
   PrintfulV2GetOrderResponse,
 } from "~/types/printful/order_types";
+import { mapV1ToV2CatalogProduct } from "~/utils/printful_product_mapper";
+import { produce } from "immer";
 
 /**
  * Creates headers for Printful API requests
@@ -134,50 +136,27 @@ export async function fetchCatalogCategories() {
 }
 
 /**
- * Fetches featured products using the v2 API with random pagination
+ * Fetches featured products using v1 API, picks a random set immutably with immer, and maps to v2 schema
  */
 export async function fetchCatalogFeaturedProducts(
   limit: number = 6
 ): Promise<PrintfulV2CatalogProduct[]> {
-  try {
-    // First, get the total count of products without fetching all products
-    const countResponse = await fetchCatalogProducts({
-      limit: 1, // Just need minimal data to get total count
-    });
+  // Fetch all v1 products
+  const v1Response = await fetchV1CatalogProducts();
+  const allProducts = v1Response.result;
+  if (!Array.isArray(allProducts) || allProducts.length === 0) return [];
 
-    // Make sure we have a valid response with paging data - Use optional chaining
-    if (!countResponse?.paging) {
-      console.error("Unexpected API response format:", countResponse);
-      throw new Error("Unexpected API response format");
+  // Use immer to produce an immutable shuffled copy (Fisher-Yates shuffle)
+  const shuffled = produce(allProducts, (draft) => {
+    for (let i = draft.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [draft[i], draft[j]] = [draft[j], draft[i]];
     }
+  });
+  const selected = shuffled.slice(0, limit);
 
-    const totalProducts = countResponse.paging.total;
-
-    // If there are fewer products than the limit, just return them all
-    if (totalProducts <= limit) {
-      const response = await fetchCatalogProducts({
-        limit: totalProducts,
-      });
-      return response.data;
-    }
-
-    // Generate a random offset to get a random page of products
-    // Ensure we don't go beyond available products considering our limit
-    const maxOffset = totalProducts - limit;
-    const randomOffset = Math.floor(Math.random() * maxOffset);
-
-    // Fetch random products using pagination
-    const response = await fetchCatalogProducts({
-      limit,
-      offset: randomOffset,
-    });
-
-    // Return the randomly offset products
-    return response.data;
-  } catch (error) {
-    console.error("Error fetching featured products from Printful:", error);
-    throw error;
-  }
+  // Map to v2 schema
+  return selected.map(mapV1ToV2CatalogProduct);
 }
 
 /**

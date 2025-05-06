@@ -1,5 +1,5 @@
 import { useQuery, type UseQueryOptions } from "@tanstack/react-query";
-import type { PrintfulV2CatalogProduct } from "~/types/printful";
+import type { PrintfulV2CatalogProduct } from "~/types/printful/catalog_product_types";
 
 interface FeaturedProductsParams {
   limit?: number;
