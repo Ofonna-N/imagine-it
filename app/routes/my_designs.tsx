@@ -14,6 +14,7 @@ import {
   DialogContent,
   DialogActions,
   CircularProgress,
+  Tooltip,
 } from "@mui/material";
 import { useState } from "react";
 import { FiEdit, FiTrash2, FiShoppingCart, FiEye } from "react-icons/fi";
@@ -105,9 +106,25 @@ export default function MyDesigns() {
                   sx={{ cursor: "pointer" }}
                 />
                 <CardContent sx={{ flexGrow: 1 }}>
-                  <Typography variant="h6" component="h2" gutterBottom>
-                    {design.name}
-                  </Typography>
+                  <Tooltip title={design.name} placement="top" arrow>
+                    <Typography
+                      variant="h6"
+                      component="h2"
+                      gutterBottom
+                      sx={{
+                        display: "-webkit-box",
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: "vertical",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "normal",
+                        minHeight: "3em",
+                        cursor: "pointer",
+                      }}
+                    >
+                      {design.name}
+                    </Typography>
+                  </Tooltip>
                   <Box
                     sx={{
                       display: "flex",
