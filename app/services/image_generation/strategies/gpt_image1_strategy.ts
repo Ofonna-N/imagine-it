@@ -25,13 +25,13 @@ export class GptImage1Strategy implements ImageGenerationStrategy {
       size,
       quality: "medium",
       n: 1,
-      output_format: "webp",
+      output_format: input.transparent ? "png" : "jpeg",
       background: input.transparent ? "transparent" : "auto",
     });
     return (
       result?.data?.map((img) => {
         if (img.b64_json) {
-          return `data:image/webp;base64,${img.b64_json}`;
+          return `data:image/jpeg;base64,${img.b64_json}`;
         } else if (img.url) {
           return img.url;
         }

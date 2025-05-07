@@ -26,7 +26,7 @@ export class PrunaaiFastStrategy implements ImageGenerationStrategy {
         prompt: input.prompt,
         seed,
         resolution,
-        output_format: "webp",
+        output_format: "jpg",
         speed_mode: "Juiced 🔥 (more speed)",
       },
     });

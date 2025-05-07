@@ -27,7 +27,7 @@ export class DallE3Strategy implements ImageGenerationStrategy {
     return (
       result?.data?.map((img) => {
         if (img.b64_json) {
-          return `data:image/webp;base64,${img.b64_json}`;
+          return `data:image/jpeg;base64,${img.b64_json}`;
         } else if (img.url) {
           return img.url;
         }
