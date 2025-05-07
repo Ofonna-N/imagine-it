@@ -10,10 +10,10 @@ export class DallE3Strategy implements ImageGenerationStrategy {
     let size: ImageGenerateParams["size"] = "1024x1024";
     switch (input.orientation) {
       case "landscape":
-        size = "1536x1024";
+        size = "1792x1024";
         break;
       case "portrait":
-        size = "1024x1536";
+        size = "1024x1792";
         break;
     }
 
@@ -23,9 +23,16 @@ export class DallE3Strategy implements ImageGenerationStrategy {
       size,
       quality: "standard",
       n: 1,
-      response_format: "url",
-      output_format: "webp",
     });
-    return result?.data?.map((img: any) => img.url) ?? [];
+    return (
+      result?.data?.map((img) => {
+        if (img.b64_json) {
+          return `data:image/webp;base64,${img.b64_json}`;
+        } else if (img.url) {
+          return img.url;
+        }
+        return "";
+      }) ?? []
+    );
   }
 }
