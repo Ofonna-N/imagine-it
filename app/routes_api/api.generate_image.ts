@@ -1,19 +1,14 @@
-import replicate from "~/services/replicate/replicate";
-import REPLICATE_MODELS from "~/services/replicate/replicate_models";
-import type {
-  GenerateImageInput,
-  PRUNAAI_HIDREAM_L1_FAST_SCHEMA,
-} from "~/features/design/types/image_generation";
+import type { GenerateImageInputPayload } from "~/services/image_generation/image_generation_types";
+import { getImageGenerationStrategy } from "~/services/image_generation/image_generation_strategy_factory";
 
 /**
  * POST /api/generate-image
  * Resource route for AI image generation
  */
-type GenerateImageResponse = PRUNAAI_HIDREAM_L1_FAST_SCHEMA["output"];
+
 export async function action({ request }: { request: Request }) {
   try {
-    const body = (await request.json()) as GenerateImageInput;
-
+    const body = (await request.json()) as GenerateImageInputPayload;
     console.log("Received request body:", body);
     if (!body.prompt) {
       return new Response(JSON.stringify({ error: "Prompt is required" }), {
@@ -22,45 +17,8 @@ export async function action({ request }: { request: Request }) {
       });
     }
 
-    const modelVersion = REPLICATE_MODELS.IMAGE_GENERATION[
-      "prunaai/hidream-l1-fast"
-    ] as `${string}/${string}` | `${string}/${string}:${string}`;
-
-    // Determine resolution based on user-selected orientation
-    const orientation = body.orientation ?? "square";
-    let resolution: PRUNAAI_HIDREAM_L1_FAST_SCHEMA["input"]["resolution"];
-    switch (orientation) {
-      case "landscape":
-        resolution = "1360 × 768 (Landscape)";
-        break;
-      case "portrait":
-        resolution = "768 × 1360 (Portrait)";
-        break;
-      default:
-        resolution = "1024 × 1024 (Square)";
-    }
-
-    // Call Replicate API to generate images with the selected orientation
-    // Generate a random seed between 1 and 20 (inclusive)
-    // The seed value controls the randomness of the AI model's output.
-    // Using the same seed with the same input will produce the same image,
-    // while changing the seed will generate a different variation.
-    // This allows for reproducibility and controlled diversity in generated images.
-    const seed = Math.floor(Math.random() * 20) + 1;
-
-    const output = await replicate.run(modelVersion, {
-      input: {
-        prompt: body.prompt,
-        seed,
-        resolution,
-        output_format: "png",
-        speed_mode: "Juiced 🔥 (more speed)",
-      } as PRUNAAI_HIDREAM_L1_FAST_SCHEMA["input"],
-    });
-
-    // Extract image URIs from the Replicate output
-    const outputs = Array.isArray(output) ? output : [output];
-    const images = outputs.map((file: any) => file.url());
+    const model = getImageGenerationStrategy(body.model);
+    const images = await model.generate(body);
 
     return new Response(JSON.stringify({ images }), {
       status: 200,
