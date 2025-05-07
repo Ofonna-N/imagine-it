@@ -29,6 +29,7 @@
     "immer": "^10.1.1",
     "isbot": "^5.1.17",
     "notistack": "^3.0.2",
+    "openai": "^4.97.0",
     "postgres": "^3.4.5",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
