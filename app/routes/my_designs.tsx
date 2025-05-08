@@ -24,11 +24,22 @@ import {
   useQueryUserDesigns,
   type UserDesign,
 } from "~/features/design/hooks/use_query_user_designs";
+import { useMutateDeleteDesign } from "~/features/design/hooks/use_mutate_delete_design";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function MyDesigns() {
   const { data: myDesigns = [], isLoading, isError } = useQueryUserDesigns();
   const [selectedDesign, setSelectedDesign] = useState<null | UserDesign>(null);
   const [openDialog, setOpenDialog] = useState(false);
+  const queryClient = useQueryClient();
+  const deleteMutation = useMutateDeleteDesign({
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["designs", "user"] });
+    },
+    onError: () => {
+      // Optionally, add error handling like a toast notification here
+    },
+  });
 
   const handleOpenDialog = (design: UserDesign) => {
     setSelectedDesign(design);
@@ -37,6 +48,10 @@ export default function MyDesigns() {
 
   const handleCloseDialog = () => {
     setOpenDialog(false);
+  };
+
+  const handleDelete = (design: UserDesign) => {
+    deleteMutation.mutate({ designId: design.id, imageUrl: design.imageUrl });
   };
 
   return (
@@ -95,6 +110,11 @@ export default function MyDesigns() {
                   height: "100%",
                   display: "flex",
                   flexDirection: "column",
+                  ...(deleteMutation.isPending &&
+                    deleteMutation.variables?.designId === design.id && {
+                    opacity: 0.5,
+                    pointerEvents: "none",
+                  }),
                 }}
               >
                 <CardMedia
@@ -162,8 +182,21 @@ export default function MyDesigns() {
                   >
                     <FiEdit />
                   </IconButton>
-                  <IconButton size="small" color="error">
-                    <FiTrash2 />
+                  <IconButton
+                    size="small"
+                    color="error"
+                    onClick={() => handleDelete(design)}
+                    disabled={
+                      deleteMutation.isPending &&
+                      deleteMutation.variables?.designId === design.id
+                    }
+                  >
+                    {deleteMutation.isPending &&
+                    deleteMutation.variables?.designId === design.id ? (
+                      <CircularProgress size={18} />
+                    ) : (
+                      <FiTrash2 />
+                    )}
                   </IconButton>
                   <Button
                     size="small"
