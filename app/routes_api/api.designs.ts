@@ -209,7 +209,7 @@ export async function action({ request }: { request: Request }) {
  * Deletes a design for the authenticated user
  * Expects: { designId: string, imageUrl?: string }
  */
-export async function destroy({ request }: { request: Request }) {
+async function destroy({ request }: { request: Request }) {
   const { headers, supabase } = createSupabaseServerClient({ request });
   const {
     data: { user },
