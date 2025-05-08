@@ -46,8 +46,6 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
   // State for prompt and generated images
   const [prompt, setPrompt] = useState("");
   const [images, setImages] = useState<string[]>([]);
-  const [file, setFile] = useState<File | null>(null);
-  const [filePreview, setFilePreview] = useState<string>("");
   // State for selected orientation
   const [orientation, setOrientation] = useState<
     "square" | "landscape" | "portrait"
@@ -121,33 +119,6 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0] ?? null;
-    if (f) {
-      if (filePreview) {
-        URL.revokeObjectURL(filePreview);
-      }
-      setFile(f);
-      setFilePreview(URL.createObjectURL(f));
-    }
-  };
-
-  const handleSaveFile = () => {
-    if (file) {
-      saveDesign({ name: file.name, file });
-      setFile(null);
-      setFilePreview("");
-    }
-  };
-
-  React.useEffect(() => {
-    return () => {
-      if (filePreview) {
-        URL.revokeObjectURL(filePreview);
-      }
-    };
-  }, [filePreview]);
-
   return (
     <Paper elevation={2} sx={{ p: 3, borderRadius: 2 }}>
       <Stack spacing={3}>
@@ -156,47 +127,6 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
           <Alert severity="error" onClose={() => setSaveError(null)}>
             {saveError}
           </Alert>
-        )}
-
-        {/* Upload from computer */}
-        {!file ? (
-          <Button variant="outlined" component="label">
-            <span>Upload Image</span>
-            <input
-              type="file"
-              accept="image/*"
-              hidden
-              onChange={handleFileChange}
-            />
-          </Button>
-        ) : (
-          <Box>
-            <Typography variant="subtitle1">Preview uploaded image:</Typography>
-            <Box
-              component="img"
-              src={filePreview}
-              alt={file.name}
-              sx={{ maxWidth: "100%", mt: 1, mb: 1 }}
-            />
-            <Stack direction="row" spacing={1}>
-              <Button
-                variant="contained"
-                startIcon={<FiSave />}
-                onClick={handleSaveFile}
-                disabled={isSaving}
-              >
-                Save Uploaded Image
-              </Button>
-              <Button
-                onClick={() => {
-                  setFile(null);
-                  setFilePreview("");
-                }}
-              >
-                Remove
-              </Button>
-            </Stack>
-          </Box>
         )}
 
         {/* Prompt Input */}

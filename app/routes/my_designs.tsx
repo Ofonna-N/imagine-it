@@ -15,9 +15,20 @@ import {
   DialogActions,
   CircularProgress,
   Tooltip,
+  Alert,
+  Menu,
+  MenuItem,
 } from "@mui/material";
-import { useState } from "react";
-import { FiEdit, FiTrash2, FiShoppingCart, FiEye } from "react-icons/fi";
+import React, { useState } from "react";
+import {
+  FiEdit,
+  FiTrash2,
+  FiShoppingCart,
+  FiEye,
+  FiUploadCloud,
+  FiSave,
+  FiPlus,
+} from "react-icons/fi";
 import { Link } from "react-router";
 import { APP_ROUTES } from "~/constants/route_paths";
 import {
@@ -26,12 +37,26 @@ import {
 } from "~/features/design/hooks/use_query_user_designs";
 import { useMutateDeleteDesign } from "~/features/design/hooks/use_mutate_delete_design";
 import { useQueryClient } from "@tanstack/react-query";
+import { useMutateSaveDesign } from "~/features/design/hooks/use_mutate_save_design";
 
 export default function MyDesigns() {
   const { data: myDesigns = [], isLoading, isError } = useQueryUserDesigns();
   const [selectedDesign, setSelectedDesign] = useState<null | UserDesign>(null);
-  const [openDialog, setOpenDialog] = useState(false);
+  const [openViewDialog, setOpenViewDialog] = useState(false);
   const queryClient = useQueryClient();
+
+  // State for "Add Design" menu
+  const [anchorElAddMenu, setAnchorElAddMenu] =
+    React.useState<null | HTMLElement>(null);
+  const openAddMenu = Boolean(anchorElAddMenu);
+
+  // State for Upload Dialog
+  const [openUploadDialog, setOpenUploadDialog] = useState(false);
+
+  // State for file upload (will be used within Upload Dialog)
+  const [file, setFile] = useState<File | null>(null);
+  const [filePreview, setFilePreview] = useState<string>("");
+
   const deleteMutation = useMutateDeleteDesign({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["designs", "user"] });
@@ -41,18 +66,84 @@ export default function MyDesigns() {
     },
   });
 
-  const handleOpenDialog = (design: UserDesign) => {
+  const {
+    mutate: saveDesign,
+    isPending: isSaving,
+    isSuccess: isSaved,
+    reset: resetSaveDesign,
+    error: saveDesignError,
+  } = useMutateSaveDesign({
+    onSuccess: () => {
+      setFile(null);
+      setFilePreview("");
+      queryClient.invalidateQueries({ queryKey: ["designs", "user"] });
+      // Close dialog on success
+      setOpenUploadDialog(false);
+    },
+    onError: (err) => {
+      // Error will be displayed in the dialog
+    },
+  });
+
+  const handleOpenViewDialog = (design: UserDesign) => {
     setSelectedDesign(design);
-    setOpenDialog(true);
+    setOpenViewDialog(true);
   };
 
-  const handleCloseDialog = () => {
-    setOpenDialog(false);
+  const handleCloseViewDialog = () => {
+    setOpenViewDialog(false);
   };
 
   const handleDelete = (design: UserDesign) => {
     deleteMutation.mutate({ designId: design.id, imageUrl: design.imageUrl });
   };
+
+  // "Add Design" Menu Handlers
+  const handleOpenAddMenu = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorElAddMenu(event.currentTarget);
+  };
+  const handleCloseAddMenu = () => {
+    setAnchorElAddMenu(null);
+  };
+
+  // Upload Dialog Handlers
+  const handleOpenUploadDialog = () => {
+    setOpenUploadDialog(true);
+    handleCloseAddMenu(); // Close the menu when dialog opens
+  };
+
+  const handleCloseUploadDialog = () => {
+    setOpenUploadDialog(false);
+    setFile(null); // Reset file states on close
+    setFilePreview("");
+    resetSaveDesign(); // Reset mutation state
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0] ?? null;
+    if (f) {
+      if (filePreview) {
+        URL.revokeObjectURL(filePreview);
+      }
+      setFile(f);
+      setFilePreview(URL.createObjectURL(f));
+      resetSaveDesign(); // Reset save state if a new file is selected
+    }
+  };
+
+  const handleSaveFile = () => {
+    if (file) {
+      saveDesign({ name: file.name, file });
+    }
+  };
+
+  React.useEffect(() => {
+    return () => {
+      if (filePreview) {
+        URL.revokeObjectURL(filePreview);
+      }
+    };
+  }, [filePreview]);
 
   return (
     <Box sx={{ mt: 4 }}>
@@ -70,14 +161,166 @@ export default function MyDesigns() {
         <Button
           variant="contained"
           color="primary"
-          component={Link}
-          to={APP_ROUTES.IMAGE_GENERATION}
-          startIcon={<FiEdit />}
+          startIcon={<FiPlus />}
+          onClick={handleOpenAddMenu}
         >
-          Create New Design
+          Add Design
         </Button>
+        <Menu
+          anchorEl={anchorElAddMenu}
+          open={openAddMenu}
+          onClose={handleCloseAddMenu}
+        >
+          <MenuItem
+            component={Link}
+            to={APP_ROUTES.IMAGE_GENERATION}
+            onClick={handleCloseAddMenu}
+          >
+            <FiEdit style={{ marginRight: 8 }} /> Create with AI
+          </MenuItem>
+          <MenuItem onClick={handleOpenUploadDialog}>
+            <FiUploadCloud style={{ marginRight: 8 }} /> Upload Image
+          </MenuItem>
+        </Menu>
       </Box>
 
+      {/* Upload Image Dialog */}
+      <Dialog
+        open={openUploadDialog}
+        onClose={handleCloseUploadDialog}
+        fullWidth
+        maxWidth="sm"
+      >
+        <DialogTitle>Upload Your Image</DialogTitle>
+        <DialogContent>
+          {saveDesignError && (
+            <Alert
+              severity="error"
+              onClose={() => resetSaveDesign()}
+              sx={{ mb: 2 }}
+            >
+              {saveDesignError instanceof Error
+                ? saveDesignError.message
+                : "Failed to save design"}
+            </Alert>
+          )}
+          {isSaved && !isSaving && !saveDesignError && (
+            <Alert
+              severity="success"
+              onClose={() => resetSaveDesign()}
+              sx={{ mb: 2 }}
+            >
+              Design uploaded and saved successfully!
+            </Alert>
+          )}
+          {!file ? (
+            <Button
+              variant="outlined"
+              component="label"
+              startIcon={<FiUploadCloud />}
+              fullWidth
+              sx={{ mt: 1 }}
+            >
+              <span>Choose Image</span>
+              <input
+                type="file"
+                accept="image/*"
+                hidden
+                onChange={handleFileChange}
+                key={filePreview || "file-input-dialog"}
+              />
+            </Button>
+          ) : (
+            <Box sx={{ textAlign: "center" }}>
+              <Typography variant="subtitle1" gutterBottom sx={{ mt: 2 }}>
+                Preview:
+              </Typography>
+              <Box
+                component="img"
+                src={filePreview}
+                alt={file.name}
+                sx={{
+                  maxWidth: "100%",
+                  maxHeight: 300,
+                  objectFit: "contain",
+                  my: 2,
+                  border: 1,
+                  borderColor: "divider",
+                  borderRadius: 1,
+                }}
+              />
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ p: "16px 24px" }}>
+          <Button onClick={handleCloseUploadDialog} color="inherit">
+            Cancel
+          </Button>
+          {file && (
+            <Button
+              variant="contained"
+              startIcon={<FiSave />}
+              onClick={handleSaveFile}
+              disabled={isSaving || (isSaved && !saveDesignError)}
+              sx={{ ml: 1 }}
+            >
+              {isSaving ? <CircularProgress size={24} /> : "Save Design"}
+            </Button>
+          )}
+        </DialogActions>
+      </Dialog>
+
+      {/* View Design Dialog (previously openDialog) */}
+      <Dialog
+        open={openViewDialog}
+        onClose={handleCloseViewDialog}
+        maxWidth="md"
+      >
+        {selectedDesign && (
+          <>
+            <DialogTitle>{selectedDesign.name}</DialogTitle>
+            <DialogContent>
+              <Box
+                component="img"
+                sx={{
+                  maxWidth: "100%",
+                  maxHeight: "70vh",
+                  objectFit: "contain",
+                }}
+                src={selectedDesign.imageUrl}
+                alt={selectedDesign.name}
+              />
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+                Created:{" "}
+                {selectedDesign.createdAt
+                  ? new Date(selectedDesign.createdAt).toLocaleDateString()
+                  : "Unknown"}
+              </Typography>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={handleCloseViewDialog}>Close</Button>
+              <Button
+                component={Link}
+                to={APP_ROUTES.IMAGE_GENERATION} // Consider passing design state for editing
+                startIcon={<FiEdit />}
+              >
+                Edit
+              </Button>
+              <Button
+                variant="contained"
+                component={Link}
+                to={APP_ROUTES.PRODUCTS} // Consider passing design info
+                startIcon={<FiShoppingCart />}
+                onClick={handleCloseViewDialog}
+              >
+                Use Design
+              </Button>
+            </DialogActions>
+          </>
+        )}
+      </Dialog>
+
+      {/* Designs Grid */}
       {isLoading ? (
         <Box sx={{ textAlign: "center", py: 6 }}>
           <CircularProgress />
@@ -112,9 +355,9 @@ export default function MyDesigns() {
                   flexDirection: "column",
                   ...(deleteMutation.isPending &&
                     deleteMutation.variables?.designId === design.id && {
-                    opacity: 0.5,
-                    pointerEvents: "none",
-                  }),
+                      opacity: 0.5,
+                      pointerEvents: "none",
+                    }),
                 }}
               >
                 <CardMedia
@@ -122,7 +365,7 @@ export default function MyDesigns() {
                   height="200"
                   image={design.imageUrl}
                   alt={design.name}
-                  onClick={() => handleOpenDialog(design)}
+                  onClick={() => handleOpenViewDialog(design)}
                   sx={{ cursor: "pointer" }}
                 />
                 <CardContent sx={{ flexGrow: 1 }}>
@@ -170,7 +413,7 @@ export default function MyDesigns() {
                   <IconButton
                     size="small"
                     color="primary"
-                    onClick={() => handleOpenDialog(design)}
+                    onClick={() => handleOpenViewDialog(design)}
                   >
                     <FiEye />
                   </IconButton>
@@ -214,51 +457,6 @@ export default function MyDesigns() {
           ))}
         </Grid>
       )}
-
-      <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="md">
-        {selectedDesign && (
-          <>
-            <DialogTitle>{selectedDesign.name}</DialogTitle>
-            <DialogContent>
-              <Box
-                component="img"
-                sx={{
-                  maxWidth: "100%",
-                  maxHeight: "70vh",
-                  objectFit: "contain",
-                }}
-                src={selectedDesign.imageUrl}
-                alt={selectedDesign.name}
-              />
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-                Created:{" "}
-                {selectedDesign.createdAt
-                  ? new Date(selectedDesign.createdAt).toLocaleDateString()
-                  : "Unknown"}
-              </Typography>
-            </DialogContent>
-            <DialogActions>
-              <Button onClick={handleCloseDialog}>Close</Button>
-              <Button
-                component={Link}
-                to={APP_ROUTES.IMAGE_GENERATION}
-                startIcon={<FiEdit />}
-              >
-                Edit
-              </Button>
-              <Button
-                variant="contained"
-                component={Link}
-                to={APP_ROUTES.PRODUCTS}
-                startIcon={<FiShoppingCart />}
-                onClick={handleCloseDialog}
-              >
-                Use Design
-              </Button>
-            </DialogActions>
-          </>
-        )}
-      </Dialog>
     </Box>
   );
 }
