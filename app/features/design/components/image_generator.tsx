@@ -218,7 +218,7 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
                         isSubmitting || imageGenerationMutation.isPending
                       }
                       multiline
-                      rows={4} // Increased rows for emphasis
+                      rows={6} // Increased rows for emphasis
                       error={!!errors.prompt}
                       helperText={errors.prompt?.message}
                       sx={{
