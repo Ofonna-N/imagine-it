@@ -35,7 +35,7 @@ Design and implement input components that integrate seamlessly with [React Hook
    });
    ```
 
-2. **Reusable Input Components**: Create generic input components (e.g., `TextField`, `SelectField`) that accept `control` and `name` props, and use `Controller` from React Hook Form.
+2. **Reusable Input Components**: Create generic input components (e.g., `TextField`, `SelectField`) that accept `control` and `name` props, and use `Controller` from React Hook Form. (do only when necessary, sometimes we don't need custom components)
 
    ```tsx
    import { Controller } from "react-hook-form";
