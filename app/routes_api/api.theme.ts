@@ -1,4 +1,4 @@
-import { themeSessionStorage } from "~/utils/theme_session.server";
+import { themeSessionStorage } from "~/utils/theme_session";
 
 /**
  * PATCH /api/theme

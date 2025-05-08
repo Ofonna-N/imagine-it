@@ -1,5 +1,5 @@
 import type { LoaderFunctionArgs } from "react-router";
-import createSupabaseServerClient from "~/services/supabase/supabase_client.server";
+import createSupabaseServerClient from "~/services/supabase/supabase_client";
 import { getOrdersByUserId } from "~/db/queries/orders_queries";
 import { fetchPrintfulOrderById } from "~/services/printful/printful_api";
 import type { PrintfulV2GetOrderResponse } from "~/types/printful/order_types";

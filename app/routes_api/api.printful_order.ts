@@ -1,5 +1,5 @@
 import { type ActionFunctionArgs } from "react-router";
-import createSupabaseServerClient from "~/services/supabase/supabase_client.server";
+import createSupabaseServerClient from "~/services/supabase/supabase_client";
 import { createPrintfulOrder } from "~/services/printful/printful_api";
 import { insertOrder } from "~/db/queries/orders_queries";
 import type { PrintfulV2CreateOrderRequest } from "~/types/printful/order_types";

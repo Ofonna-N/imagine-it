@@ -1,4 +1,4 @@
-import createSupabaseServerClient from "~/services/supabase/supabase_client.server";
+import createSupabaseServerClient from "~/services/supabase/supabase_client";
 import type { OAuthProvider } from "~/features/auth/hooks/use_auth_mutations";
 
 /**

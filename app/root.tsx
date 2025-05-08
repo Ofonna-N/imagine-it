@@ -10,7 +10,7 @@ import {
 import type { Route } from "./+types/root";
 import { Container, Box, Typography, Paper } from "@mui/material";
 import { AppProviders } from "./context/app_providers";
-import { getThemeSession } from "~/utils/theme_session.server";
+import { getThemeSession } from "~/utils/theme_session";
 import InitColorSchemeScript from "@mui/material/InitColorSchemeScript";
 
 export const links: Route.LinksFunction = () => [

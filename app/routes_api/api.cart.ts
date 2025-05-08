@@ -7,7 +7,7 @@ import {
   clearCart,
   updateCartItemQuantity,
 } from "../db/queries/carts_queries";
-import createSupabaseServerClient from "../services/supabase/supabase_client.server";
+import createSupabaseServerClient from "../services/supabase/supabase_client";
 import type { PrintfulV2OrderItem } from "~/types/printful/order_types";
 
 /**

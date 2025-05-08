@@ -1,4 +1,4 @@
-import createSupabaseServerClient from "~/services/supabase/supabase_client.server";
+import createSupabaseServerClient from "~/services/supabase/supabase_client";
 import { randomUUID } from "crypto";
 import {
   getDesignsByUserId,

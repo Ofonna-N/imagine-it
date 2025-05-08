@@ -1,7 +1,7 @@
 import { type ActionFunctionArgs } from "react-router";
 import { getRecipient, saveRecipient } from "../db/queries/carts_queries";
 import type { PrintfulV2OrderRecipient } from "../types/printful";
-import createSupabaseServerClient from "~/services/supabase/supabase_client.server";
+import createSupabaseServerClient from "~/services/supabase/supabase_client";
 
 /**
  * Resource Route: /api/recipient
