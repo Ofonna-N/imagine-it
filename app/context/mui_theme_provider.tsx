@@ -5,7 +5,6 @@ import {
   useEffect,
   useMemo,
   useState,
-  useRef,
 } from "react";
 import {
   ThemeProvider as MuiThemeProvider,
@@ -53,7 +52,6 @@ export function MUiThemeProvider({
 
   // Persist theme mode to cookie via mutation
   const themeMutation = useMutateThemeMode();
-  const isFirstRender = useRef(true);
 
   // Toggle between light and dark modes
   const toggleTheme = useCallback(() => {
@@ -78,14 +76,6 @@ export function MUiThemeProvider({
     },
     [themeMutation]
   );
-
-  // Sync mode to cookie on mount (for SSR hydration)
-  useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
-      themeMutation.mutate({ mode });
-    }
-  }, []);
 
   // Create the current theme based on mode
   const theme = useMemo(() => getTheme(mode), [mode]);
