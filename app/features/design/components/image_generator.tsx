@@ -1,5 +1,12 @@
-import React, { useState } from "react";
+import React from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useForm, Controller, type SubmitHandler } from "react-hook-form"; // Corrected SubmitHandler import
+import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  imageGenerationSchema,
+  type ImageGenerationFormValues,
+  type ArtStyleUnion,
+} from "../schemas/image_generation_schema";
 import {
   useMutateGenerateImage,
   type GenerateImageResponse,
@@ -17,7 +24,6 @@ import {
   ImageListItem,
   Paper,
   Stack,
-  InputAdornment,
   Tooltip,
   FormControl,
   InputLabel,
@@ -29,14 +35,18 @@ import {
   FormControlLabel,
   Switch,
   Grid,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
 } from "@mui/material";
 import {
-  FiSearch,
   FiCheck,
   FiSave,
   FiZap,
   FiStar,
   FiImage,
+  FiChevronDown,
+  FiSettings,
 } from "react-icons/fi";
 import { useMutateSaveDesign } from "../hooks/use_mutate_save_design";
 import type { ModelKey } from "~/services/image_generation/model_registry";
@@ -52,7 +62,42 @@ interface ImageGeneratorProps {
   singleSelect?: boolean;
 }
 
-type ModelType = "basic" | "advanced";
+const artStyleOptions: { value: ArtStyleUnion; label: string }[] = [
+  { value: "", label: "None (Default)" },
+  { value: "minimalist", label: "Minimalist" },
+  { value: "abstract", label: "Abstract" },
+  { value: "sketchy", label: "Sketchy" },
+  { value: "photography", label: "Photography" },
+  { value: "painting", label: "Painting" },
+  { value: "3d render", label: "3D Render" },
+  { value: "cinematic", label: "Cinematic" },
+  {
+    value: "graphic design pop art",
+    label: "Graphic Design Pop Art",
+  },
+  { value: "creative", label: "Creative" },
+  { value: "fashion", label: "Fashion" },
+  { value: "graphic design", label: "Graphic Design" },
+  { value: "moody", label: "Moody" },
+  { value: "bokeh", label: "Bokeh" },
+  {
+    value: "pro b&w photography",
+    label: "Pro B&W Photography",
+  },
+  {
+    value: "pro color photography",
+    label: "Pro Color Photography",
+  },
+  {
+    value: "pro film photography",
+    label: "Pro Film Photography",
+  },
+  {
+    value: "sketch black and white",
+    label: "Sketch Black and White",
+  },
+  { value: "sketch color", label: "Sketch Color" },
+];
 
 /**
  * ImageGenerator component
@@ -62,93 +107,60 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
   onImageSelect,
   singleSelect = false,
 }) => {
-  const [prompt, setPrompt] = useState("");
-  const [orientation, setOrientation] = useState<
-    "square" | "landscape" | "portrait"
-  >("square");
-  const [artStyle, setArtStyle] = useState<string>(""); // Default to no specific art style initially
-  const artStyleOptions = [
-    "minimalist",
-    "abstract",
-    "sketchy",
-    "photography",
-    "painting",
-    "3d render",
-    "cinematic",
-    "graphic design pop art",
-    "creative",
-    "fashion",
-    "graphic design",
-    "moody",
-    "bokeh",
-    "pro b&w photography",
-    "pro color photography",
-    "pro film photography",
-    "sketch black and white",
-    "sketch color",
-  ];
-
-  const [selectedModel, setSelectedModel] = useState<ModelType>("advanced"); // ADDED: State for model selection
-  const [isTransparent, setIsTransparent] = useState(false); // ADDED: State for transparency
-
   const queryClient = useQueryClient();
+
+  const {
+    control,
+    handleSubmit,
+    watch,
+    formState: { errors, isSubmitting },
+    setValue,
+  } = useForm<ImageGenerationFormValues>({
+    resolver: zodResolver(imageGenerationSchema),
+    defaultValues: {
+      prompt: "",
+      selectedModel: "advanced",
+      isTransparent: false,
+      artStyle: "",
+      orientation: "square",
+    },
+  });
+
+  const selectedModel = watch("selectedModel");
 
   const imageGenerationMutation = useMutateGenerateImage({
     onSuccess: (data: GenerateImageResponse) => {
-      // Store data in the query cache under a specific key
       queryClient.setQueryData(["lastGeneratedImageData"], data);
-      console.log("Image data stored in query cache:", data);
-      // You might also want to trigger other actions here
     },
-    // ... other mutation options
   });
 
-  console.log("imageGenerationMutation", imageGenerationMutation);
-  const {
-    mutate: saveDesign,
-    isPending: isSaving,
-    isSuccess: isSaved,
-    reset: resetSaveDesign,
-    variables: saveDesignVariables,
-    error: saveDesignError, // Using error property from the hook
-  } = useMutateSaveDesign({
+  const { mutate: saveDesign, ...saveDesignState } = useMutateSaveDesign({
     onSuccess: () => {
       console.log("Design saved");
     },
-    // onError callback removed, error is handled by saveDesignError
   });
 
-  const handleModelChange = (
-    event: React.MouseEvent<HTMLElement>,
-    newModel: ModelType | null
-  ) => {
-    if (newModel !== null) {
-      setSelectedModel(newModel);
-      if (newModel === "basic") {
-        setIsTransparent(false); // Reset transparency if basic model is selected
-      }
-    }
-  };
-
-  const handleGenerate = () => {
-    if (!prompt.trim()) return;
-    resetSaveDesign();
-    let finalPrompt = prompt;
-    if (artStyle) {
-      finalPrompt = `${prompt}. art style must be (${artStyle})`;
+  const onSubmit: SubmitHandler<ImageGenerationFormValues> = (data) => {
+    saveDesignState.reset();
+    let finalPrompt = data.prompt;
+    // artStyle is optional, so ensure it exists and is not an empty string (falsy) before appending
+    if (data.artStyle) {
+      // Simplified condition
+      finalPrompt = `${data.prompt}. art style must be (${data.artStyle})`;
     }
 
     const modelKey: ModelKey =
-      selectedModel === "advanced" ? "gpt-image-1" : "prunaai-fast";
+      data.selectedModel === "advanced" ? "gpt-image-1" : "prunaai-fast";
+
     const payload: GenerateImageInputPayload = {
-      // Using 'any' for payload to dynamically add 'transparent'
       prompt: finalPrompt,
-      orientation,
+      orientation: data.orientation,
       model: modelKey,
     };
 
-    if (selectedModel === "advanced") {
-      payload.transparent = isTransparent;
+    if (data.selectedModel === "advanced") {
+      // isTransparent is optional in the schema, provide a default if undefined
+      payload.transparent = data.isTransparent ?? false;
     }
 
     imageGenerationMutation.mutate(payload);
@@ -170,361 +182,478 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
       elevation={0}
       sx={{ p: { xs: 2, md: 3 }, borderRadius: 2, background: "transparent" }}
     >
-      <Stack spacing={3}>
-        {saveDesignError && (
-          <Alert severity="error" onClose={() => resetSaveDesign()}>
-            {saveDesignError instanceof Error
-              ? saveDesignError.message
-              : "Failed to save design"}
-          </Alert>
-        )}
+      <form onSubmit={handleSubmit(onSubmit)}>
+        <Stack spacing={3}>
+          {saveDesignState.error && (
+            <Alert severity="error" onClose={() => saveDesignState.reset()}>
+              {saveDesignState.error instanceof Error
+                ? saveDesignState.error.message
+                : "Failed to save design"}
+            </Alert>
+          )}
 
-        <Grid container spacing={2} alignItems="flex-start">
-          {/* Left Column: Controls */}
-          <Grid size={{ xs: 12, md: 4 }}>
-            <Stack spacing={2.5}>
-              <Typography
-                variant="h6"
-                component="div"
-                sx={{ fontWeight: "medium" }}
-              >
-                Create Your Image
-              </Typography>
-
-              <FormControl fullWidth>
+          <Grid container spacing={3} alignItems="flex-start">
+            {/* Left Column: Prompt Input (Emphasized) & Main Action */}
+            <Grid size={{ xs: 12, md: 7 }}>
+              {" "}
+              {/* Corrected Grid usage for MUI v7 */}
+              <Stack spacing={2.5}>
                 <Typography
-                  variant="subtitle2"
-                  gutterBottom
-                  sx={{ fontWeight: "medium" }}
+                  variant="h5"
+                  component="div"
+                  sx={{ fontWeight: "bold", mb: 1 }}
                 >
-                  Model
+                  Describe Your Vision
                 </Typography>
-                <ToggleButtonGroup
-                  value={selectedModel}
-                  exclusive
-                  onChange={handleModelChange}
-                  aria-label="Image generation model"
-                  fullWidth
-                >
-                  <ToggleButton
-                    value="basic"
-                    aria-label="Basic model"
-                    sx={{ flexGrow: 1 }}
-                  >
-                    <FiZap style={{ marginRight: 8 }} /> Basic
-                  </ToggleButton>
-                  <ToggleButton
-                    value="advanced"
-                    aria-label="Advanced model"
-                    sx={{ flexGrow: 1 }}
-                  >
-                    <FiStar style={{ marginRight: 8 }} /> Advanced
-                  </ToggleButton>
-                </ToggleButtonGroup>
-              </FormControl>
-
-              {selectedModel === "advanced" && (
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={isTransparent}
-                      onChange={(e) => setIsTransparent(e.target.checked)}
-                      disabled={imageGenerationMutation.isPending}
+                <Controller
+                  name="prompt"
+                  control={control}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      fullWidth
+                      label="Your Prompt"
+                      placeholder="e.g. A cosmic owl librarian in a vibrant, neon-lit jungle, detailed illustration"
+                      disabled={
+                        isSubmitting || imageGenerationMutation.isPending
+                      }
+                      multiline
+                      rows={4} // Increased rows for emphasis
+                      error={!!errors.prompt}
+                      helperText={errors.prompt?.message}
+                      sx={{
+                        "& .MuiOutlinedInput-root": {
+                          fontSize: "1.1rem", // Larger font for prompt
+                          "& fieldset": {
+                            borderWidth: "2px", // Thicker border
+                            borderColor: errors.prompt
+                              ? "error.main"
+                              : "primary.light",
+                          },
+                          "&:hover fieldset": {
+                            borderColor: "primary.main",
+                          },
+                          "&.Mui-focused fieldset": {
+                            borderColor: "primary.main",
+                          },
+                        },
+                      }}
                     />
-                  }
-                  label="Transparent Background (PNG)"
-                  sx={{ mt: -1 }} // Adjust margin if needed
+                  )}
                 />
-              )}
 
-              <TextField
-                fullWidth
-                label="Your Prompt"
-                placeholder="e.g. A sunset over mountains, vibrant colors"
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                disabled={imageGenerationMutation.isPending}
-                multiline
-                rows={3}
-                slotProps={{
-                  input: {
-                    startAdornment: (
-                      <InputAdornment
-                        position="start"
-                        sx={{ alignItems: "flex-start", mt: 1.5 }}
-                      >
-                        <FiSearch />
-                      </InputAdornment>
-                    ),
-                  },
-                }}
-              />
-
-              <FormControl
-                fullWidth
-                disabled={imageGenerationMutation.isPending}
-              >
-                <InputLabel id="art-style-select-label">
-                  Art Style (Optional)
-                </InputLabel>
-                <Select
-                  labelId="art-style-select-label"
-                  value={artStyle}
-                  label="Art Style (Optional)"
-                  onChange={(e) => setArtStyle(e.target.value)}
-                >
-                  <MenuItem value="">
-                    <em>None (Default)</em>
-                  </MenuItem>
-                  {artStyleOptions.map((style) => (
-                    <MenuItem key={style} value={style}>
-                      {style.charAt(0).toUpperCase() + style.slice(1)}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-
-              <FormControl
-                fullWidth
-                disabled={imageGenerationMutation.isPending}
-              >
-                <InputLabel id="orientation-select-label">
-                  Orientation
-                </InputLabel>
-                <Select
-                  labelId="orientation-select-label"
-                  value={orientation}
-                  label="Orientation"
-                  onChange={(e) =>
-                    setOrientation(
-                      e.target.value as "square" | "landscape" | "portrait"
+                <Button
+                  type="submit"
+                  variant="contained"
+                  size="large"
+                  disabled={isSubmitting || imageGenerationMutation.isPending}
+                  startIcon={
+                    isSubmitting || imageGenerationMutation.isPending ? (
+                      <CircularProgress size={20} color="inherit" />
+                    ) : (
+                      <FiZap />
                     )
                   }
+                  fullWidth
+                  sx={{ py: 1.5, fontSize: "1.1rem", mt: 1 }} // Emphasized button
                 >
-                  <MenuItem value="square">Square (1:1)</MenuItem>
-                  <MenuItem value="landscape">Landscape (16:9)</MenuItem>
-                  <MenuItem value="portrait">Portrait (9:16)</MenuItem>
-                </Select>
-              </FormControl>
+                  Generate Image
+                  {(isSubmitting || imageGenerationMutation.isPending) &&
+                    "s..."}
+                </Button>
+              </Stack>
+            </Grid>
 
-              <Button
-                variant="contained"
-                size="large"
-                onClick={handleGenerate}
-                disabled={!prompt.trim() || imageGenerationMutation.isPending}
-                startIcon={
-                  imageGenerationMutation.isPending ? (
-                    <CircularProgress size={20} color="inherit" />
-                  ) : (
-                    <FiZap />
-                  )
-                }
-                fullWidth
-                sx={{ py: 1.5 }}
+            {/* Right Column: Advanced Settings & Controls */}
+            <Grid size={{ xs: 12, md: 5 }}>
+              {" "}
+              {/* Corrected Grid usage for MUI v7 */}
+              <Accordion
+                defaultExpanded={true} // Start expanded by default
+                sx={{
+                  border: "1px solid",
+                  borderColor: "divider",
+                  borderRadius: 1,
+                  boxShadow: "none",
+                  "&:before": { display: "none" }, // Remove default top border
+                }}
               >
-                Generate Image{imageGenerationMutation.isPending ? "s..." : "s"}
-              </Button>
-            </Stack>
+                <AccordionSummary
+                  expandIcon={<FiChevronDown />}
+                  aria-controls="advanced-settings-content"
+                  id="advanced-settings-header"
+                  sx={{
+                    minHeight: 48,
+                    "&.Mui-expanded": { minHeight: 48 },
+                    "& .MuiAccordionSummary-content": {
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 1,
+                    },
+                  }}
+                >
+                  <FiSettings />
+                  <Typography variant="subtitle1" sx={{ fontWeight: "medium" }}>
+                    Customization Options
+                  </Typography>
+                </AccordionSummary>
+                <AccordionDetails>
+                  <Stack spacing={2.5}>
+                    <FormControl fullWidth error={!!errors.selectedModel}>
+                      <Typography
+                        variant="subtitle2"
+                        gutterBottom
+                        sx={{ fontWeight: "medium" }}
+                      >
+                        Model
+                      </Typography>
+                      <Controller
+                        name="selectedModel"
+                        control={control}
+                        render={({ field }) => (
+                          <ToggleButtonGroup
+                            {...field}
+                            exclusive
+                            onChange={(event, newValue) => {
+                              if (newValue !== null) {
+                                field.onChange(newValue);
+                                if (newValue === "basic") {
+                                  setValue("isTransparent", false);
+                                }
+                              }
+                            }}
+                            aria-label="Image generation model"
+                            fullWidth
+                            disabled={
+                              isSubmitting || imageGenerationMutation.isPending
+                            }
+                          >
+                            <ToggleButton
+                              value="basic"
+                              aria-label="Basic model"
+                              sx={{ flexGrow: 1 }}
+                            >
+                              <FiZap style={{ marginRight: 8 }} /> Basic
+                            </ToggleButton>
+                            <ToggleButton
+                              value="advanced"
+                              aria-label="Advanced model"
+                              sx={{ flexGrow: 1 }}
+                            >
+                              <FiStar style={{ marginRight: 8 }} /> Advanced
+                            </ToggleButton>
+                          </ToggleButtonGroup>
+                        )}
+                      />
+                      {errors.selectedModel && (
+                        <Typography
+                          color="error"
+                          variant="caption"
+                          sx={{ mt: 0.5 }}
+                        >
+                          {errors.selectedModel.message}
+                        </Typography>
+                      )}
+                    </FormControl>
+
+                    {selectedModel === "advanced" && (
+                      <Controller
+                        name="isTransparent"
+                        control={control}
+                        render={({ field }) => (
+                          <FormControlLabel
+                            control={
+                              <Switch
+                                {...field}
+                                checked={field.value ?? false} // Ensure checked is always boolean
+                                disabled={
+                                  isSubmitting ||
+                                  imageGenerationMutation.isPending
+                                }
+                              />
+                            }
+                            label="Transparent Background (PNG)"
+                          />
+                        )}
+                      />
+                    )}
+
+                    <Controller
+                      name="artStyle"
+                      control={control}
+                      render={({ field }) => (
+                        <FormControl
+                          fullWidth
+                          disabled={
+                            isSubmitting || imageGenerationMutation.isPending
+                          }
+                          error={!!errors.artStyle}
+                        >
+                          <InputLabel id="art-style-select-label">
+                            Art Style (Optional)
+                          </InputLabel>
+                          <Select
+                            {...field}
+                            value={field.value ?? ""} // Ensure value is not undefined for Select
+                            labelId="art-style-select-label"
+                            label="Art Style (Optional)"
+                          >
+                            {artStyleOptions.map((style) => (
+                              <MenuItem key={style.value} value={style.value}>
+                                {style.label}
+                              </MenuItem>
+                            ))}
+                          </Select>
+                          {errors.artStyle && (
+                            <Typography
+                              color="error"
+                              variant="caption"
+                              sx={{ mt: 0.5 }}
+                            >
+                              {errors.artStyle.message}
+                            </Typography>
+                          )}
+                        </FormControl>
+                      )}
+                    />
+
+                    <Controller
+                      name="orientation"
+                      control={control}
+                      render={({ field }) => (
+                        <FormControl
+                          fullWidth
+                          disabled={
+                            isSubmitting || imageGenerationMutation.isPending
+                          }
+                          error={!!errors.orientation}
+                        >
+                          <InputLabel id="orientation-select-label">
+                            Orientation
+                          </InputLabel>
+                          <Select
+                            {...field}
+                            labelId="orientation-select-label"
+                            label="Orientation"
+                          >
+                            <MenuItem value="square">Square (1:1)</MenuItem>
+                            <MenuItem value="landscape">
+                              Landscape (16:9)
+                            </MenuItem>
+                            <MenuItem value="portrait">
+                              Portrait (9:16)
+                            </MenuItem>
+                          </Select>
+                          {errors.orientation && (
+                            <Typography
+                              color="error"
+                              variant="caption"
+                              sx={{ mt: 0.5 }}
+                            >
+                              {errors.orientation.message}
+                            </Typography>
+                          )}
+                        </FormControl>
+                      )}
+                    />
+                  </Stack>
+                </AccordionDetails>
+              </Accordion>
+            </Grid>
           </Grid>
 
-          {/* Right Column: Image Results */}
-          <Grid size={{ xs: 12, md: 8 }}>
-            <Box sx={{ pl: { md: 2 } }}>
-              {imageGenerationMutation.isPending ? (
-                <Box
-                  sx={{
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    py: 8,
-                    border: "1px dashed",
-                    borderColor: "divider",
-                    borderRadius: 2,
-                    minHeight: 300,
-                  }}
+          {/* Image Results Section - Remains largely the same, but uses mutation state */}
+          <Box sx={{ mt: 4 }}>
+            {" "}
+            {/* Added margin top for separation */}
+            {imageGenerationMutation.isPending ? (
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  py: 8,
+                  border: "1px dashed",
+                  borderColor: "divider",
+                  borderRadius: 2,
+                  minHeight: 300,
+                }}
+              >
+                <CircularProgress />
+                <Typography
+                  variant="body1"
+                  color="text.secondary"
+                  sx={{ mt: 2 }}
                 >
-                  <CircularProgress />
-                  <Typography
-                    variant="body1"
-                    color="text.secondary"
-                    sx={{ mt: 2 }}
-                  >
-                    Generating your masterpiece...
-                  </Typography>
-                </Box>
-              ) : currentGeneratedImages &&
-                currentGeneratedImages.length > 0 ? (
-                <ImageList
-                  variant="masonry"
-                  cols={
-                    singleSelect ? 1 : currentGeneratedImages.length > 1 ? 2 : 1
-                  }
-                  gap={12}
-                  sx={{ m: 0, overflow: "hidden" }}
-                >
-                  {currentGeneratedImages.map((url, idx) => (
-                    <ImageListItem
-                      key={url + idx}
-                      sx={{
-                        borderRadius: 1.5,
-                        overflow: "hidden",
-                        boxShadow: 3,
-                      }}
-                    >
-                      <Card
-                        sx={{
-                          position: "relative",
-                          cursor: onImageSelect ? "pointer" : "default",
-                          "&:hover .overlay": { opacity: 1 },
-                          display: "flex", // Added for better image fit
-                          flexDirection: "column", // Added
-                          height: "100%", // Added
-                        }}
-                        onClick={
-                          singleSelect ? () => handleSelect(url) : undefined
-                        }
-                        elevation={0}
-                      >
-                        <CardMedia
-                          component="img"
-                          image={url}
-                          alt={`AI Image ${idx + 1}`}
-                          sx={{
-                            width: "100%",
-                            // aspectRatio: '1 / 1', // Maintain aspect ratio, adjust as needed
-                            objectFit: "cover", // Ensure image covers the area
-                            display: "block",
-                            flexGrow: 1, // Added
-                          }}
-                        />
-                        <Box
-                          className="overlay"
-                          sx={{
-                            position: "absolute",
-                            inset: 0,
-                            bgcolor: "rgba(0,0,0,0.5)",
-                            opacity: 0,
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            transition: "opacity 0.3s",
-                          }}
-                        >
-                          <Stack direction="row" spacing={1}>
-                            {onImageSelect &&
-                              !singleSelect && ( // Show check only if onImageSelect is provided and not singleSelect
-                                <Tooltip title="Select Image">
-                                  <IconButton
-                                    onClick={() => handleSelect(url)}
-                                    sx={{
-                                      color: "common.white",
-                                      "&:hover": {
-                                        bgcolor: "rgba(255,255,255,0.1)",
-                                      },
-                                    }}
-                                  >
-                                    <FiCheck />
-                                  </IconButton>
-                                </Tooltip>
-                              )}
-                            <Tooltip
-                              title={
-                                isSaving
-                                  ? "Saving..."
-                                  : isSaved
-                                  ? "Design Saved!"
-                                  : "Save Design"
-                              }
-                            >
-                              <span>
-                                {" "}
-                                {/* Span for disabled button tooltip */}
-                                <IconButton
-                                  disabled={
-                                    isSaving ||
-                                    (isSaved &&
-                                      saveDesignVariables?.image_url === url)
-                                  }
-                                  onClick={() =>
-                                    saveDesign({
-                                      name: prompt || `AI Design ${idx + 1}`,
-                                      image_url: url,
-                                    })
-                                  }
-                                  sx={{
-                                    color: "common.white",
-                                    "&:hover": {
-                                      bgcolor: "rgba(255,255,255,0.1)",
-                                    },
-                                  }}
-                                >
-                                  {isSaving &&
-                                  saveDesignVariables?.image_url === url ? (
-                                    <CircularProgress
-                                      size={24}
-                                      color="inherit"
-                                    />
-                                  ) : (
-                                    <FiSave />
-                                  )}
-                                </IconButton>
-                              </span>
-                            </Tooltip>
-                          </Stack>
-                        </Box>
-                      </Card>
-                    </ImageListItem>
-                  ))}
-                </ImageList>
-              ) : (
-                <Box
-                  sx={{
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    py: 8,
-                    border: "1px dashed",
-                    borderColor: "divider",
-                    borderRadius: 2,
-                    minHeight: 300,
-                    textAlign: "center",
-                  }}
-                >
-                  <Box
+                  Generating your masterpiece...
+                </Typography>
+              </Box>
+            ) : currentGeneratedImages && currentGeneratedImages.length > 0 ? (
+              <ImageList
+                variant="masonry"
+                cols={
+                  singleSelect ? 1 : currentGeneratedImages.length > 1 ? 2 : 1
+                }
+                gap={12}
+                sx={{ m: 0, overflow: "hidden" }}
+              >
+                {currentGeneratedImages.map((url, idx) => (
+                  <ImageListItem
+                    key={url + idx}
                     sx={{
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: "text.secondary",
+                      borderRadius: 1.5,
+                      overflow: "hidden",
+                      boxShadow: 3,
                     }}
                   >
-                    <FiImage
-                      size={64}
-                      style={{ marginBottom: 16, opacity: 0.5 }}
-                    />
-                    <Typography variant="body1">
-                      Your generated images will appear here.
-                    </Typography>
-                    <Typography variant="caption">
-                      Enter a prompt and click "Generate Images".
-                    </Typography>
-                  </Box>
-                  {imageGenerationMutation.error && (
-                    <Alert severity="error" sx={{ mt: 2, width: "100%" }}>
-                      {imageGenerationMutation.error instanceof Error
-                        ? imageGenerationMutation.error.message
-                        : "Failed to generate images. Please try again."}
-                    </Alert>
-                  )}
+                    <Card
+                      sx={{
+                        position: "relative",
+                        cursor: onImageSelect ? "pointer" : "default",
+                        "&:hover .overlay": { opacity: 1 },
+                        display: "flex",
+                        flexDirection: "column",
+                        height: "100%",
+                      }}
+                      onClick={
+                        singleSelect ? () => handleSelect(url) : undefined
+                      }
+                      elevation={0}
+                    >
+                      <CardMedia
+                        component="img"
+                        image={url}
+                        alt={`AI Image ${idx + 1}`}
+                        sx={{
+                          width: "100%",
+                          objectFit: "cover",
+                          display: "block",
+                          flexGrow: 1,
+                        }}
+                      />
+                      <Box
+                        className="overlay"
+                        sx={{
+                          position: "absolute",
+                          inset: 0,
+                          bgcolor: "rgba(0,0,0,0.5)",
+                          opacity: 0,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          transition: "opacity 0.3s",
+                        }}
+                      >
+                        <Stack direction="row" spacing={1}>
+                          {onImageSelect && !singleSelect && (
+                            <Tooltip title="Select Image">
+                              <IconButton
+                                onClick={() => handleSelect(url)}
+                                sx={{
+                                  color: "common.white",
+                                  "&:hover": {
+                                    bgcolor: "rgba(255,255,255,0.1)",
+                                  },
+                                }}
+                              >
+                                <FiCheck />
+                              </IconButton>
+                            </Tooltip>
+                          )}
+                          <Tooltip
+                            title={
+                              saveDesignState.isPending
+                                ? "Saving..."
+                                : saveDesignState.isSuccess
+                                ? "Design Saved!"
+                                : "Save Design"
+                            }
+                          >
+                            <span>
+                              <IconButton
+                                disabled={
+                                  saveDesignState.isPending ||
+                                  (saveDesignState.isSuccess &&
+                                    saveDesignState.variables?.image_url ===
+                                      url)
+                                }
+                                onClick={() =>
+                                  saveDesign({
+                                    name:
+                                      watch("prompt") || `AI Design ${idx + 1}`,
+                                    image_url: url,
+                                  })
+                                }
+                                sx={{
+                                  color: "common.white",
+                                  "&:hover": {
+                                    bgcolor: "rgba(255,255,255,0.1)",
+                                  },
+                                }}
+                              >
+                                {saveDesignState.isPending &&
+                                saveDesignState.variables?.image_url === url ? (
+                                  <CircularProgress size={24} color="inherit" />
+                                ) : (
+                                  <FiSave />
+                                )}
+                              </IconButton>
+                            </span>
+                          </Tooltip>
+                        </Stack>
+                      </Box>
+                    </Card>
+                  </ImageListItem>
+                ))}
+              </ImageList>
+            ) : (
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  py: 8,
+                  border: "1px dashed",
+                  borderColor: "divider",
+                  borderRadius: 2,
+                  minHeight: 300,
+                  textAlign: "center",
+                }}
+              >
+                <Box
+                  sx={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "text.secondary",
+                  }}
+                >
+                  <FiImage
+                    size={64}
+                    style={{ marginBottom: 16, opacity: 0.5 }}
+                  />
+                  <Typography variant="body1">
+                    Your generated images will appear here.
+                  </Typography>
+                  <Typography variant="caption">
+                    Enter a prompt and click "Generate Images".
+                  </Typography>
                 </Box>
-              )}
-            </Box>
-          </Grid>
-        </Grid>
-      </Stack>
+                {imageGenerationMutation.error && (
+                  <Alert severity="error" sx={{ mt: 2, width: "100%" }}>
+                    {imageGenerationMutation.error instanceof Error
+                      ? imageGenerationMutation.error.message
+                      : "Failed to generate images. Please try again."}
+                  </Alert>
+                )}
+              </Box>
+            )}
+          </Box>
+        </Stack>
+      </form>
     </Paper>
   );
 };
