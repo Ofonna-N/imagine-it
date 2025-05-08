@@ -462,6 +462,64 @@ export const getTheme = (mode: PaletteMode) => {
             },
           },
         },
+        MuiToggleButtonGroup: {
+          styleOverrides: {
+            root: {
+              borderRadius: "2px", // Consistent with other components
+              border: `1px solid ${alpha(primaryMain, 0.3)}`,
+            },
+            grouped: {
+              margin: "4px", // Add some space between buttons
+              border: "none", // Remove individual borders
+              "&:not(:first-of-type)": {
+                borderRadius: "2px", // Keep consistent border radius
+                marginLeft: "4px", // Ensure margin is applied
+              },
+              "&:first-of-type": {
+                borderRadius: "2px", // Keep consistent border radius
+              },
+            },
+          },
+        },
+        MuiToggleButton: {
+          styleOverrides: {
+            root: {
+              borderRadius: "2px", // Consistent border radius
+              textTransform: "none",
+              fontWeight: 500,
+              color:
+                mode === "light"
+                  ? alpha("#000000", 0.7)
+                  : alpha("#FFFFFF", 0.7), // Deselected text color
+              backgroundColor: "transparent",
+              border: "none", // Remove individual borders, handled by group
+              padding: "8px 16px",
+              transition:
+                "background-color 0.2s ease-in-out, color 0.2s ease-in-out",
+              "&:hover": {
+                backgroundColor:
+                  mode === "light"
+                    ? alpha(primaryMain, 0.05)
+                    : alpha(primaryMain, 0.15),
+                color: primaryMain,
+              },
+              "&.Mui-selected": {
+                color: mode === "light" ? primaryDark : primaryLight,
+                backgroundColor:
+                  mode === "light"
+                    ? alpha(primaryLight, 0.2)
+                    : alpha(primaryDark, 0.3), // Brighter background for selected
+                fontWeight: 700,
+                "&:hover": {
+                  backgroundColor:
+                    mode === "light"
+                      ? alpha(primaryLight, 0.3)
+                      : alpha(primaryDark, 0.4),
+                },
+              },
+            },
+          },
+        },
       },
       cssVariables: {
         colorSchemeSelector: "class",
