@@ -5,6 +5,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import {
   imageGenerationSchema,
   type ImageGenerationFormValues,
+  artStyleOptions as artStyleValues,
+  artStyleEnhancements,
   type ArtStyleUnion,
 } from "../schemas/image_generation_schema";
 import {
@@ -62,42 +64,18 @@ interface ImageGeneratorProps {
   singleSelect?: boolean;
 }
 
-const artStyleOptions: { value: ArtStyleUnion; label: string }[] = [
-  { value: "", label: "None (Default)" },
-  { value: "minimalist", label: "Minimalist" },
-  { value: "abstract", label: "Abstract" },
-  { value: "sketchy", label: "Sketchy" },
-  { value: "photography", label: "Photography" },
-  { value: "painting", label: "Painting" },
-  { value: "3d render", label: "3D Render" },
-  { value: "cinematic", label: "Cinematic" },
-  {
-    value: "graphic design pop art",
-    label: "Graphic Design Pop Art",
-  },
-  { value: "creative", label: "Creative" },
-  { value: "fashion", label: "Fashion" },
-  { value: "graphic design", label: "Graphic Design" },
-  { value: "moody", label: "Moody" },
-  { value: "bokeh", label: "Bokeh" },
-  {
-    value: "pro b&w photography",
-    label: "Pro B&W Photography",
-  },
-  {
-    value: "pro color photography",
-    label: "Pro Color Photography",
-  },
-  {
-    value: "pro film photography",
-    label: "Pro Film Photography",
-  },
-  {
-    value: "sketch black and white",
-    label: "Sketch Black and White",
-  },
-  { value: "sketch color", label: "Sketch Color" },
-];
+// Transform the imported artStyleValues into the { value, label } format
+const artStyleOptions: { value: ArtStyleUnion; label: string }[] =
+  artStyleValues.map((style) => ({
+    value: style,
+    label:
+      style === ""
+        ? "None (Default)"
+        : style
+            .split(" ")
+            .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(" "),
+  }));
 
 /**
  * ImageGenerator component
@@ -143,10 +121,10 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
   const onSubmit: SubmitHandler<ImageGenerationFormValues> = (data) => {
     saveDesignState.reset();
     let finalPrompt = data.prompt;
-    // artStyle is optional, so ensure it exists and is not an empty string (falsy) before appending
     if (data.artStyle) {
-      // Simplified condition
-      finalPrompt = `${data.prompt}. art style must be (${data.artStyle})`;
+      const enhancement =
+        artStyleEnhancements[data.artStyle as ArtStyleUnion] || data.artStyle;
+      finalPrompt = `${data.prompt}. Art style: ${data.artStyle}. ${enhancement}`;
     }
 
     const modelKey: ModelKey =
