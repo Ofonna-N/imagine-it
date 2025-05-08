@@ -29,11 +29,6 @@ export interface GenerateImageInputPayload {
   prompt: string;
   orientation?: "landscape" | "portrait" | "square" | "auto";
   /**
-   * Optional provider name (e.g., 'replicate', 'local')
-   * Used for dynamic provider selection in the API
-   */
-  provider?: string;
-  /**
    * Model key from MODEL_REGISTRY (e.g., 'prunaai-fast', 'gpt-image-1')
    */
   model?: ModelKey;
