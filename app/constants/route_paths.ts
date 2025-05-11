@@ -90,6 +90,7 @@ export const API_ROUTES = {
    * Resource route for purchasing credits
    */
   PURCHASE_CREDITS: "/api/purchase-credits",
+  CREDIT_PACKAGES: "/api/credit-packages", // GET: fetch available credit packages
 };
 
 // A flattened version combining all routes for easier imports

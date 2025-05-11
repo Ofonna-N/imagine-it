@@ -6,11 +6,11 @@ import {
   PayeePaymentMethodPreference,
   PaypalExperienceUserAction,
   PaypalWalletContextShippingPreference,
-  ShippingPreference,
   type PaymentSource,
   type PurchaseUnitRequest,
 } from "@paypal/paypal-server-sdk";
 import type { CreateOrderData } from "@paypal/paypal-js/types/components/buttons";
+import { TAX_RATE } from "~/utils/tax";
 
 /**
  * POST /api/paypal-create-order
@@ -57,42 +57,48 @@ export async function action({ request }: ActionFunctionArgs) {
     shippingCost,
   } = body;
 
-  // Map items to PayPal purchase_units.items
-  // Calculate totals
-  const itemTotal = items.reduce(
-    (sum, item) => sum + item.price * item.quantity,
-    0
-  );
-  const shippingTotal = shippingCost ?? 0;
-  const taxTotal = tax ?? 0;
-  const totalValue = (itemTotal + shippingTotal + taxTotal).toFixed(2);
+  // Calculate Texas sales tax (8.25%) for credit package
+
+  let taxTotal = 0;
+  let itemTotal = 0;
+  let totalValue = 0;
+  if (items.length === 1 && items[0].name?.toLowerCase().includes("credit")) {
+    // Credit purchase flow
+    itemTotal = items[0].price;
+    taxTotal = +(itemTotal * TAX_RATE).toFixed(2);
+    totalValue = +(itemTotal + taxTotal).toFixed(2);
+  } else {
+    // Fallback for other flows (e.g. product checkout)
+    itemTotal = items.reduce(
+      (sum, item) => sum + item.price * item.quantity,
+      0
+    );
+    taxTotal = tax ?? 0;
+    totalValue = +(itemTotal + (shippingCost ?? 0) + taxTotal).toFixed(2);
+  }
+  console.log("totalValue", totalValue);
+  console.log("itemTotal", itemTotal);
+  console.log("taxTotal", taxTotal);
+  console.log("shippingCost", shippingCost);
+  console.log("items", items);
 
   const purchase_units: PurchaseUnitRequest[] = [
     {
       amount: {
         currencyCode: currency,
-        value: totalValue,
+        value: totalValue.toFixed(2),
         breakdown: {
-          itemTotal: {
-            currencyCode: currency,
-            value: itemTotal.toFixed(2),
-          },
+          itemTotal: { currencyCode: currency, value: itemTotal.toFixed(2) },
           shipping: {
             currencyCode: currency,
-            value: shippingTotal.toFixed(2),
+            value: (shippingCost ?? 0).toFixed(2),
           },
-          taxTotal: {
-            currencyCode: currency,
-            value: taxTotal.toFixed(2),
-          },
+          taxTotal: { currencyCode: currency, value: taxTotal.toFixed(2) },
         },
       },
       items: items.map((item) => ({
         name: item.name,
-        unitAmount: {
-          currencyCode: currency,
-          value: item.price.toFixed(2),
-        },
+        unitAmount: { currencyCode: currency, value: item.price.toFixed(2) },
         quantity: item.quantity.toString(),
       })),
       shipping: {

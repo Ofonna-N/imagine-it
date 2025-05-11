@@ -260,7 +260,11 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
                   type="submit"
                   variant="contained"
                   size="large"
-                  disabled={isSubmitting || imageGenerationMutation.isPending}
+                  disabled={
+                    isSubmitting ||
+                    imageGenerationMutation.isPending ||
+                    !userProfileData?.credits
+                  }
                   startIcon={
                     isSubmitting || imageGenerationMutation.isPending ? (
                       <CircularProgress size={20} color="inherit" />
@@ -274,6 +278,11 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
                   Generate Image
                   {(isSubmitting || imageGenerationMutation.isPending) &&
                     "s..."}
+                  {!userProfileData?.credits && (
+                    <Typography variant="caption" sx={{ ml: 2 }}>
+                      (Insufficient credits)
+                    </Typography>
+                  )}
                 </Button>
               </Stack>
             </Grid>

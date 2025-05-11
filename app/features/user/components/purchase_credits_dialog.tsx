@@ -5,12 +5,17 @@ import {
   DialogContent,
   DialogActions,
   Button,
-  TextField,
   Typography,
   Alert,
   Stack,
 } from "@mui/material";
 import { useMutatePurchaseCredits } from "../hooks/use_mutate_purchase_credits";
+import {
+  PayPalButtons,
+  type PayPalButtonsComponentProps,
+} from "@paypal/react-paypal-js";
+import { useQueryCreditPackages } from "../hooks/use_query_credit_packages";
+import { TAX_RATE, calculateTax } from "~/utils/tax";
 
 interface PurchaseCreditsDialogProps {
   open: boolean;
@@ -18,33 +23,40 @@ interface PurchaseCreditsDialogProps {
   onPurchaseSuccess?: () => void;
 }
 
-const CREDIT_PACKAGES = [
-  { credits: 20, price: 0.99 },
-  { credits: 60, price: 2.49 },
-  { credits: 150, price: 4.99 },
-  { credits: 400, price: 9.99 },
-];
-
 const PurchaseCreditsDialog: React.FC<PurchaseCreditsDialogProps> = ({
   open,
   onClose,
   onPurchaseSuccess,
 }) => {
+  const { data, isLoading, error: packagesError } = useQueryCreditPackages();
   const [selected, setSelected] = useState(0);
-  const [paymentId, setPaymentId] = useState(""); // In real app, this comes from payment provider
-  const { mutate, isPending, isSuccess, error, data } =
-    useMutatePurchaseCredits({
-      onSuccess: () => {
-        if (onPurchaseSuccess) onPurchaseSuccess();
-      },
-    });
+  const {
+    mutate,
+    isPending,
+    isSuccess,
+    error,
+    data: purchaseData,
+  } = useMutatePurchaseCredits({
+    onSuccess: () => {
+      if (onPurchaseSuccess) onPurchaseSuccess();
+    },
+  });
 
-  const handlePurchase = () => {
-    // In production, integrate with PayPal/Stripe and get paymentId
-    mutate({
-      credits: CREDIT_PACKAGES[selected].credits,
-      paymentId: paymentId || "test-payment-id",
-    });
+  const creditPackages = data?.packages || [];
+  const selectedPackage = creditPackages[selected] || creditPackages[0];
+  const tax = selectedPackage ? calculateTax(selectedPackage.price) : 0;
+  const total = selectedPackage ? +(selectedPackage.price + tax).toFixed(2) : 0;
+
+  // Instead of sending credits and price, send only packageId and paymentId to the backend
+  const handleApprove: PayPalButtonsComponentProps["onApprove"] = async (
+    data
+  ) => {
+    if (data.orderID && selectedPackage) {
+      mutate({
+        packageId: String(selectedPackage.id),
+        paymentId: data.orderID,
+      });
+    }
   };
 
   return (
@@ -53,9 +65,13 @@ const PurchaseCreditsDialog: React.FC<PurchaseCreditsDialogProps> = ({
       <DialogContent>
         <Stack spacing={2}>
           <Typography>Select a credit package:</Typography>
-          {CREDIT_PACKAGES.map((pkg, idx) => (
+          {isLoading && <Typography>Loading packages...</Typography>}
+          {packagesError && (
+            <Alert severity="error">{packagesError.message}</Alert>
+          )}
+          {creditPackages.map((pkg, idx) => (
             <Button
-              key={pkg.credits}
+              key={pkg.id}
               variant={selected === idx ? "contained" : "outlined"}
               onClick={() => setSelected(idx)}
               fullWidth
@@ -65,18 +81,62 @@ const PurchaseCreditsDialog: React.FC<PurchaseCreditsDialogProps> = ({
               <span>${pkg.price.toFixed(2)}</span>
             </Button>
           ))}
-          {/* Simulate payment ID input for demo/testing */}
-          <TextField
-            label="Payment ID (simulate)"
-            value={paymentId}
-            onChange={(e) => setPaymentId(e.target.value)}
-            fullWidth
-            size="small"
-          />
+          {/* PayPal Button Integration */}
+          {selectedPackage && (
+            <Stack spacing={1}>
+              <Typography variant="body2" color="text.secondary">
+                Subtotal: ${selectedPackage.price.toFixed(2)}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Tax ({(TAX_RATE * 100).toFixed(2)}%): ${tax.toFixed(2)}
+              </Typography>
+              <Typography
+                variant="subtitle1"
+                color="text.primary"
+                sx={{ fontWeight: 600 }}
+              >
+                Total: ${total.toFixed(2)}
+              </Typography>
+            </Stack>
+          )}
+          {selectedPackage && (
+            <PayPalButtons
+              style={{ layout: "vertical", color: "blue" }}
+              createOrder={(_data, actions) => {
+                return actions.order.create({
+                  intent: "CAPTURE",
+                  purchase_units: [
+                    {
+                      amount: {
+                        value: total.toFixed(2),
+                        currency_code: "USD",
+                        breakdown: {
+                          item_total: {
+                            value: selectedPackage.price.toFixed(2),
+                            currency_code: "USD",
+                          },
+                          tax_total: {
+                            value: tax.toFixed(2),
+                            currency_code: "USD",
+                          },
+                        },
+                      },
+                      description: `${selectedPackage.credits} credits for Imagine It`,
+                    },
+                  ],
+                });
+              }}
+              onApprove={handleApprove}
+              onError={(err) => {
+                // Optionally handle PayPal errors
+                console.error("PayPal error", err);
+              }}
+            />
+          )}
           {error && <Alert severity="error">{error.message}</Alert>}
           {isSuccess && (
             <Alert severity="success">
-              Purchase successful! New balance: {data?.newBalance}
+              Purchase successful! New balance: {purchaseData?.newBalance}
             </Alert>
           )}
         </Stack>
@@ -84,13 +144,6 @@ const PurchaseCreditsDialog: React.FC<PurchaseCreditsDialogProps> = ({
       <DialogActions>
         <Button onClick={onClose} disabled={isPending}>
           Cancel
-        </Button>
-        <Button
-          onClick={handlePurchase}
-          variant="contained"
-          disabled={isPending}
-        >
-          Buy
         </Button>
       </DialogActions>
     </Dialog>

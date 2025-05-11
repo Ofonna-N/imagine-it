@@ -13,12 +13,7 @@ import {
   alpha,
 } from "@mui/material";
 import { z } from "zod";
-import {
-  useForm,
-  FormProvider,
-  useFormContext,
-  useFormState,
-} from "react-hook-form";
+import { useForm, FormProvider, useFormContext } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
 import { useQueryCart } from "~/features/cart/hooks/use_query_cart";
@@ -51,6 +46,7 @@ import FormLabel from "@mui/material/FormLabel";
 import type { PrintfulV2ShippingRate } from "~/types/printful/shipping_rates_types";
 import ROUTE_PATHS from "~/constants/route_paths";
 import { useMutateClearCart } from "~/features/cart/hooks/use_mutate_clear_cart";
+import { TAX_RATE, calculateTax } from "../utils/tax";
 
 // --- Schema and Types ---
 const orderRecipientSchema = z
@@ -75,12 +71,6 @@ const checkoutSchema = z.object({
 });
 
 type CheckoutFormData = z.infer<typeof checkoutSchema>;
-
-// --- Tax Calculation Helper ---
-const TAX_RATE = 0.08; // 8% industry standard
-function calculateTax(subtotal: number): number {
-  return +(subtotal * TAX_RATE).toFixed(2);
-}
 
 // --- Shipping Form Component ---
 function ShippingForm() {
@@ -429,7 +419,7 @@ export default function Checkout() {
       const shipping = shippingForm.getValues().shipping;
       const order_items = itemsWithPrices.map(({ item }) => item.item_data);
       const printfulPayload = {
-        shipping: selectedShippingRate?.shipping || "STANDARD",
+        shipping: selectedShippingRate?.shipping ?? "STANDARD",
         recipient: shipping,
         order_items,
         // Add any additional fields as needed
@@ -583,12 +573,12 @@ export default function Checkout() {
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
                           {shippingForm.getValues().shipping.city},{" "}
-                          {shippingForm.getValues().shipping.state_code ||
+                          {shippingForm.getValues().shipping.state_code ??
                             shippingForm.getValues().shipping.state_name}{" "}
                           {shippingForm.getValues().shipping.zip}
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
-                          {shippingForm.getValues().shipping.country_name ||
+                          {shippingForm.getValues().shipping.country_name ??
                             shippingForm.getValues().shipping.country_code}
                         </Typography>
                         {shippingForm.getValues().shipping.phone && (
@@ -777,7 +767,9 @@ export default function Checkout() {
                           mb: 1,
                         }}
                       >
-                        <Typography color="text.secondary">Tax (8%)</Typography>
+                        <Typography color="text.secondary">{`Tax (${(
+                          TAX_RATE * 100
+                        ).toFixed(2)}%)`}</Typography>
                         <Typography color="text.primary">{`$${tax.toFixed(
                           2
                         )}`}</Typography>

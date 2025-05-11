@@ -129,4 +129,8 @@ export default [
     API_ROUTES.PURCHASE_CREDITS.slice(1),
     "routes_api/api.purchase_credits.ts"
   ),
+  route(
+    API_ROUTES.CREDIT_PACKAGES.slice(1),
+    "routes_api/api.credit_packages.ts"
+  ),
 ] satisfies RouteConfig;
