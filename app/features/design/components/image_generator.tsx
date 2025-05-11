@@ -308,44 +308,61 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
                         name="selectedModel"
                         control={control}
                         render={({ field }) => (
-                          <ToggleButtonGroup
-                            {...field}
-                            exclusive
-                            onChange={(event, newValue) => {
-                              if (newValue !== null) {
-                                field.onChange(newValue);
-                                if (newValue === "basic") {
-                                  setValue("isTransparent", false);
+                          <Box sx={{ width: "100%" }}>
+                            <ToggleButtonGroup
+                              {...field}
+                              exclusive
+                              onChange={(event, newValue) => {
+                                if (newValue !== null) {
+                                  field.onChange(newValue);
+                                  if (newValue === "basic") {
+                                    setValue("isTransparent", false);
+                                  }
                                 }
+                              }}
+                              aria-label="Image generation model"
+                              fullWidth
+                              sx={{
+                                display: "flex",
+                                flexWrap: "wrap",
+                                width: "100%",
+                              }}
+                              disabled={
+                                isSubmitting || imageGenerationMutation.isPending
                               }
-                            }}
-                            aria-label="Image generation model"
-                            fullWidth
-                            disabled={
-                              isSubmitting || imageGenerationMutation.isPending
-                            }
-                          >
-                            <ToggleButton
-                              value="basic"
-                              aria-label="Basic model"
-                              sx={{ flexGrow: 1 }}
                             >
-                              <FiZap style={{ marginRight: 8 }} /> Basic
-                              <Typography variant="caption" sx={{ ml: 1 }}>
-                                {MODEL_CREDIT_COSTS["prunaai-fast"]} credits
-                              </Typography>
-                            </ToggleButton>
-                            <ToggleButton
-                              value="advanced"
-                              aria-label="Advanced model"
-                              sx={{ flexGrow: 1 }}
-                            >
-                              <FiStar style={{ marginRight: 8 }} /> Advanced
-                              <Typography variant="caption" sx={{ ml: 1 }}>
-                                {MODEL_CREDIT_COSTS["gpt-image-1"]} credits
-                              </Typography>
-                            </ToggleButton>
-                          </ToggleButtonGroup>
+                              <ToggleButton
+                                value="basic"
+                                aria-label="Basic model"
+                                sx={{ flex: "1 1 0", minWidth: 0, justifyContent: "center", p: 1.5 }}
+                              >
+                                <Stack direction="column" alignItems="center" spacing={0.5} width="100%">
+                                  <FiZap size={22} />
+                                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                                    Basic
+                                  </Typography>
+                                  <Typography variant="caption" color="text.secondary">
+                                    {MODEL_CREDIT_COSTS["prunaai-fast"]} credits
+                                  </Typography>
+                                </Stack>
+                              </ToggleButton>
+                              <ToggleButton
+                                value="advanced"
+                                aria-label="Advanced model"
+                                sx={{ flex: "1 1 0", minWidth: 0, justifyContent: "center", p: 1.5 }}
+                              >
+                                <Stack direction="column" alignItems="center" spacing={0.5} width="100%">
+                                  <FiStar size={22} />
+                                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                                    Advanced
+                                  </Typography>
+                                  <Typography variant="caption" color="text.secondary">
+                                    {MODEL_CREDIT_COSTS["gpt-image-1"]} credits
+                                  </Typography>
+                                </Stack>
+                              </ToggleButton>
+                            </ToggleButtonGroup>
+                          </Box>
                         )}
                       />
                       {errors.selectedModel && (
