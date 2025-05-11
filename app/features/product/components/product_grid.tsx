@@ -9,7 +9,7 @@ interface ProductGridProps {
 }
 
 // Create a MotionGrid component
-const MotionGrid = motion(Grid);
+const MotionGrid = motion.create(Grid);
 
 export function ProductGrid({
   catalogProducts,
