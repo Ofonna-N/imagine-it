@@ -4,6 +4,9 @@
 - Use snake_case for file names.
 - Use camelCase for function names and variable names; only file names should use snake_case.
 
+# React Router v7 Instructions
+- Outside of types, only actions and loaders should be exported from resource/api routes
+
 # MUI v7 Instructions
 - Use the new `Grid` component instead of `GridLegacy`.
 - Remove `item` and `zeroMinWidth` props from `Grid`.
