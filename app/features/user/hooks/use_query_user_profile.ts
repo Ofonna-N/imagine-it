@@ -18,7 +18,8 @@ function useQueryUserProfile() {
         throw new Error(error.error ?? "Failed to fetch user profile");
       }
 
-      return response.json();
+      const data = await response.json();
+      return data.profile; // <-- Fix: return the profile object directly
     },
     // Don't fetch if not authenticated (you can add a dependency to user session status)
     enabled: true,

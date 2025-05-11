@@ -85,6 +85,11 @@ export const API_ROUTES = {
   USER_ORDERS: "/api/user-orders",
   // Theme API route
   THEME: "/api/theme",
+  /**
+   * POST /api/purchase-credits
+   * Resource route for purchasing credits
+   */
+  PURCHASE_CREDITS: "/api/purchase-credits",
 };
 
 // A flattened version combining all routes for easier imports

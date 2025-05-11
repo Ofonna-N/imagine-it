@@ -125,4 +125,8 @@ export default [
   ),
   route(API_ROUTES.USER_ORDERS.slice(1), "routes_api/api.user_orders.ts"),
   route(API_ROUTES.THEME.slice(1), "routes_api/api.theme.ts"),
+  route(
+    API_ROUTES.PURCHASE_CREDITS.slice(1),
+    "routes_api/api.purchase_credits.ts"
+  ),
 ] satisfies RouteConfig;

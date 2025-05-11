@@ -111,3 +111,29 @@ export async function deductUserCredits(
   }
   return updatedProfile;
 }
+
+/**
+ * Adds credits to a user's balance.
+ * @param userId - The ID of the user.
+ * @param creditsToAdd - The amount of credits to add.
+ * @returns The updated user profile.
+ */
+export async function addUserCredits(
+  userId: string,
+  creditsToAdd: number
+): Promise<UserProfile | null> {
+  try {
+    if (creditsToAdd <= 0) {
+      throw new Error("Credits to add must be positive.");
+    }
+    const user = await getUserProfileById(userId);
+    if (!user) {
+      throw new Error("User not found for credit addition.");
+    }
+    const newCreditAmount = (user.credits ?? 0) + creditsToAdd;
+    return await updateUserCredits(userId, newCreditAmount);
+  } catch (error) {
+    console.error("Error adding user credits:", error);
+    throw error;
+  }
+}

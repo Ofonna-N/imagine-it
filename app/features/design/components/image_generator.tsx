@@ -53,6 +53,9 @@ import {
 import { useMutateSaveDesign } from "../hooks/use_mutate_save_design";
 import type { ModelKey } from "~/services/image_generation/model_registry";
 import type { GenerateImageInputPayload } from "~/services/image_generation/image_generation_types";
+import CreditsBalance from "~/features/user/components/credits_balance";
+import PurchaseCreditsDialog from "~/features/user/components/purchase_credits_dialog";
+import useQueryUserProfile from "~/features/user/hooks/use_query_user_profile";
 
 /**
  * Props for ImageGenerator component
@@ -77,6 +80,14 @@ const artStyleOptions: { value: ArtStyleUnion; label: string }[] =
             .join(" "),
   }));
 
+// Model credit costs (sync with backend)
+const MODEL_CREDIT_COSTS: Record<string, number> = {
+  "prunaai-fast": 2,
+  "gpt-image-1": 13,
+  "dall-e-3": 8,
+  "new-model": 1,
+};
+
 /**
  * ImageGenerator component
  * Allows users to enter a prompt, generate images, and view/save results.
@@ -86,7 +97,13 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
   singleSelect = false,
 }) => {
   const queryClient = useQueryClient();
-
+  const {
+    data: userProfileData,
+    isLoading: isProfileLoading,
+    error: profileError,
+    refetch: refetchUserProfile,
+  } = useQueryUserProfile();
+  console.log("userProfileData", userProfileData);
   const {
     control,
     handleSubmit,
@@ -117,6 +134,8 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
       console.log("Design saved");
     },
   });
+
+  const [purchaseDialogOpen, setPurchaseDialogOpen] = React.useState(false);
 
   const onSubmit: SubmitHandler<ImageGenerationFormValues> = (data) => {
     saveDesignState.reset();
@@ -312,6 +331,9 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
                               sx={{ flexGrow: 1 }}
                             >
                               <FiZap style={{ marginRight: 8 }} /> Basic
+                              <Typography variant="caption" sx={{ ml: 1 }}>
+                                {MODEL_CREDIT_COSTS["prunaai-fast"]} credits
+                              </Typography>
                             </ToggleButton>
                             <ToggleButton
                               value="advanced"
@@ -319,6 +341,9 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
                               sx={{ flexGrow: 1 }}
                             >
                               <FiStar style={{ marginRight: 8 }} /> Advanced
+                              <Typography variant="caption" sx={{ ml: 1 }}>
+                                {MODEL_CREDIT_COSTS["gpt-image-1"]} credits
+                              </Typography>
                             </ToggleButton>
                           </ToggleButtonGroup>
                         )}
@@ -333,6 +358,39 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
                         </Typography>
                       )}
                     </FormControl>
+
+                    {/* Show credits and buy button */}
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 2,
+                        mt: 2,
+                      }}
+                    >
+                      <CreditsBalance
+                        credits={userProfileData?.credits}
+                        isLoading={isProfileLoading}
+                        error={profileError}
+                      />
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        onClick={() => setPurchaseDialogOpen(true)}
+                      >
+                        Buy Credits
+                      </Button>
+                    </Box>
+                    <PurchaseCreditsDialog
+                      open={purchaseDialogOpen}
+                      onClose={() => setPurchaseDialogOpen(false)}
+                      onPurchaseSuccess={() => {
+                        queryClient.invalidateQueries({
+                          queryKey: ["userProfile"],
+                        });
+                        refetchUserProfile();
+                      }}
+                    />
 
                     {selectedModel === "advanced" && (
                       <Controller
@@ -620,13 +678,31 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
                     Enter a prompt and click "Generate Images".
                   </Typography>
                 </Box>
-                {imageGenerationMutation.error && (
-                  <Alert severity="error" sx={{ mt: 2, width: "100%" }}>
-                    {imageGenerationMutation.error instanceof Error
-                      ? imageGenerationMutation.error.message
-                      : "Failed to generate images. Please try again."}
-                  </Alert>
-                )}
+                {imageGenerationMutation.error &&
+                  /Insufficient credits/i.test(
+                    imageGenerationMutation.error.message
+                  ) && (
+                    <Alert severity="warning" sx={{ mt: 2 }}>
+                      {imageGenerationMutation.error.message}
+                      <Button
+                        size="small"
+                        sx={{ ml: 2 }}
+                        onClick={() => setPurchaseDialogOpen(true)}
+                      >
+                        Buy Credits
+                      </Button>
+                    </Alert>
+                  )}
+                {imageGenerationMutation.error &&
+                  !/Insufficient credits/i.test(
+                    imageGenerationMutation.error.message
+                  ) && (
+                    <Alert severity="error" sx={{ mt: 2, width: "100%" }}>
+                      {imageGenerationMutation.error instanceof Error
+                        ? imageGenerationMutation.error.message
+                        : "Failed to generate images. Please try again."}
+                    </Alert>
+                  )}
               </Box>
             )}
           </Box>
