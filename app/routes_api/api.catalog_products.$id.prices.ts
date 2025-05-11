@@ -1,9 +1,10 @@
 import type { LoaderFunctionArgs } from "react-router";
 import { fetchCatalogProductPrices } from "~/services/printful/printful_api";
+import { applyProfitToProductPricesResponse } from "~/utils/profit_calculator"; // Adjust path if needed
 
 /**
  * GET /api/catalog-products/:id/prices
- * Utility: Returns pricing information for a specific catalog product.
+ * Utility: Returns pricing information for a specific catalog product, with profit margin applied.
  */
 export async function loader({ params }: LoaderFunctionArgs) {
   const productId = params.id;
@@ -16,8 +17,13 @@ export async function loader({ params }: LoaderFunctionArgs) {
   }
 
   try {
-    const pricingResponse = await fetchCatalogProductPrices(productId);
-    return new Response(JSON.stringify(pricingResponse), {
+    const originalPricingResponse = await fetchCatalogProductPrices(productId);
+    // Apply profit margin
+    const pricingResponseWithProfit = applyProfitToProductPricesResponse(
+      originalPricingResponse
+    );
+
+    return new Response(JSON.stringify(pricingResponseWithProfit), {
       status: 200,
       headers: { "Content-Type": "application/json" },
     });
