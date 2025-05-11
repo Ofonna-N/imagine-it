@@ -1,7 +1,8 @@
-# React Router v7 Instructions
+# Project Instructions
 - Name query hooks as `use_query_<resource_name>`.
 - Name mutation hooks as `use_mutate_<resource_name>`.
 - Use snake_case for file names.
+- Use camelCase for function names and variable names; only file names should use snake_case.
 
 # MUI v7 Instructions
 - Use the new `Grid` component instead of `GridLegacy`.
