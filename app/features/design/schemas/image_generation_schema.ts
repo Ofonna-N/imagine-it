@@ -90,13 +90,18 @@ export const imageGenerationSchema = z.object({
     errorMap: () => ({ message: "Please select a model." }),
   }),
   isTransparent: z.boolean().default(false).optional(), // Made optional to align with form logic where it's conditional
-  artStyle: z.enum(artStyleOptions).default("").optional(), // Ensured optional and default
+  artStyle: z.array(z.enum(artStyleOptions)).default([]).optional(), // Now supports multiple styles
   orientation: z.enum(["square", "landscape", "portrait"], {
     errorMap: () => ({ message: "Please select an orientation." }),
   }),
 });
 
-export type ImageGenerationFormValues = z.infer<typeof imageGenerationSchema>;
+export type ImageGenerationFormValues = Omit<
+  z.infer<typeof imageGenerationSchema>,
+  "artStyle"
+> & {
+  artStyle?: ArtStyleUnion[];
+};
 
 // Utility type for art style options if needed elsewhere
 export type ArtStyleUnion = (typeof artStyleOptions)[number];

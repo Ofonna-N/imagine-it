@@ -40,6 +40,7 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
+  Autocomplete,
 } from "@mui/material";
 import {
   FiCheck,
@@ -56,6 +57,7 @@ import type { GenerateImageInputPayload } from "~/services/image_generation/imag
 import CreditsBalance from "~/features/user/components/credits_balance";
 import PurchaseCreditsDialog from "~/features/user/components/purchase_credits_dialog";
 import useQueryUserProfile from "~/features/user/hooks/use_query_user_profile";
+import { createFilterOptions } from "@mui/material/Autocomplete";
 
 /**
  * Props for ImageGenerator component
@@ -88,6 +90,16 @@ const MODEL_CREDIT_COSTS: Record<string, number> = {
   "new-model": 1,
 };
 
+// Memoize filterOptions for performance with large lists
+const artStyleFilterOptions = createFilterOptions<{
+  value: ArtStyleUnion;
+  label: string;
+}>({
+  matchFrom: "any",
+  stringify: (option) => `${option.label} ${option.value}`,
+  // limit: 50, // Only show top 50 matches for performance
+});
+
 /**
  * ImageGenerator component
  * Allows users to enter a prompt, generate images, and view/save results.
@@ -97,6 +109,8 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
   singleSelect = false,
 }) => {
   const queryClient = useQueryClient();
+
+  console.log("ImageGenerator component rendered");
   const {
     data: userProfileData,
     isLoading: isProfileLoading,
@@ -116,7 +130,7 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
       prompt: "",
       selectedModel: "advanced",
       isTransparent: false,
-      artStyle: "",
+      artStyle: [], // Now an array
       orientation: "square",
     },
   });
@@ -140,10 +154,12 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
   const onSubmit: SubmitHandler<ImageGenerationFormValues> = (data) => {
     saveDesignState.reset();
     let finalPrompt = data.prompt;
-    if (data.artStyle) {
-      const enhancement =
-        artStyleEnhancements[data.artStyle as ArtStyleUnion] || data.artStyle;
-      finalPrompt = `${data.prompt}. Art style: ${data.artStyle}. ${enhancement}`;
+    if (data.artStyle && data.artStyle.length > 0) {
+      const enhancements = data.artStyle
+        .map((style) => artStyleEnhancements[style] || style)
+        .join("; ");
+      const styleList = data.artStyle.join(", ");
+      finalPrompt = `${data.prompt}. Art style: ${styleList}. ${enhancements}`;
     }
 
     const modelKey: ModelKey =
@@ -328,20 +344,37 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
                                 width: "100%",
                               }}
                               disabled={
-                                isSubmitting || imageGenerationMutation.isPending
+                                isSubmitting ||
+                                imageGenerationMutation.isPending
                               }
                             >
                               <ToggleButton
                                 value="basic"
                                 aria-label="Basic model"
-                                sx={{ flex: "1 1 0", minWidth: 0, justifyContent: "center", p: 1.5 }}
+                                sx={{
+                                  flex: "1 1 0",
+                                  minWidth: 0,
+                                  justifyContent: "center",
+                                  p: 1.5,
+                                }}
                               >
-                                <Stack direction="column" alignItems="center" spacing={0.5} width="100%">
+                                <Stack
+                                  direction="column"
+                                  alignItems="center"
+                                  spacing={0.5}
+                                  width="100%"
+                                >
                                   <FiZap size={22} />
-                                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                                  <Typography
+                                    variant="body2"
+                                    sx={{ fontWeight: 500 }}
+                                  >
                                     Basic
                                   </Typography>
-                                  <Typography variant="caption" color="text.secondary">
+                                  <Typography
+                                    variant="caption"
+                                    color="text.secondary"
+                                  >
                                     {MODEL_CREDIT_COSTS["prunaai-fast"]} credits
                                   </Typography>
                                 </Stack>
@@ -349,14 +382,30 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
                               <ToggleButton
                                 value="advanced"
                                 aria-label="Advanced model"
-                                sx={{ flex: "1 1 0", minWidth: 0, justifyContent: "center", p: 1.5 }}
+                                sx={{
+                                  flex: "1 1 0",
+                                  minWidth: 0,
+                                  justifyContent: "center",
+                                  p: 1.5,
+                                }}
                               >
-                                <Stack direction="column" alignItems="center" spacing={0.5} width="100%">
+                                <Stack
+                                  direction="column"
+                                  alignItems="center"
+                                  spacing={0.5}
+                                  width="100%"
+                                >
                                   <FiStar size={22} />
-                                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                                  <Typography
+                                    variant="body2"
+                                    sx={{ fontWeight: 500 }}
+                                  >
                                     Advanced
                                   </Typography>
-                                  <Typography variant="caption" color="text.secondary">
+                                  <Typography
+                                    variant="caption"
+                                    color="text.secondary"
+                                  >
                                     {MODEL_CREDIT_COSTS["gpt-image-1"]} credits
                                   </Typography>
                                 </Stack>
@@ -435,38 +484,64 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
                       name="artStyle"
                       control={control}
                       render={({ field }) => (
-                        <FormControl
-                          fullWidth
+                        <Autocomplete
+                          multiple
+                          options={artStyleOptions}
+                          getOptionLabel={(option: {
+                            value: ArtStyleUnion;
+                            label: string;
+                          }) => option.label}
+                          value={
+                            Array.isArray(field.value)
+                              ? artStyleOptions.filter((o) =>
+                                  (field.value ?? []).includes(o.value)
+                                )
+                              : []
+                          }
+                          onChange={(
+                            _,
+                            newValue: {
+                              value: ArtStyleUnion;
+                              label: string;
+                            }[] = []
+                          ) => field.onChange(newValue.map((v) => v.value))}
+                          isOptionEqualToValue={(
+                            option: { value: ArtStyleUnion },
+                            val: { value: ArtStyleUnion }
+                          ) => option.value === val.value}
                           disabled={
                             isSubmitting || imageGenerationMutation.isPending
                           }
-                          error={!!errors.artStyle}
-                        >
-                          <InputLabel id="art-style-select-label">
-                            Art Style (Optional)
-                          </InputLabel>
-                          <Select
-                            {...field}
-                            value={field.value ?? ""} // Ensure value is not undefined for Select
-                            labelId="art-style-select-label"
-                            label="Art Style (Optional)"
-                          >
-                            {artStyleOptions.map((style) => (
-                              <MenuItem key={style.value} value={style.value}>
-                                {style.label}
-                              </MenuItem>
-                            ))}
-                          </Select>
-                          {errors.artStyle && (
-                            <Typography
-                              color="error"
-                              variant="caption"
-                              sx={{ mt: 0.5 }}
-                            >
-                              {errors.artStyle.message}
-                            </Typography>
+                          filterOptions={artStyleFilterOptions}
+                          renderInput={(params) => (
+                            <TextField
+                              {...params}
+                              label="Art Style (Optional)"
+                              error={!!errors.artStyle}
+                              helperText={errors.artStyle?.message}
+                            />
                           )}
-                        </FormControl>
+                          renderOption={(
+                            props: React.HTMLAttributes<HTMLLIElement>,
+                            option: { value: ArtStyleUnion; label: string },
+                            state: { selected: boolean }
+                          ) => (
+                            <li
+                              {...props}
+                              key={option.value}
+                              style={{ display: "flex", alignItems: "center" }}
+                            >
+                              {state.selected && (
+                                <FiCheck
+                                  style={{ marginRight: 8, color: "#1976d2" }}
+                                />
+                              )}
+                              {option.label}
+                            </li>
+                          )}
+                          clearOnEscape
+                          fullWidth
+                        />
                       )}
                     />
 
