@@ -8,6 +8,8 @@ import {
   Typography,
   Alert,
   Stack,
+  Paper,
+  useTheme,
 } from "@mui/material";
 import { useMutatePurchaseCredits } from "../hooks/use_mutate_purchase_credits";
 import {
@@ -47,6 +49,8 @@ const PurchaseCreditsDialog: React.FC<PurchaseCreditsDialogProps> = ({
   const tax = selectedPackage ? calculateTax(selectedPackage.price) : 0;
   const total = selectedPackage ? +(selectedPackage.price + tax).toFixed(2) : 0;
 
+  const paypalContainerBgColor = useTheme().palette.background.paper;
+  const [isDebitCardExpanded, setIsDebitCardExpanded] = useState(false);
   // Instead of sending credits and price, send only packageId and paymentId to the backend
   const handleApprove: PayPalButtonsComponentProps["onApprove"] = async (
     data
@@ -100,38 +104,64 @@ const PurchaseCreditsDialog: React.FC<PurchaseCreditsDialogProps> = ({
             </Stack>
           )}
           {selectedPackage && (
-            <PayPalButtons
-              style={{ layout: "vertical", color: "blue" }}
-              createOrder={(_data, actions) => {
-                return actions.order.create({
-                  intent: "CAPTURE",
-                  purchase_units: [
-                    {
-                      amount: {
-                        value: total.toFixed(2),
-                        currency_code: "USD",
-                        breakdown: {
-                          item_total: {
-                            value: selectedPackage.price.toFixed(2),
-                            currency_code: "USD",
-                          },
-                          tax_total: {
-                            value: tax.toFixed(2),
-                            currency_code: "USD",
+            <Paper
+              id="paypal-button-container"
+              component={"div"}
+              style={{
+                colorScheme: "none",
+                backgroundColor: isDebitCardExpanded
+                  ? "#ffff"
+                  : paypalContainerBgColor,
+                padding: "10px",
+                borderRadius: "5px",
+              }}
+            >
+              <PayPalButtons
+                style={{
+                  layout: "vertical",
+                  color: "blue",
+                  height: 30,
+                }}
+                createOrder={(_data, actions) => {
+                  if (_data.paymentSource === "card") {
+                    setIsDebitCardExpanded(true);
+                  } else {
+                    setIsDebitCardExpanded(false);
+                  }
+
+                  return actions.order.create({
+                    intent: "CAPTURE",
+                    purchase_units: [
+                      {
+                        amount: {
+                          value: total.toFixed(2),
+                          currency_code: "USD",
+                          breakdown: {
+                            item_total: {
+                              value: selectedPackage.price.toFixed(2),
+                              currency_code: "USD",
+                            },
+                            tax_total: {
+                              value: tax.toFixed(2),
+                              currency_code: "USD",
+                            },
                           },
                         },
+                        description: `${selectedPackage.credits} credits for Imagine It`,
                       },
-                      description: `${selectedPackage.credits} credits for Imagine It`,
-                    },
-                  ],
-                });
-              }}
-              onApprove={handleApprove}
-              onError={(err) => {
-                // Optionally handle PayPal errors
-                console.error("PayPal error", err);
-              }}
-            />
+                    ],
+                  });
+                }}
+                onApprove={handleApprove}
+                onError={(err) => {
+                  // Optionally handle PayPal errors
+                  console.error("PayPal error", err);
+                }}
+                onCancel={() => {
+                  setIsDebitCardExpanded(false);
+                }}
+              />
+            </Paper>
           )}
           {error && <Alert severity="error">{error.message}</Alert>}
           {isSuccess && (

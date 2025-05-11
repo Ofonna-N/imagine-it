@@ -11,6 +11,7 @@ import {
   Step,
   StepLabel,
   alpha,
+  useTheme,
 } from "@mui/material";
 import { z } from "zod";
 import { useForm, FormProvider, useFormContext } from "react-hook-form";
@@ -27,14 +28,7 @@ import { useMutatePaypalCreateOrder } from "~/features/order/hooks/use_mutate_pa
 import { useMutatePaypalCaptureOrder } from "~/features/order/hooks/use_mutate_paypal_capture_order";
 import Dialog from "@mui/material/Dialog";
 import CircularProgress from "@mui/material/CircularProgress";
-import {
-  PayPalNameField,
-  PayPalNumberField,
-  PayPalExpiryField,
-  PayPalCVVField,
-  PayPalButtons,
-  usePayPalCardFields,
-} from "@paypal/react-paypal-js";
+import { PayPalButtons } from "@paypal/react-paypal-js";
 import type { CreateOrderData } from "@paypal/paypal-js/types/components/buttons";
 import { grey } from "@mui/material/colors";
 import { useMutatePrintfulOrder } from "~/features/order/hooks/use_mutate_printful_order";
@@ -222,55 +216,6 @@ function ShippingForm() {
 const steps = ["Shipping Address", "Review Order"];
 
 // --- PayPal Card Fields Form Component ---
-function PayPalCardFieldsForm({
-  loading,
-  onSubmit,
-}: Readonly<{
-  loading: boolean;
-  onSubmit?: () => void;
-}>) {
-  const { cardFieldsForm } = usePayPalCardFields();
-
-  return (
-    <Box sx={{ mb: 2, px: 2 }}>
-      <PayPalNameField
-        style={{
-          input: { color: "blue" },
-          ".invalid": { color: "purple" },
-        }}
-      />
-      <PayPalNumberField />
-      <PayPalExpiryField />
-      <PayPalCVVField />
-      <Button
-        variant="contained"
-        color="primary"
-        fullWidth
-        disabled={loading}
-        onClick={async () => {
-          if (!cardFieldsForm) {
-            const childErrorMessage =
-              "Unable to find any child components in the <PayPalCardFieldsProvider />";
-            throw new Error(childErrorMessage);
-          }
-          const formState = await cardFieldsForm.getState();
-          if (!formState.isFormValid) {
-            return alert("The payment form is invalid");
-          }
-          if (onSubmit) {
-            onSubmit();
-          }
-          cardFieldsForm.submit().catch((err) => {
-            console.log("Error submitting PayPal card fields form", err);
-          });
-        }}
-        sx={{ mt: 2 }}
-      >
-        {loading ? "Processing Payment..." : "Submit Payment"}
-      </Button>
-    </Box>
-  );
-}
 
 // --- Main Checkout Component ---
 export default function Checkout() {
@@ -343,7 +288,8 @@ export default function Checkout() {
       setActiveStep(step);
     }
   };
-
+  const paypalContainerBgColor = useTheme().palette.background.paper;
+  const [isDebitCardExpanded, setIsDebitCardExpanded] = useState(false);
   // Pre-fill form with recipient info on mount
   useEffect(() => {
     if (recipientDataStatus === "success" && recipientData?.recipient_data) {
@@ -862,30 +808,41 @@ export default function Checkout() {
               ".invalid": { color: "purple" },
             }}
           > */}
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "center",
-              width: "100%",
-              alignItems: "center",
+          <Paper
+            id="paypal-button-container"
+            component={"div"}
+            style={{
+              colorScheme: "none",
+              backgroundColor: isDebitCardExpanded
+                ? "#ffff"
+                : paypalContainerBgColor, // smokewhite as hex
+              padding: "10px",
+              borderRadius: "5px",
             }}
           >
             <PayPalButtons
               style={{ disableMaxWidth: true }}
               onApprove={handlePaypalApprove}
-              createOrder={async (createOrder) =>
-                await handlePaypalCreateOrder({
+              createOrder={async (createOrder) => {
+                if (createOrder.paymentSource === "card") {
+                  setIsDebitCardExpanded(true);
+                } else {
+                  setIsDebitCardExpanded(false);
+                }
+                return await handlePaypalCreateOrder({
                   createOrder,
-                })
-              }
+                });
+              }}
               onCancel={() => {
                 console.log("PayPal order cancelled");
+                setIsDebitCardExpanded(false);
               }}
               onError={(err) => {
                 console.error("PayPal button error:", err);
+                setIsDebitCardExpanded(false);
               }}
             />
-          </Box>
+          </Paper>
           {/* <Box sx={{ my: 2, textAlign: "center" }}>
               <Typography variant="body1" color="text.secondary">
                 — OR —

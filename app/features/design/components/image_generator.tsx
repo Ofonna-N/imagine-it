@@ -278,7 +278,8 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
                   Generate Image
                   {(isSubmitting || imageGenerationMutation.isPending) &&
                     "s..."}
-                  {!userProfileData?.credits && (
+                  {(!userProfileData?.credits ||
+                    userProfileData.credits < 2) && (
                     <Typography variant="caption" sx={{ ml: 2 }}>
                       (Insufficient credits)
                     </Typography>
