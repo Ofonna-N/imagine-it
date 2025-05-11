@@ -1,4 +1,11 @@
-import { pgTable, uuid, text, timestamp, pgEnum } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  uuid,
+  text,
+  timestamp,
+  pgEnum,
+  integer,
+} from "drizzle-orm/pg-core";
 
 // Create a roles enum for type safety
 export const userRoleEnum = pgEnum("user_role", ["admin", "customer"]);
@@ -10,8 +17,8 @@ export const profilesTable = pgTable("profiles", {
   email: text("email").notNull().unique(),
   phone: text("phone"),
   avatarUrl: text("avatar_url"),
-  // Change to array of roles
   roles: userRoleEnum("roles").array().notNull().default(["customer"]),
+  credits: integer("credits").notNull().default(0), // Add credits column
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }).enableRLS();
