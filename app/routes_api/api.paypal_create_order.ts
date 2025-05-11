@@ -76,11 +76,6 @@ export async function action({ request }: ActionFunctionArgs) {
     taxTotal = tax ?? 0;
     totalValue = +(itemTotal + (shippingCost ?? 0) + taxTotal).toFixed(2);
   }
-  console.log("totalValue", totalValue);
-  console.log("itemTotal", itemTotal);
-  console.log("taxTotal", taxTotal);
-  console.log("shippingCost", shippingCost);
-  console.log("items", items);
 
   const purchase_units: PurchaseUnitRequest[] = [
     {
