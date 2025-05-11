@@ -140,6 +140,7 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
   const imageGenerationMutation = useMutateGenerateImage({
     onSuccess: (data: GenerateImageResponse) => {
       queryClient.setQueryData(["lastGeneratedImageData"], data);
+      refetchUserProfile();
     },
   });
 
@@ -189,7 +190,7 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
     queryClient.getQueryData<GenerateImageResponse>([
       "lastGeneratedImageData",
     ])?.images;
-  console.log("currentGeneratedImages", currentGeneratedImages);
+
   return (
     <Paper
       elevation={0}
