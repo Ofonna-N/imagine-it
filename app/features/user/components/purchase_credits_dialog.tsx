@@ -121,6 +121,7 @@ const PurchaseCreditsDialog: React.FC<PurchaseCreditsDialogProps> = ({
                   layout: "vertical",
                   color: "blue",
                   height: 30,
+                  label: "pay",
                 }}
                 createOrder={(_data, actions) => {
                   if (_data.paymentSource === "card") {
