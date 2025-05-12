@@ -58,6 +58,7 @@ import CreditsBalance from "~/features/user/components/credits_balance";
 import PurchaseCreditsDialog from "~/features/user/components/purchase_credits_dialog";
 import useQueryUserProfile from "~/features/user/hooks/use_query_user_profile";
 import { createFilterOptions } from "@mui/material/Autocomplete";
+import StandardModal from "../../../components/standard_modal";
 
 /**
  * Props for ImageGenerator component
@@ -147,6 +148,16 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
 
   const [purchaseDialogOpen, setPurchaseDialogOpen] = React.useState(false);
 
+  // State to control error dialog visibility
+  const [errorDialogOpen, setErrorDialogOpen] = React.useState(false);
+
+  // Show dialog when mutation fails
+  React.useEffect(() => {
+    if (imageGenerationMutation.isError) {
+      setErrorDialogOpen(true);
+    }
+  }, [imageGenerationMutation.isError]);
+
   const onSubmit: SubmitHandler<ImageGenerationFormValues> = (data) => {
     saveDesignState.reset();
     let finalPrompt = data.prompt;
@@ -191,6 +202,26 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
       elevation={0}
       sx={{ p: { xs: 2, md: 3 }, borderRadius: 2, background: "transparent" }}
     >
+      {/* Error Feedback Dialog */}
+      <StandardModal
+        open={errorDialogOpen}
+        onClose={() => setErrorDialogOpen(false)}
+        dialogProps={{ title: "Image Generation Failed" }}
+        status={imageGenerationMutation.status}
+        actions={[
+          {
+            label: "Close",
+            onClick: () => setErrorDialogOpen(false),
+            buttonProps: { color: "primary" },
+          },
+        ]}
+      >
+        <Typography variant="body1" sx={{ mb: 1 }}>
+          {imageGenerationMutation.error instanceof Error
+            ? imageGenerationMutation.error.message
+            : "An unexpected error occurred while generating your image. Please try again."}
+        </Typography>
+      </StandardModal>
       <form onSubmit={handleSubmit(onSubmit)}>
         <Stack spacing={3}>
           {saveDesignState.error && (
