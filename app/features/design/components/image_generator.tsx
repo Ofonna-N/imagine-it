@@ -110,14 +110,13 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
 }) => {
   const queryClient = useQueryClient();
 
-  console.log("ImageGenerator component rendered");
   const {
     data: userProfileData,
     isLoading: isProfileLoading,
     error: profileError,
     refetch: refetchUserProfile,
   } = useQueryUserProfile();
-  console.log("userProfileData", userProfileData);
+
   const {
     control,
     handleSubmit,
@@ -144,11 +143,7 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
     },
   });
 
-  const { mutate: saveDesign, ...saveDesignState } = useMutateSaveDesign({
-    onSuccess: () => {
-      console.log("Design saved");
-    },
-  });
+  const { mutate: saveDesign, ...saveDesignState } = useMutateSaveDesign();
 
   const [purchaseDialogOpen, setPurchaseDialogOpen] = React.useState(false);
 

@@ -110,7 +110,8 @@ export async function action({ request }: ActionFunctionArgs) {
           } = supabase.storage.from("imagine-it").getPublicUrl(storagePath);
           storedMockupUrls.push(publicUrl);
         } catch (err) {
-          // Skip this image if fetch/upload fails
+          // Log the error for debugging purposes and skip this image
+          console.error("Failed to fetch or upload mockup image:", err);
           continue;
         }
       }
@@ -159,10 +160,11 @@ export async function action({ request }: ActionFunctionArgs) {
       for (const cartItem of cartItems) {
         if (Array.isArray(cartItem.mockup_urls)) {
           for (const url of cartItem.mockup_urls) {
-            const match = url.match(/\/public\/imagine-it\/(.+)$/);
+            const regex = /\/public\/imagine-it\/(.+)$/;
+            const match = regex.exec(url);
             const storagePath = match ? match[1] : null;
             if (storagePath) {
-              const { data, error } = await supabase.storage
+              const { error } = await supabase.storage
                 .from("imagine-it")
                 .remove([storagePath]);
               if (error) {
@@ -197,11 +199,12 @@ export async function action({ request }: ActionFunctionArgs) {
         for (const url of cartItem.mockup_urls) {
           // Supabase public URL: https://<project>.supabase.co/storage/v1/object/public/<bucket>/<path>
           // Extract the path after '/public/<bucket>/'
-          const match = url.match(/\/public\/imagine-it\/(.+)$/);
+          const regex = /\/public\/imagine-it\/(.+)$/;
+          const match = regex.exec(url);
           const storagePath = match ? match[1] : null;
-          // console.log("Storage Path:", storagePath);
+
           if (storagePath) {
-            const { data, error } = await supabase.storage
+            const { error } = await supabase.storage
               .from("imagine-it")
               .remove([storagePath]);
             if (error) {

@@ -19,7 +19,6 @@ const CreditsBalance: React.FC<CreditsBalanceProps> = ({
   if (error)
     return <Typography color="error">Failed to load credits</Typography>;
 
-  console.log("Credits:", credits);
   return (
     <Box display="flex" alignItems="center" gap={1}>
       <Typography variant="subtitle2">Credits:</Typography>

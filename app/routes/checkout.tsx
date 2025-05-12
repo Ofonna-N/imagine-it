@@ -332,7 +332,6 @@ export default function Checkout() {
   async function handlePaypalCreateOrder(param: {
     createOrder: CreateOrderData;
   }) {
-    console.log("Creating PayPal order", param);
     const shipping = shippingForm.getValues().shipping;
     const items = itemsWithPrices.map(({ item, basePrice }) => ({
       id: String(item.id),
@@ -350,7 +349,6 @@ export default function Checkout() {
       shippingCost: shippingRate ?? 0,
     });
 
-    console.log("PayPal order created", response);
     return response.orderId;
   }
   // Handler for PayPal approval (trigger Printful order here)
@@ -834,7 +832,6 @@ export default function Checkout() {
                 });
               }}
               onCancel={() => {
-                console.log("PayPal order cancelled");
                 setIsDebitCardExpanded(false);
               }}
               onError={(err) => {

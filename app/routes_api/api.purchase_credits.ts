@@ -53,7 +53,6 @@ export async function action({ request }: ActionFunctionArgs) {
     // Capture PayPal payment (server-side, never trust client)
     const capture = await ordersController.captureOrder({ id: body.paymentId });
     const captureResult = capture.result;
-    console.log("PayPal capture result:", captureResult);
     // Check capture status and amount (must match price + tax)
     const capturedAmount = parseFloat(
       captureResult.purchaseUnits?.[0]?.payments?.captures?.[0]?.amount
