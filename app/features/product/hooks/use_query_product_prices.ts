@@ -1,9 +1,9 @@
 import { useQuery, type UseQueryOptions } from "@tanstack/react-query";
 import { API_ROUTES } from "~/constants/route_paths";
 import type {
-  PrintfulV2CatalogProductPricesResponse,
   PrintfulV2CatalogProductPricesData,
-} from "~/types/printful";
+  PrintfulV2CatalogProductPricesResponse,
+} from "~/types/printful/catalog_product_prices_types";
 
 /**
  * Fetch pricing information for a specific catalog product via the API proxy.

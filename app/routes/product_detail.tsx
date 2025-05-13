@@ -413,17 +413,7 @@ export default function ProductDetail() {
                   color="primary"
                 >
                   {product.techniques.map((tech) => (
-                    <ToggleButton
-                      key={tech.key}
-                      value={tech.key}
-                      sx={{
-                        color:
-                          selectedTechnique === tech.key
-                            ? "primary"
-                            : "text.primary",
-                        fontWeight: selectedTechnique === tech.key ? 700 : 400,
-                      }}
-                    >
+                    <ToggleButton key={tech.key} value={tech.key}>
                       {tech.display_name}
                     </ToggleButton>
                   ))}
@@ -877,9 +867,7 @@ const AvailabilitySection = ({
   // Group by region for better UI organization
   const availabilityByRegion = uniqueAvailabilityItems.reduce(
     (acc: any, item) => {
-      if (!acc[item.regionName]) {
-        acc[item.regionName] = [];
-      }
+      acc[item.regionName] ??= [];
       acc[item.regionName].push(item);
       return acc;
     },

@@ -5,10 +5,13 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
+  useLoaderData,
 } from "react-router";
 import type { Route } from "./+types/root";
 import { Container, Box, Typography, Paper } from "@mui/material";
 import { AppProviders } from "./context/app_providers";
+import { getThemeSession } from "~/utils/theme_session";
+import InitColorSchemeScript from "@mui/material/InitColorSchemeScript";
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -24,7 +27,16 @@ export const links: Route.LinksFunction = () => [
   { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
 ];
 
+export async function loader({ request }: Route.LoaderArgs) {
+  // Get theme mode from cookie session
+  const session = await getThemeSession(request);
+  const theme = session.get("mode") ?? "light";
+  return { theme };
+}
+
 export function Layout({ children }: Readonly<{ children: React.ReactNode }>) {
+  const { theme } = useLoaderData<typeof loader>();
+
   return (
     <html lang="en">
       <head>
@@ -36,8 +48,17 @@ export function Layout({ children }: Readonly<{ children: React.ReactNode }>) {
         <Links />
       </head>
       <body>
-        <AppProviders>{children}</AppProviders>
+        <AppProviders
+          providerProps={{
+            themeProviderProps: {
+              initialMode: theme,
+            },
+          }}
+        >
+          {children}
+        </AppProviders>
         <ScrollRestoration />
+        <InitColorSchemeScript attribute="class" />
         <Scripts />
       </body>
     </html>

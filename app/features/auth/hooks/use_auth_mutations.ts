@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
+import { API_ROUTES } from "~/constants/route_paths"; // Import API_ROUTES
 
 // Schema definitions
 export const loginSchema = z.object({
@@ -29,7 +30,8 @@ export function useMutateAuthLogin() {
   return useMutation({
     mutationKey: ["login"], // Adding a mutation key for identification
     mutationFn: async (credentials: LoginFormValues) => {
-      const response = await fetch("/api/auth/login", {
+      const response = await fetch(API_ROUTES.AUTH.LOGIN, {
+        // Use correct constant
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(credentials),
@@ -62,7 +64,8 @@ export function useMutateAuthSignup() {
       { email, password }: Omit<SignupFormValues, "confirmPassword">,
       metadata?: Record<string, any>
     ) => {
-      const response = await fetch("/api/auth/signup", {
+      const response = await fetch(API_ROUTES.AUTH.SIGNUP, {
+        // Use correct constant
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password, metadata }),
@@ -90,7 +93,8 @@ export function useMutateAuthSignout() {
   return useMutation({
     mutationKey: ["signout"], // Adding a mutation key for identification
     mutationFn: async () => {
-      const response = await fetch("/api/auth/signout", {
+      const response = await fetch(API_ROUTES.AUTH.SIGNOUT, {
+        // Use correct constant
         method: "POST",
         credentials: "include", // Critical for cookie handling
       });
@@ -124,7 +128,8 @@ export function useMutateAuthOAuth() {
   return useMutation({
     mutationKey: ["oauth"], // Adding a mutation key for identification
     mutationFn: async (provider: OAuthProvider) => {
-      const response = await fetch(`/api/auth/oauth/${provider}`, {
+      const response = await fetch(API_ROUTES.AUTH.OAUTH(provider), {
+        // Use correct constant
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include", // Critical for cookie handling

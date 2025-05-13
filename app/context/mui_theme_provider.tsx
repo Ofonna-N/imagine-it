@@ -12,6 +12,7 @@ import {
   CssBaseline,
 } from "@mui/material";
 import { getTheme } from "../config/theme";
+import { useMutateThemeMode } from "../features/theme/hooks/use_mutate_theme";
 
 // Create a context for theme management
 type ThemeContextType = {
@@ -36,17 +37,21 @@ export const useColorScheme = () => {
 };
 
 // Theme provider component
-export function ThemeProvider({
+export function MUiThemeProvider({
   children,
-}: Readonly<{ children: React.ReactNode }>) {
-  // Get initial theme from local storage or default to light
+  initialMode,
+}: Readonly<{ children: React.ReactNode; initialMode?: PaletteMode }>) {
+  // Get initial theme from cookie (SSR) or local storage (CSR)
   const [mode, setMode] = useState<PaletteMode>(() => {
     if (typeof window !== "undefined") {
       const savedMode = localStorage.getItem("themeMode") as PaletteMode | null;
-      return savedMode ?? "light";
+      return savedMode ?? initialMode ?? "light";
     }
-    return "light";
+    return initialMode ?? "light";
   });
+
+  // Persist theme mode to cookie via mutation
+  const themeMutation = useMutateThemeMode();
 
   // Toggle between light and dark modes
   const toggleTheme = useCallback(() => {
@@ -55,17 +60,22 @@ export function ThemeProvider({
       if (typeof window !== "undefined") {
         localStorage.setItem("themeMode", newMode);
       }
+      themeMutation.mutate({ mode: newMode });
       return newMode;
     });
-  }, []);
+  }, [themeMutation]);
 
   // Direct mode setter function
-  const setThemeMode = useCallback((newMode: PaletteMode) => {
-    setMode(newMode);
-    if (typeof window !== "undefined") {
-      localStorage.setItem("themeMode", newMode);
-    }
-  }, []);
+  const setThemeMode = useCallback(
+    (newMode: PaletteMode) => {
+      setMode(newMode);
+      if (typeof window !== "undefined") {
+        localStorage.setItem("themeMode", newMode);
+      }
+      themeMutation.mutate({ mode: newMode });
+    },
+    [themeMutation]
+  );
 
   // Create the current theme based on mode
   const theme = useMemo(() => getTheme(mode), [mode]);

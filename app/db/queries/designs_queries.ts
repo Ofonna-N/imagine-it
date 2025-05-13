@@ -46,3 +46,17 @@ export async function createDesign(
   const [newDesign] = await db.insert(designsTable).values(input).returning();
   return newDesign;
 }
+
+/**
+ * Delete a design by its ID, scoped to a specific user
+ */
+export async function deleteDesignByIdAndUser(
+  id: string,
+  userId: string
+): Promise<number> {
+  const deletedRows = await db
+    .delete(designsTable)
+    .where(and(eq(designsTable.id, id), eq(designsTable.userId, userId)))
+    .returning();
+  return deletedRows.length;
+}

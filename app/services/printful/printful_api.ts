@@ -11,6 +11,7 @@ import type {
   PrintfulV2CatalogVariantsResponse,
   PrintfulV2CategoriesResponse,
   PrintfulV2ProductAvailabilityResponse,
+  PrintfulV1CatalogProductResponse,
 } from "~/types/printful/catalog_product_types";
 import type { PrintfulV2CatalogVariantAvailabilityResponse } from "~/types/printful/catalog_variant_availability_types";
 import type { PrintfulV2CatalogVariantPricesResponse } from "~/types/printful/catalog_variant_prices_types";
@@ -23,6 +24,8 @@ import type {
   PrintfulV2CreateOrderResponse,
   PrintfulV2GetOrderResponse,
 } from "~/types/printful/order_types";
+import { mapV1ToV2CatalogProduct } from "~/utils/printful_product_mapper";
+import { produce } from "immer";
 
 /**
  * Creates headers for Printful API requests
@@ -133,50 +136,27 @@ export async function fetchCatalogCategories() {
 }
 
 /**
- * Fetches featured products using the v2 API with random pagination
+ * Fetches featured products using v1 API, picks a random set immutably with immer, and maps to v2 schema
  */
 export async function fetchCatalogFeaturedProducts(
   limit: number = 6
 ): Promise<PrintfulV2CatalogProduct[]> {
-  try {
-    // First, get the total count of products without fetching all products
-    const countResponse = await fetchCatalogProducts({
-      limit: 1, // Just need minimal data to get total count
-    });
+  // Fetch all v1 products
+  const v1Response = await fetchV1CatalogProducts();
+  const allProducts = v1Response.result;
+  if (!Array.isArray(allProducts) || allProducts.length === 0) return [];
 
-    // Make sure we have a valid response with paging data - Use optional chaining
-    if (!countResponse?.paging) {
-      console.error("Unexpected API response format:", countResponse);
-      throw new Error("Unexpected API response format");
+  // Use immer to produce an immutable shuffled copy (Fisher-Yates shuffle)
+  const shuffled = produce(allProducts, (draft) => {
+    for (let i = draft.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [draft[i], draft[j]] = [draft[j], draft[i]];
     }
+  });
+  const selected = shuffled.slice(0, limit);
 
-    const totalProducts = countResponse.paging.total;
-
-    // If there are fewer products than the limit, just return them all
-    if (totalProducts <= limit) {
-      const response = await fetchCatalogProducts({
-        limit: totalProducts,
-      });
-      return response.data;
-    }
-
-    // Generate a random offset to get a random page of products
-    // Ensure we don't go beyond available products considering our limit
-    const maxOffset = totalProducts - limit;
-    const randomOffset = Math.floor(Math.random() * maxOffset);
-
-    // Fetch random products using pagination
-    const response = await fetchCatalogProducts({
-      limit,
-      offset: randomOffset,
-    });
-
-    // Return the randomly offset products
-    return response.data;
-  } catch (error) {
-    console.error("Error fetching featured products from Printful:", error);
-    throw error;
-  }
+  // Map to v2 schema
+  return selected.map(mapV1ToV2CatalogProduct);
 }
 
 /**
@@ -209,11 +189,12 @@ export async function fetchCatalogProductMockupStyles(
 ) {
   // Build endpoint with optional placements filter
   let endpoint = `/v2/catalog-products/${productId}/mockup-styles`;
+  const params = new URLSearchParams();
+  params.append("limit", "100");
   if (placements && placements.length > 0) {
-    const params = new URLSearchParams();
     params.append("placements", placements.join(","));
-    endpoint += `?${params.toString()}`;
   }
+  endpoint += `?${params.toString()}`;
   return fetchFromPrintful<PrintfulV2MockupStylesResponse>(endpoint);
 }
 
@@ -302,4 +283,25 @@ export async function fetchPrintfulOrderById(
     `/v2/orders/${printfulOrderId}`
   );
   return response.data;
+}
+
+/**
+ * GET /products
+ * Utility: Fetches all catalog products from the Printful v1 API.
+ * Returns an array of PrintfulV1CatalogProduct objects.
+ */
+export async function fetchV1CatalogProducts(params?: {
+  categoryIds?: string;
+}) {
+  // GET /products
+  // Utility: Fetches all catalog products from the Printful v1 API.
+  // Accepts an optional categoryId query parameter via params object.
+  // Returns an array of PrintfulV1CatalogProduct objects.
+  let endpoint = "/products";
+  if (params?.categoryIds) {
+    const queryParams = new URLSearchParams();
+    queryParams.append("category_id", params.categoryIds);
+    endpoint += `?${queryParams.toString()}`;
+  }
+  return fetchFromPrintful<PrintfulV1CatalogProductResponse>(endpoint);
 }

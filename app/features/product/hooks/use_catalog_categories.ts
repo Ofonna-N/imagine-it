@@ -1,5 +1,6 @@
 import { useQuery, type UseQueryOptions } from "@tanstack/react-query";
-import type { PrintfulV2Category } from "~/types/printful";
+import type { PrintfulV2Category } from "~/types/printful/catalog_product_types";
+import { API_ROUTES } from "~/constants/route_paths"; // Import API route constants
 
 /**
  * Hook for fetching catalog categories using TanStack Query
@@ -20,10 +21,10 @@ const useQueryCatalogCategories = (
   return useQuery({
     queryKey: ["catalogCategories"],
     queryFn: async () => {
-      const response = await fetch("/api/catalog-categories");
+      const response = await fetch(API_ROUTES.CATALOG_CATEGORIES); // Use constant
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to fetch categories");
+        throw new Error(errorData.error ?? "Failed to fetch categories");
       }
       const data: PrintfulV2Category[] = await response.json();
       return data;

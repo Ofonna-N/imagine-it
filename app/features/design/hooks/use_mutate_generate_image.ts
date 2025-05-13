@@ -1,10 +1,7 @@
 import { useMutation, type UseMutationOptions } from "@tanstack/react-query";
 import ROUTE_PATHS from "~/constants/route_paths";
+import type { GenerateImageInputPayload } from "../../../services/image_generation/image_generation_types";
 
-export type GenerateImagePayload = {
-  prompt: string;
-  orientation?: "landscape" | "portrait" | "square";
-};
 export type GenerateImageResponse = { images: string[] };
 
 /**
@@ -15,7 +12,7 @@ export function useMutateGenerateImage(
   options?: UseMutationOptions<
     GenerateImageResponse,
     Error,
-    GenerateImagePayload
+    GenerateImageInputPayload
   >
 ) {
   return useMutation({

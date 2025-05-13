@@ -11,14 +11,10 @@ import {
   Step,
   StepLabel,
   alpha,
+  useTheme,
 } from "@mui/material";
 import { z } from "zod";
-import {
-  useForm,
-  FormProvider,
-  useFormContext,
-  useFormState,
-} from "react-hook-form";
+import { useForm, FormProvider, useFormContext } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
 import { useQueryCart } from "~/features/cart/hooks/use_query_cart";
@@ -32,15 +28,7 @@ import { useMutatePaypalCreateOrder } from "~/features/order/hooks/use_mutate_pa
 import { useMutatePaypalCaptureOrder } from "~/features/order/hooks/use_mutate_paypal_capture_order";
 import Dialog from "@mui/material/Dialog";
 import CircularProgress from "@mui/material/CircularProgress";
-import {
-  PayPalCardFieldsProvider,
-  PayPalNameField,
-  PayPalNumberField,
-  PayPalExpiryField,
-  PayPalCVVField,
-  PayPalButtons,
-  usePayPalCardFields,
-} from "@paypal/react-paypal-js";
+import { PayPalButtons } from "@paypal/react-paypal-js";
 import type { CreateOrderData } from "@paypal/paypal-js/types/components/buttons";
 import { grey } from "@mui/material/colors";
 import { useMutatePrintfulOrder } from "~/features/order/hooks/use_mutate_printful_order";
@@ -52,6 +40,7 @@ import FormLabel from "@mui/material/FormLabel";
 import type { PrintfulV2ShippingRate } from "~/types/printful/shipping_rates_types";
 import ROUTE_PATHS from "~/constants/route_paths";
 import { useMutateClearCart } from "~/features/cart/hooks/use_mutate_clear_cart";
+import { TAX_RATE, calculateTax } from "../utils/tax";
 
 // --- Schema and Types ---
 const orderRecipientSchema = z
@@ -76,12 +65,6 @@ const checkoutSchema = z.object({
 });
 
 type CheckoutFormData = z.infer<typeof checkoutSchema>;
-
-// --- Tax Calculation Helper ---
-const TAX_RATE = 0.08; // 8% industry standard
-function calculateTax(subtotal: number): number {
-  return +(subtotal * TAX_RATE).toFixed(2);
-}
 
 // --- Shipping Form Component ---
 function ShippingForm() {
@@ -233,55 +216,6 @@ function ShippingForm() {
 const steps = ["Shipping Address", "Review Order"];
 
 // --- PayPal Card Fields Form Component ---
-function PayPalCardFieldsForm({
-  loading,
-  onSubmit,
-}: Readonly<{
-  loading: boolean;
-  onSubmit?: () => void;
-}>) {
-  const { cardFieldsForm } = usePayPalCardFields();
-
-  return (
-    <Box sx={{ mb: 2, px: 2 }}>
-      <PayPalNameField
-        style={{
-          input: { color: "blue" },
-          ".invalid": { color: "purple" },
-        }}
-      />
-      <PayPalNumberField />
-      <PayPalExpiryField />
-      <PayPalCVVField />
-      <Button
-        variant="contained"
-        color="primary"
-        fullWidth
-        disabled={loading}
-        onClick={async () => {
-          if (!cardFieldsForm) {
-            const childErrorMessage =
-              "Unable to find any child components in the <PayPalCardFieldsProvider />";
-            throw new Error(childErrorMessage);
-          }
-          const formState = await cardFieldsForm.getState();
-          if (!formState.isFormValid) {
-            return alert("The payment form is invalid");
-          }
-          if (onSubmit) {
-            onSubmit();
-          }
-          cardFieldsForm.submit().catch((err) => {
-            console.log("Error submitting PayPal card fields form", err);
-          });
-        }}
-        sx={{ mt: 2 }}
-      >
-        {loading ? "Processing Payment..." : "Submit Payment"}
-      </Button>
-    </Box>
-  );
-}
 
 // --- Main Checkout Component ---
 export default function Checkout() {
@@ -318,7 +252,6 @@ export default function Checkout() {
     status: recipientDataStatus,
   } = useQueryRecipient();
   const mutateRecipient = useMutateRecipient();
-  const formState = useFormState({ control: shippingForm.control });
   const [activeStep, setActiveStep] = useState(0);
   const paypalCreateOrderMutation = useMutatePaypalCreateOrder();
   const paypalCaptureOrderMutation = useMutatePaypalCaptureOrder();
@@ -353,10 +286,10 @@ export default function Checkout() {
       const valid = await shippingForm.trigger("shipping");
       if (!valid) return;
       setActiveStep(step);
-      return;
     }
   };
-
+  const paypalContainerBgColor = useTheme().palette.background.paper;
+  const [isDebitCardExpanded, setIsDebitCardExpanded] = useState(false);
   // Pre-fill form with recipient info on mount
   useEffect(() => {
     if (recipientDataStatus === "success" && recipientData?.recipient_data) {
@@ -399,7 +332,6 @@ export default function Checkout() {
   async function handlePaypalCreateOrder(param: {
     createOrder: CreateOrderData;
   }) {
-    console.log("Creating PayPal order", param);
     const shipping = shippingForm.getValues().shipping;
     const items = itemsWithPrices.map(({ item, basePrice }) => ({
       id: String(item.id),
@@ -417,7 +349,6 @@ export default function Checkout() {
       shippingCost: shippingRate ?? 0,
     });
 
-    console.log("PayPal order created", response);
     return response.orderId;
   }
   // Handler for PayPal approval (trigger Printful order here)
@@ -425,14 +356,14 @@ export default function Checkout() {
     setPaypalDialogOpen(false);
     if (!data.orderID) return;
     try {
-      const captureResult = await paypalCaptureOrderMutation.mutateAsync({
+      await paypalCaptureOrderMutation.mutateAsync({
         orderId: data.orderID,
       });
       // Prepare Printful order payload
       const shipping = shippingForm.getValues().shipping;
       const order_items = itemsWithPrices.map(({ item }) => item.item_data);
       const printfulPayload = {
-        shipping: selectedShippingRate?.shipping || "STANDARD",
+        shipping: selectedShippingRate?.shipping ?? "STANDARD",
         recipient: shipping,
         order_items,
         // Add any additional fields as needed
@@ -448,8 +379,13 @@ export default function Checkout() {
         state: { order: printfulOrder },
       });
     } catch (err) {
-      // Handle error (e.g., show error message)
-      alert("Order processing failed. Please contact support.");
+      // Handle error by setting an error state to display in the UI
+      setPaypalDialogOpen(false);
+      // Optionally, you can set an error state and show a Snackbar or Typography in your component
+      // For demonstration, we'll log the error and you should display it in the UI as needed
+      console.error("Order processing failed:", err);
+      // Optionally, set an error state here and display it in the UI
+      // setOrderError("Order processing failed. Please contact support.");
     }
   };
 
@@ -581,12 +517,12 @@ export default function Checkout() {
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
                           {shippingForm.getValues().shipping.city},{" "}
-                          {shippingForm.getValues().shipping.state_code ||
+                          {shippingForm.getValues().shipping.state_code ??
                             shippingForm.getValues().shipping.state_name}{" "}
                           {shippingForm.getValues().shipping.zip}
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
-                          {shippingForm.getValues().shipping.country_name ||
+                          {shippingForm.getValues().shipping.country_name ??
                             shippingForm.getValues().shipping.country_code}
                         </Typography>
                         {shippingForm.getValues().shipping.phone && (
@@ -606,14 +542,14 @@ export default function Checkout() {
                         Select Shipping Method
                       </FormLabel>
                       <RadioGroup
-                        value={selectedShippingRate?.shipping || ""}
+                        value={selectedShippingRate?.shipping ?? ""}
                         onChange={(e) => {
                           const rate = shippingRates.find(
                             (r) => r.shipping === e.target.value
                           );
                           setSelectedShippingRate(rate || null);
-                          setShippingRate(Number(rate?.rate || 0));
-                          setTotal(subtotal + Number(rate?.rate || 0) + tax);
+                          setShippingRate(Number(rate?.rate ?? 0));
+                          setTotal(subtotal + Number(rate?.rate ?? 0) + tax);
                         }}
                       >
                         {shippingRates.length === 0 ? (
@@ -661,33 +597,36 @@ export default function Checkout() {
                                   </Typography>
                                 </Box>
                               }
-                              sx={{
-                                alignItems: "flex-start",
-                                py: 1.5,
-                                mx: 0,
-                                "& .MuiFormControlLabel-label": {
-                                  width: "100%",
+                              sx={[
+                                {
+                                  alignItems: "flex-start",
+                                  py: 1.5,
+                                  mx: 0,
+                                  "& .MuiFormControlLabel-label": {
+                                    width: "100%",
+                                  },
+                                  borderRadius: 2,
+                                  border: (theme) =>
+                                    `1px solid ${theme.palette.divider}`,
+                                  mb: 1,
+                                  pl: 2,
+                                  pr: 1,
+                                  backgroundColor: "rgba(0,0,0,0.02)",
+                                  transition: "background 0.2s, border 0.2s",
                                 },
-                                borderRadius: 2,
-                                border: (theme) =>
-                                  `1px solid ${theme.palette.divider}`,
-                                mb: 1,
-                                pl: 2,
-                                pr: 1,
-                                backgroundColor: (theme) =>
-                                  theme.palette.mode === "dark"
-                                    ? "rgba(255,255,255,0.02)"
-                                    : "rgba(0,0,0,0.02)",
-                                "&.Mui-checked, &.Mui-selected": {
-                                  backgroundColor: (theme) =>
-                                    theme.palette.mode === "dark"
-                                      ? "rgba(25, 118, 210, 0.08)"
-                                      : "rgba(25, 118, 210, 0.08)",
-                                  borderColor: (theme) =>
-                                    theme.palette.primary.main,
-                                },
-                                transition: "background 0.2s, border 0.2s",
-                              }}
+                                (theme) =>
+                                  theme.applyStyles("dark", {
+                                    backgroundColor: "rgba(255,255,255,0.02)",
+                                  }),
+                                (theme) =>
+                                  theme.applyStyles("dark", {
+                                    "&.Mui-checked, &.Mui-selected": {
+                                      backgroundColor:
+                                        "rgba(25, 118, 210, 0.08)",
+                                      borderColor: theme.palette.primary.main,
+                                    },
+                                  }),
+                              ]}
                             />
                           ))
                         )}
@@ -772,7 +711,9 @@ export default function Checkout() {
                           mb: 1,
                         }}
                       >
-                        <Typography color="text.secondary">Tax (8%)</Typography>
+                        <Typography color="text.secondary">{`Tax (${(
+                          TAX_RATE * 100
+                        ).toFixed(2)}%)`}</Typography>
                         <Typography color="text.primary">{`$${tax.toFixed(
                           2
                         )}`}</Typography>
@@ -865,30 +806,40 @@ export default function Checkout() {
               ".invalid": { color: "purple" },
             }}
           > */}
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "center",
-              width: "100%",
-              alignItems: "center",
+          <Paper
+            id="paypal-button-container"
+            component={"div"}
+            style={{
+              colorScheme: "none",
+              backgroundColor: isDebitCardExpanded
+                ? "#ffff"
+                : paypalContainerBgColor, // smokewhite as hex
+              padding: "10px",
+              borderRadius: "5px",
             }}
           >
             <PayPalButtons
               style={{ disableMaxWidth: true }}
               onApprove={handlePaypalApprove}
-              createOrder={async (createOrder) =>
-                await handlePaypalCreateOrder({
+              createOrder={async (createOrder) => {
+                if (createOrder.paymentSource === "card") {
+                  setIsDebitCardExpanded(true);
+                } else {
+                  setIsDebitCardExpanded(false);
+                }
+                return await handlePaypalCreateOrder({
                   createOrder,
-                })
-              }
+                });
+              }}
               onCancel={() => {
-                console.log("PayPal order cancelled");
+                setIsDebitCardExpanded(false);
               }}
               onError={(err) => {
                 console.error("PayPal button error:", err);
+                setIsDebitCardExpanded(false);
               }}
             />
-          </Box>
+          </Paper>
           {/* <Box sx={{ my: 2, textAlign: "center" }}>
               <Typography variant="body1" color="text.secondary">
                 — OR —

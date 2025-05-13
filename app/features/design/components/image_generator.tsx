@@ -1,5 +1,18 @@
-import React, { useState } from "react";
-import { useMutateGenerateImage } from "~/features/design/hooks/use_mutate_generate_image";
+import React from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useForm, Controller, type SubmitHandler } from "react-hook-form"; // Corrected SubmitHandler import
+import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  imageGenerationSchema,
+  type ImageGenerationFormValues,
+  artStyleOptions as artStyleValues,
+  artStyleEnhancements,
+  type ArtStyleUnion,
+} from "../schemas/image_generation_schema";
+import {
+  useMutateGenerateImage,
+  type GenerateImageResponse,
+} from "~/features/design/hooks/use_mutate_generate_image";
 import {
   Box,
   Button,
@@ -13,16 +26,39 @@ import {
   ImageListItem,
   Paper,
   Stack,
-  InputAdornment,
   Tooltip,
   FormControl,
   InputLabel,
   Select,
   MenuItem,
   Alert,
+  ToggleButtonGroup,
+  ToggleButton,
+  FormControlLabel,
+  Switch,
+  Grid,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  Autocomplete,
 } from "@mui/material";
-import { FiSearch, FiCheck, FiSave } from "react-icons/fi";
+import {
+  FiCheck,
+  FiSave,
+  FiZap,
+  FiStar,
+  FiImage,
+  FiChevronDown,
+  FiSettings,
+} from "react-icons/fi";
 import { useMutateSaveDesign } from "../hooks/use_mutate_save_design";
+import type { ModelKey } from "~/services/image_generation/model_registry";
+import type { GenerateImageInputPayload } from "~/services/image_generation/image_generation_types";
+import CreditsBalance from "~/features/user/components/credits_balance";
+import PurchaseCreditsDialog from "~/features/user/components/purchase_credits_dialog";
+import useQueryUserProfile from "~/features/user/hooks/use_query_user_profile";
+import { createFilterOptions } from "@mui/material/Autocomplete";
+import StandardModal from "../../../components/standard_modal";
 
 /**
  * Props for ImageGenerator component
@@ -34,324 +70,773 @@ interface ImageGeneratorProps {
   singleSelect?: boolean;
 }
 
+// Transform the imported artStyleValues into the { value, label } format
+const artStyleOptions: { value: ArtStyleUnion; label: string }[] =
+  artStyleValues.map((style) => ({
+    value: style,
+    label:
+      style === ""
+        ? "None (Default)"
+        : style
+            .split(" ")
+            .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(" "),
+  }));
+
+// Model credit costs (sync with backend)
+const MODEL_CREDIT_COSTS: Record<string, number> = {
+  "prunaai-fast": 2,
+  "gpt-image-1": 13,
+  "dall-e-3": 8,
+  "new-model": 1,
+};
+
+// Memoize filterOptions for performance with large lists
+const artStyleFilterOptions = createFilterOptions<{
+  value: ArtStyleUnion;
+  label: string;
+}>({
+  matchFrom: "any",
+  stringify: (option) => `${option.label} ${option.value}`,
+  // limit: 50, // Only show top 50 matches for performance
+});
+
 /**
  * ImageGenerator component
  * Allows users to enter a prompt, generate images, and view/save results.
- * Intended for reuse in both the dedicated image generation page and product designer.
  */
 const ImageGenerator: React.FC<ImageGeneratorProps> = ({
   onImageSelect,
   singleSelect = false,
 }) => {
-  // State for prompt and generated images
-  const [prompt, setPrompt] = useState("");
-  const [images, setImages] = useState<string[]>([]);
-  const [file, setFile] = useState<File | null>(null);
-  const [filePreview, setFilePreview] = useState<string>("");
-  // State for selected orientation
-  const [orientation, setOrientation] = useState<
-    "square" | "landscape" | "portrait"
-  >("square");
-  // State for selected art style
-  const [artStyle, setArtStyle] = useState<string>("bokeh");
-  const artStyleOptions = [
-    "minimalist",
-    "abstract",
-    "sketchy",
-    "photography",
-    "painting",
-    "3d render",
-    "cinematic",
-    "graphic design pop art",
-    "creative",
-    "fashion",
-    "graphic design",
-    "moody",
-    "bokeh",
-    "pro b&w photography",
-    "pro color photography",
-    "pro film photography",
-    "sketch black and white",
-    "sketch color",
-  ];
-
-  const [saveError, setSaveError] = useState<string | null>(null);
-
-  // Mutation hook for generating images via API
-  const { mutate: generateImages, isPending: isGenerating } =
-    useMutateGenerateImage({
-      onSuccess: (data) => {
-        setImages(data.images);
-      },
-    });
+  const queryClient = useQueryClient();
 
   const {
-    mutate: saveDesign,
-    isPending: isSaving,
-    isSuccess: isSaved,
-    reset: resetSaveDesign,
-  } = useMutateSaveDesign({
-    onSuccess: () => {
-      setSaveError(null);
-      console.log("Design saved");
-    },
-    onError: (err) => {
-      console.error("Error saving design:", err);
-      setSaveError(
-        err instanceof Error ? err.message : "Failed to save design"
-      );
+    data: userProfileData,
+    isLoading: isProfileLoading,
+    error: profileError,
+    refetch: refetchUserProfile,
+  } = useQueryUserProfile();
+
+  const {
+    control,
+    handleSubmit,
+    watch,
+    formState: { errors, isSubmitting },
+    setValue,
+  } = useForm<ImageGenerationFormValues>({
+    resolver: zodResolver(imageGenerationSchema),
+    defaultValues: {
+      prompt: "",
+      selectedModel: "advanced",
+      isTransparent: false,
+      artStyle: [], // Now an array
+      orientation: "square",
     },
   });
 
-  // Handler to invoke the image generation mutation
-  const handleGenerate = () => {
-    if (!prompt.trim()) return;
-    resetSaveDesign();
-    let finalPrompt = prompt;
-    if (artStyle) {
-      finalPrompt = `${prompt}. art style must be (${artStyle})`;
+  const selectedModel = watch("selectedModel");
+
+  const imageGenerationMutation = useMutateGenerateImage({
+    onSuccess: (data: GenerateImageResponse) => {
+      queryClient.setQueryData(["lastGeneratedImageData"], data);
+      refetchUserProfile();
+    },
+  });
+
+  const { mutate: saveDesign, ...saveDesignState } = useMutateSaveDesign();
+
+  const [purchaseDialogOpen, setPurchaseDialogOpen] = React.useState(false);
+
+  // State to control error dialog visibility
+  const [errorDialogOpen, setErrorDialogOpen] = React.useState(false);
+
+  // Show dialog when mutation fails
+  React.useEffect(() => {
+    if (imageGenerationMutation.isError) {
+      setErrorDialogOpen(true);
     }
-    generateImages({ prompt: finalPrompt, orientation });
+  }, [imageGenerationMutation.isError]);
+
+  const onSubmit: SubmitHandler<ImageGenerationFormValues> = (data) => {
+    saveDesignState.reset();
+    let finalPrompt = data.prompt;
+    if (data.artStyle && data.artStyle.length > 0) {
+      const enhancements = data.artStyle
+        .map((style) => artStyleEnhancements[style] || style)
+        .join("; ");
+      const styleList = data.artStyle.join(", ");
+      finalPrompt = `${data.prompt}. Art style: ${styleList}. ${enhancements}`;
+    }
+
+    const modelKey: ModelKey =
+      data.selectedModel === "advanced" ? "gpt-image-1" : "prunaai-fast";
+
+    const payload: GenerateImageInputPayload = {
+      prompt: finalPrompt,
+      orientation: data.orientation,
+      model: modelKey,
+    };
+
+    if (data.selectedModel === "advanced") {
+      // isTransparent is optional in the schema, provide a default if undefined
+      payload.transparent = data.isTransparent ?? false;
+    }
+
+    imageGenerationMutation.mutate(payload);
   };
 
-  // Handler for selecting an image
   const handleSelect = (url: string) => {
     if (onImageSelect) {
       onImageSelect(url);
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0] ?? null;
-    if (f) {
-      if (filePreview) {
-        URL.revokeObjectURL(filePreview);
-      }
-      setFile(f);
-      setFilePreview(URL.createObjectURL(f));
-    }
-  };
-
-  const handleSaveFile = () => {
-    if (file) {
-      saveDesign({ name: file.name, file });
-      setFile(null);
-      setFilePreview("");
-    }
-  };
-
-  React.useEffect(() => {
-    return () => {
-      if (filePreview) {
-        URL.revokeObjectURL(filePreview);
-      }
-    };
-  }, [filePreview]);
+  const currentGeneratedImages =
+    queryClient.getQueryData<GenerateImageResponse>([
+      "lastGeneratedImageData",
+    ])?.images;
 
   return (
-    <Paper elevation={2} sx={{ p: 3, borderRadius: 2 }}>
-      <Stack spacing={3}>
-        {/* Error Alert for Save Design */}
-        {saveError && (
-          <Alert severity="error" onClose={() => setSaveError(null)}>
-            {saveError}
-          </Alert>
-        )}
+    <Paper
+      elevation={0}
+      sx={{ p: { xs: 2, md: 3 }, borderRadius: 2, background: "transparent" }}
+    >
+      {/* Error Feedback Dialog */}
+      <StandardModal
+        open={errorDialogOpen}
+        onClose={() => setErrorDialogOpen(false)}
+        dialogProps={{ title: "Image Generation Failed" }}
+        status={imageGenerationMutation.status}
+        actions={[
+          {
+            label: "Close",
+            onClick: () => setErrorDialogOpen(false),
+            buttonProps: { color: "primary" },
+          },
+        ]}
+      >
+        <Typography variant="body1" sx={{ mb: 1 }}>
+          {imageGenerationMutation.error instanceof Error
+            ? imageGenerationMutation.error.message
+            : "An unexpected error occurred while generating your image. Please try again."}
+        </Typography>
+      </StandardModal>
+      <form onSubmit={handleSubmit(onSubmit)}>
+        <Stack spacing={3}>
+          {saveDesignState.error && (
+            <Alert severity="error" onClose={() => saveDesignState.reset()}>
+              {saveDesignState.error instanceof Error
+                ? saveDesignState.error.message
+                : "Failed to save design"}
+            </Alert>
+          )}
 
-        {/* Upload from computer */}
-        {!file ? (
-          <Button variant="outlined" component="label">
-            <span>Upload Image</span>
-            <input
-              type="file"
-              accept="image/*"
-              hidden
-              onChange={handleFileChange}
-            />
-          </Button>
-        ) : (
-          <Box>
-            <Typography variant="subtitle1">Preview uploaded image:</Typography>
-            <Box
-              component="img"
-              src={filePreview}
-              alt={file.name}
-              sx={{ maxWidth: "100%", mt: 1, mb: 1 }}
-            />
-            <Stack direction="row" spacing={1}>
-              <Button
-                variant="contained"
-                startIcon={<FiSave />}
-                onClick={handleSaveFile}
-                disabled={isSaving}
-              >
-                Save Uploaded Image
-              </Button>
-              <Button
-                onClick={() => {
-                  setFile(null);
-                  setFilePreview("");
+          <Grid container spacing={3} alignItems="flex-start">
+            {/* Left Column: Prompt Input (Emphasized) & Main Action */}
+            <Grid size={{ xs: 12, md: 7 }}>
+              {" "}
+              {/* Corrected Grid usage for MUI v7 */}
+              <Stack spacing={2.5}>
+                <Typography
+                  variant="h5"
+                  component="div"
+                  sx={{ fontWeight: "bold", mb: 1 }}
+                >
+                  Describe Your Vision
+                </Typography>
+                <Controller
+                  name="prompt"
+                  control={control}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      fullWidth
+                      label="Your Prompt"
+                      placeholder="e.g. A cosmic owl librarian in a vibrant, neon-lit jungle, detailed illustration"
+                      disabled={
+                        isSubmitting || imageGenerationMutation.isPending
+                      }
+                      multiline
+                      rows={6} // Increased rows for emphasis
+                      error={!!errors.prompt}
+                      helperText={errors.prompt?.message}
+                      sx={{
+                        "& .MuiOutlinedInput-root": {
+                          fontSize: "1.1rem", // Larger font for prompt
+                          "& fieldset": {
+                            borderWidth: "2px", // Thicker border
+                            borderColor: errors.prompt
+                              ? "error.main"
+                              : "primary.light",
+                          },
+                          "&:hover fieldset": {
+                            borderColor: "primary.main",
+                          },
+                          "&.Mui-focused fieldset": {
+                            borderColor: "primary.main",
+                          },
+                        },
+                      }}
+                    />
+                  )}
+                />
+
+                <Button
+                  type="submit"
+                  variant="contained"
+                  size="large"
+                  disabled={
+                    isSubmitting ||
+                    imageGenerationMutation.isPending ||
+                    !userProfileData?.credits
+                  }
+                  startIcon={
+                    isSubmitting || imageGenerationMutation.isPending ? (
+                      <CircularProgress size={20} color="inherit" />
+                    ) : (
+                      <FiZap />
+                    )
+                  }
+                  fullWidth
+                  sx={{ py: 1.5, fontSize: "1.1rem", mt: 1 }} // Emphasized button
+                >
+                  Generate Image
+                  {(isSubmitting || imageGenerationMutation.isPending) &&
+                    "s..."}
+                  {(!userProfileData?.credits ||
+                    userProfileData.credits < 2) && (
+                    <Typography variant="caption" sx={{ ml: 2 }}>
+                      (Insufficient credits)
+                    </Typography>
+                  )}
+                </Button>
+              </Stack>
+            </Grid>
+
+            {/* Right Column: Advanced Settings & Controls */}
+            <Grid size={{ xs: 12, md: 5 }}>
+              {" "}
+              {/* Corrected Grid usage for MUI v7 */}
+              <Accordion
+                defaultExpanded={true} // Start expanded by default
+                sx={{
+                  border: "1px solid",
+                  borderColor: "divider",
+                  borderRadius: 1,
+                  boxShadow: "none",
+                  "&:before": { display: "none" }, // Remove default top border
                 }}
               >
-                Remove
-              </Button>
-            </Stack>
-          </Box>
-        )}
-
-        {/* Prompt Input */}
-        <TextField
-          fullWidth
-          placeholder="e.g. A sunset over mountains"
-          value={prompt}
-          onChange={(e) => setPrompt(e.target.value)}
-          disabled={isGenerating}
-          slotProps={{
-            input: {
-              startAdornment: (
-                <InputAdornment position="start">
-                  <FiSearch />
-                </InputAdornment>
-              ),
-            },
-          }}
-        />
-
-        {/* Art Style Selector */}
-        <FormControl fullWidth disabled={isGenerating} sx={{ mt: 1 }}>
-          <InputLabel id="art-style-select-label">Art Style</InputLabel>
-          <Select
-            labelId="art-style-select-label"
-            value={artStyle}
-            label="Art Style"
-            onChange={(e) => setArtStyle(e.target.value)}
-          >
-            <MenuItem value="">
-              <em>None</em>
-            </MenuItem>
-            {artStyleOptions.map((style) => (
-              <MenuItem key={style} value={style}>
-                {style.charAt(0).toUpperCase() + style.slice(1)}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-
-        {/* Orientation Selector */}
-        <FormControl fullWidth disabled={isGenerating}>
-          <InputLabel id="orientation-select-label">Orientation</InputLabel>
-          <Select
-            labelId="orientation-select-label"
-            value={orientation}
-            label="Orientation"
-            onChange={(e) =>
-              setOrientation(
-                e.target.value as "square" | "landscape" | "portrait"
-              )
-            }
-          >
-            <MenuItem value="square">Square</MenuItem>
-            <MenuItem value="landscape">Landscape</MenuItem>
-            <MenuItem value="portrait">Portrait</MenuItem>
-          </Select>
-        </FormControl>
-
-        {/* Generate Button */}
-        <Button
-          variant="contained"
-          size="large"
-          onClick={handleGenerate}
-          disabled={!prompt.trim() || isGenerating}
-          startIcon={isGenerating ? <CircularProgress size={20} /> : null}
-        >
-          Generate
-        </Button>
-
-        {/* Images Grid */}
-        {isGenerating ? (
-          <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
-            <CircularProgress />
-          </Box>
-        ) : images.length > 0 ? (
-          <ImageList variant="masonry" cols={3} gap={8} sx={{ m: 0 }}>
-            {images.map((url, idx) => (
-              <ImageListItem key={url}>
-                <Card
+                <AccordionSummary
+                  expandIcon={<FiChevronDown />}
+                  aria-controls="advanced-settings-content"
+                  id="advanced-settings-header"
                   sx={{
-                    position: "relative",
-                    cursor: onImageSelect ? "pointer" : "default",
+                    minHeight: 48,
+                    "&.Mui-expanded": { minHeight: 48 },
+                    "& .MuiAccordionSummary-content": {
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 1,
+                    },
                   }}
-                  onClick={singleSelect ? () => handleSelect(url) : undefined}
                 >
-                  <CardMedia
-                    component="img"
-                    image={url}
-                    alt={`AI Image ${idx + 1}`}
-                    sx={{ width: "100%", display: "block" }}
-                  />
-                  {
+                  <FiSettings />
+                  <Typography variant="subtitle1" sx={{ fontWeight: "medium" }}>
+                    Customization Options
+                  </Typography>
+                </AccordionSummary>
+                <AccordionDetails>
+                  <Stack spacing={2.5}>
+                    <FormControl fullWidth error={!!errors.selectedModel}>
+                      <Typography
+                        variant="subtitle2"
+                        gutterBottom
+                        sx={{ fontWeight: "medium" }}
+                      >
+                        Model
+                      </Typography>
+                      <Controller
+                        name="selectedModel"
+                        control={control}
+                        render={({ field }) => (
+                          <Box sx={{ width: "100%" }}>
+                            <ToggleButtonGroup
+                              {...field}
+                              exclusive
+                              onChange={(event, newValue) => {
+                                if (newValue !== null) {
+                                  field.onChange(newValue);
+                                  if (newValue === "basic") {
+                                    setValue("isTransparent", false);
+                                  }
+                                }
+                              }}
+                              aria-label="Image generation model"
+                              fullWidth
+                              sx={{
+                                display: "flex",
+                                flexWrap: "wrap",
+                                width: "100%",
+                              }}
+                              disabled={
+                                isSubmitting ||
+                                imageGenerationMutation.isPending
+                              }
+                            >
+                              <ToggleButton
+                                value="basic"
+                                aria-label="Basic model"
+                                sx={{
+                                  flex: "1 1 0",
+                                  minWidth: 0,
+                                  justifyContent: "center",
+                                  p: 1.5,
+                                }}
+                              >
+                                <Stack
+                                  direction="column"
+                                  alignItems="center"
+                                  spacing={0.5}
+                                  width="100%"
+                                >
+                                  <FiZap size={22} />
+                                  <Typography
+                                    variant="body2"
+                                    sx={{ fontWeight: 500 }}
+                                  >
+                                    Basic
+                                  </Typography>
+                                  <Typography
+                                    variant="caption"
+                                    color="text.secondary"
+                                  >
+                                    {MODEL_CREDIT_COSTS["prunaai-fast"]} credits
+                                  </Typography>
+                                </Stack>
+                              </ToggleButton>
+                              <ToggleButton
+                                value="advanced"
+                                aria-label="Advanced model"
+                                sx={{
+                                  flex: "1 1 0",
+                                  minWidth: 0,
+                                  justifyContent: "center",
+                                  p: 1.5,
+                                }}
+                              >
+                                <Stack
+                                  direction="column"
+                                  alignItems="center"
+                                  spacing={0.5}
+                                  width="100%"
+                                >
+                                  <FiStar size={22} />
+                                  <Typography
+                                    variant="body2"
+                                    sx={{ fontWeight: 500 }}
+                                  >
+                                    Advanced
+                                  </Typography>
+                                  <Typography
+                                    variant="caption"
+                                    color="text.secondary"
+                                  >
+                                    {MODEL_CREDIT_COSTS["gpt-image-1"]} credits
+                                  </Typography>
+                                </Stack>
+                              </ToggleButton>
+                            </ToggleButtonGroup>
+                          </Box>
+                        )}
+                      />
+                      {errors.selectedModel && (
+                        <Typography
+                          color="error"
+                          variant="caption"
+                          sx={{ mt: 0.5 }}
+                        >
+                          {errors.selectedModel.message}
+                        </Typography>
+                      )}
+                    </FormControl>
+
+                    {/* Show credits and buy button */}
                     <Box
-                      className="overlay"
                       sx={{
-                        position: "absolute",
-                        inset: 0,
-                        bgcolor: "rgba(0,0,0,0.4)",
-                        opacity: 0,
                         display: "flex",
                         alignItems: "center",
-                        justifyContent: "center",
-                        transition: "opacity 0.3s",
-                        "&:hover": { opacity: 1 },
+                        gap: 2,
+                        mt: 2,
                       }}
                     >
-                      <Stack direction="row" spacing={1}>
-                        {onImageSelect && (
-                          <IconButton
-                            onClick={() => handleSelect(url)}
-                            sx={{ color: "common.white" }}
-                          >
-                            <FiCheck />
-                          </IconButton>
-                        )}
-                        <Tooltip
-                          title={
-                            isSaving
-                              ? "Saving..."
-                              : isSaved
-                              ? "Design Saved"
-                              : "Save Design"
-                          }
-                        >
-                          <span>
-                            <IconButton
-                              disabled={isSaving || isSaved}
-                              loading={isSaving}
-                              onClick={() =>
-                                saveDesign({ name: prompt, image_url: url })
-                              }
-                              sx={{ color: "common.white" }}
-                            >
-                              <FiSave />
-                            </IconButton>
-                          </span>
-                        </Tooltip>
-                      </Stack>
+                      <CreditsBalance
+                        credits={userProfileData?.credits}
+                        isLoading={isProfileLoading}
+                        error={profileError}
+                      />
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        onClick={() => setPurchaseDialogOpen(true)}
+                      >
+                        Buy Credits
+                      </Button>
                     </Box>
-                  }
-                </Card>
-              </ImageListItem>
-            ))}
-          </ImageList>
-        ) : (
-          <Typography
-            variant="body2"
-            color="text.secondary"
-            sx={{ textAlign: "center", py: 4 }}
-          >
-            Enter a prompt and click Generate to create images.
-          </Typography>
-        )}
-      </Stack>
+                    <PurchaseCreditsDialog
+                      open={purchaseDialogOpen}
+                      onClose={() => setPurchaseDialogOpen(false)}
+                      onPurchaseSuccess={() => {
+                        queryClient.invalidateQueries({
+                          queryKey: ["userProfile"],
+                        });
+                        refetchUserProfile();
+                      }}
+                    />
+
+                    {selectedModel === "advanced" && (
+                      <Controller
+                        name="isTransparent"
+                        control={control}
+                        render={({ field }) => (
+                          <FormControlLabel
+                            control={
+                              <Switch
+                                {...field}
+                                checked={field.value ?? false} // Ensure checked is always boolean
+                                disabled={
+                                  isSubmitting ||
+                                  imageGenerationMutation.isPending
+                                }
+                              />
+                            }
+                            label="Transparent Background (PNG)"
+                          />
+                        )}
+                      />
+                    )}
+
+                    <Controller
+                      name="artStyle"
+                      control={control}
+                      render={({ field }) => (
+                        <Autocomplete
+                          multiple
+                          options={artStyleOptions}
+                          getOptionLabel={(option: {
+                            value: ArtStyleUnion;
+                            label: string;
+                          }) => option.label}
+                          value={
+                            Array.isArray(field.value)
+                              ? artStyleOptions.filter((o) =>
+                                  (field.value ?? []).includes(o.value)
+                                )
+                              : []
+                          }
+                          onChange={(
+                            _,
+                            newValue: {
+                              value: ArtStyleUnion;
+                              label: string;
+                            }[] = []
+                          ) => field.onChange(newValue.map((v) => v.value))}
+                          isOptionEqualToValue={(
+                            option: { value: ArtStyleUnion },
+                            val: { value: ArtStyleUnion }
+                          ) => option.value === val.value}
+                          disabled={
+                            isSubmitting || imageGenerationMutation.isPending
+                          }
+                          filterOptions={artStyleFilterOptions}
+                          renderInput={(params) => (
+                            <TextField
+                              {...params}
+                              label="Art Style (Optional)"
+                              error={!!errors.artStyle}
+                              helperText={errors.artStyle?.message}
+                            />
+                          )}
+                          renderOption={(
+                            props: React.HTMLAttributes<HTMLLIElement>,
+                            option: { value: ArtStyleUnion; label: string },
+                            state: { selected: boolean }
+                          ) => (
+                            <li
+                              {...props}
+                              key={option.value}
+                              style={{ display: "flex", alignItems: "center" }}
+                            >
+                              {state.selected && (
+                                <FiCheck
+                                  style={{ marginRight: 8, color: "#1976d2" }}
+                                />
+                              )}
+                              {option.label}
+                            </li>
+                          )}
+                          clearOnEscape
+                          fullWidth
+                        />
+                      )}
+                    />
+
+                    <Controller
+                      name="orientation"
+                      control={control}
+                      render={({ field }) => (
+                        <FormControl
+                          fullWidth
+                          disabled={
+                            isSubmitting || imageGenerationMutation.isPending
+                          }
+                          error={!!errors.orientation}
+                        >
+                          <InputLabel id="orientation-select-label">
+                            Orientation
+                          </InputLabel>
+                          <Select
+                            {...field}
+                            labelId="orientation-select-label"
+                            label="Orientation"
+                          >
+                            <MenuItem value="square">Square (1:1)</MenuItem>
+                            <MenuItem value="landscape">
+                              Landscape (16:9)
+                            </MenuItem>
+                            <MenuItem value="portrait">
+                              Portrait (9:16)
+                            </MenuItem>
+                          </Select>
+                          {errors.orientation && (
+                            <Typography
+                              color="error"
+                              variant="caption"
+                              sx={{ mt: 0.5 }}
+                            >
+                              {errors.orientation.message}
+                            </Typography>
+                          )}
+                        </FormControl>
+                      )}
+                    />
+                  </Stack>
+                </AccordionDetails>
+              </Accordion>
+            </Grid>
+          </Grid>
+
+          {/* Image Results Section - Remains largely the same, but uses mutation state */}
+          <Box sx={{ mt: 4 }}>
+            {" "}
+            {/* Added margin top for separation */}
+            {imageGenerationMutation.isPending ? (
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  py: 8,
+                  border: "1px dashed",
+                  borderColor: "divider",
+                  borderRadius: 2,
+                  minHeight: 300,
+                }}
+              >
+                <CircularProgress />
+                <Typography
+                  variant="body1"
+                  color="text.secondary"
+                  sx={{ mt: 2 }}
+                >
+                  Generating your masterpiece...
+                </Typography>
+              </Box>
+            ) : currentGeneratedImages && currentGeneratedImages.length > 0 ? (
+              <ImageList
+                variant="masonry"
+                cols={
+                  singleSelect ? 1 : currentGeneratedImages.length > 1 ? 2 : 1
+                }
+                gap={12}
+                sx={{ m: 0, overflow: "hidden" }}
+              >
+                {currentGeneratedImages.map((url, idx) => (
+                  <ImageListItem
+                    key={url + idx}
+                    sx={{
+                      borderRadius: 1.5,
+                      overflow: "hidden",
+                      boxShadow: 3,
+                    }}
+                  >
+                    <Card
+                      sx={{
+                        position: "relative",
+                        cursor: onImageSelect ? "pointer" : "default",
+                        "&:hover .overlay": { opacity: 1 },
+                        display: "flex",
+                        flexDirection: "column",
+                        height: "100%",
+                      }}
+                      onClick={
+                        singleSelect ? () => handleSelect(url) : undefined
+                      }
+                      elevation={0}
+                    >
+                      <CardMedia
+                        component="img"
+                        image={url}
+                        alt={`AI Image ${idx + 1}`}
+                        sx={{
+                          width: "100%",
+                          objectFit: "cover",
+                          display: "block",
+                          flexGrow: 1,
+                        }}
+                      />
+                      <Box
+                        className="overlay"
+                        sx={{
+                          position: "absolute",
+                          inset: 0,
+                          bgcolor: "rgba(0,0,0,0.5)",
+                          opacity: 0,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          transition: "opacity 0.3s",
+                        }}
+                      >
+                        <Stack direction="row" spacing={1}>
+                          {onImageSelect && !singleSelect && (
+                            <Tooltip title="Select Image">
+                              <IconButton
+                                onClick={() => handleSelect(url)}
+                                sx={{
+                                  color: "common.white",
+                                  "&:hover": {
+                                    bgcolor: "rgba(255,255,255,0.1)",
+                                  },
+                                }}
+                              >
+                                <FiCheck />
+                              </IconButton>
+                            </Tooltip>
+                          )}
+                          <Tooltip
+                            title={
+                              saveDesignState.isPending
+                                ? "Saving..."
+                                : saveDesignState.isSuccess
+                                ? "Design Saved!"
+                                : "Save Design"
+                            }
+                          >
+                            <span>
+                              <IconButton
+                                disabled={
+                                  saveDesignState.isPending ||
+                                  (saveDesignState.isSuccess &&
+                                    saveDesignState.variables?.image_url ===
+                                      url)
+                                }
+                                onClick={() =>
+                                  saveDesign({
+                                    name:
+                                      watch("prompt") || `AI Design ${idx + 1}`,
+                                    image_url: url,
+                                  })
+                                }
+                                sx={{
+                                  color: "common.white",
+                                  "&:hover": {
+                                    bgcolor: "rgba(255,255,255,0.1)",
+                                  },
+                                }}
+                              >
+                                {saveDesignState.isPending &&
+                                saveDesignState.variables?.image_url === url ? (
+                                  <CircularProgress size={24} color="inherit" />
+                                ) : (
+                                  <FiSave />
+                                )}
+                              </IconButton>
+                            </span>
+                          </Tooltip>
+                        </Stack>
+                      </Box>
+                    </Card>
+                  </ImageListItem>
+                ))}
+              </ImageList>
+            ) : (
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  py: 8,
+                  border: "1px dashed",
+                  borderColor: "divider",
+                  borderRadius: 2,
+                  minHeight: 300,
+                  textAlign: "center",
+                }}
+              >
+                <Box
+                  sx={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "text.secondary",
+                  }}
+                >
+                  <FiImage
+                    size={64}
+                    style={{ marginBottom: 16, opacity: 0.5 }}
+                  />
+                  <Typography variant="body1">
+                    Your generated images will appear here.
+                  </Typography>
+                  <Typography variant="caption">
+                    Enter a prompt and click "Generate Images".
+                  </Typography>
+                </Box>
+                {imageGenerationMutation.error &&
+                  /Insufficient credits/i.test(
+                    imageGenerationMutation.error.message
+                  ) && (
+                    <Alert severity="warning" sx={{ mt: 2 }}>
+                      {imageGenerationMutation.error.message}
+                      <Button
+                        size="small"
+                        sx={{ ml: 2 }}
+                        onClick={() => setPurchaseDialogOpen(true)}
+                      >
+                        Buy Credits
+                      </Button>
+                    </Alert>
+                  )}
+                {imageGenerationMutation.error &&
+                  !/Insufficient credits/i.test(
+                    imageGenerationMutation.error.message
+                  ) && (
+                    <Alert severity="error" sx={{ mt: 2, width: "100%" }}>
+                      {imageGenerationMutation.error instanceof Error
+                        ? imageGenerationMutation.error.message
+                        : "Failed to generate images. Please try again."}
+                    </Alert>
+                  )}
+              </Box>
+            )}
+          </Box>
+        </Stack>
+      </form>
     </Paper>
   );
 };

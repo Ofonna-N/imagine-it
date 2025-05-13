@@ -83,6 +83,14 @@ export const API_ROUTES = {
    * Resource route for fetching all Printful orders for the current user
    */
   USER_ORDERS: "/api/user-orders",
+  // Theme API route
+  THEME: "/api/theme",
+  /**
+   * POST /api/purchase-credits
+   * Resource route for purchasing credits
+   */
+  PURCHASE_CREDITS: "/api/purchase-credits",
+  CREDIT_PACKAGES: "/api/credit-packages", // GET: fetch available credit packages
 };
 
 // A flattened version combining all routes for easier imports

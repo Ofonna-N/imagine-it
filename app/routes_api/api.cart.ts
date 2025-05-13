@@ -1,6 +1,5 @@
 import { type ActionFunctionArgs } from "react-router";
 import { getStoragePath } from "../utils/storage_path";
-import { randomUUID } from "crypto";
 import {
   addCartItem,
   getCartItems,
@@ -8,7 +7,7 @@ import {
   clearCart,
   updateCartItemQuantity,
 } from "../db/queries/carts_queries";
-import createSupabaseServerClient from "../services/supabase/supabase_client.server";
+import createSupabaseServerClient from "../services/supabase/supabase_client";
 import type { PrintfulV2OrderItem } from "~/types/printful/order_types";
 
 /**
@@ -24,11 +23,11 @@ import type { PrintfulV2OrderItem } from "~/types/printful/order_types";
 async function getUserIdFromRequest(request: Request): Promise<string | null> {
   const { supabase } = createSupabaseServerClient({ request });
   const {
-    data: { session },
+    data: { user },
     error,
-  } = await supabase.auth.getSession();
-  if (error || !session?.user?.id) return null;
-  return session.user.id;
+  } = await supabase.auth.getUser();
+  if (error || !user?.id) return null;
+  return user.id;
 }
 
 export async function loader({ request }: { request: Request }) {
@@ -111,7 +110,8 @@ export async function action({ request }: ActionFunctionArgs) {
           } = supabase.storage.from("imagine-it").getPublicUrl(storagePath);
           storedMockupUrls.push(publicUrl);
         } catch (err) {
-          // Skip this image if fetch/upload fails
+          // Log the error for debugging purposes and skip this image
+          console.error("Failed to fetch or upload mockup image:", err);
           continue;
         }
       }
@@ -160,10 +160,11 @@ export async function action({ request }: ActionFunctionArgs) {
       for (const cartItem of cartItems) {
         if (Array.isArray(cartItem.mockup_urls)) {
           for (const url of cartItem.mockup_urls) {
-            const match = url.match(/\/public\/imagine-it\/(.+)$/);
+            const regex = /\/public\/imagine-it\/(.+)$/;
+            const match = regex.exec(url);
             const storagePath = match ? match[1] : null;
             if (storagePath) {
-              const { data, error } = await supabase.storage
+              const { error } = await supabase.storage
                 .from("imagine-it")
                 .remove([storagePath]);
               if (error) {
@@ -198,11 +199,12 @@ export async function action({ request }: ActionFunctionArgs) {
         for (const url of cartItem.mockup_urls) {
           // Supabase public URL: https://<project>.supabase.co/storage/v1/object/public/<bucket>/<path>
           // Extract the path after '/public/<bucket>/'
-          const match = url.match(/\/public\/imagine-it\/(.+)$/);
+          const regex = /\/public\/imagine-it\/(.+)$/;
+          const match = regex.exec(url);
           const storagePath = match ? match[1] : null;
-          // console.log("Storage Path:", storagePath);
+
           if (storagePath) {
-            const { data, error } = await supabase.storage
+            const { error } = await supabase.storage
               .from("imagine-it")
               .remove([storagePath]);
             if (error) {

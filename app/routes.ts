@@ -2,36 +2,34 @@ import { type RouteConfig, route, layout } from "@react-router/dev/routes";
 import { API_ROUTES, APP_ROUTES, AUTH_ROUTES } from "./constants/route_paths";
 
 export default [
-  // Public authentication routes (accessible when not logged in)
-  route(AUTH_ROUTES.LOGIN.slice(1), "routes/login.tsx"),
-  route(AUTH_ROUTES.SIGNUP.slice(1), "routes/signup.tsx"),
+  layout("layouts/public_layout.tsx", [
+    // Public authentication routes
+    route(AUTH_ROUTES.LOGIN.slice(1), "routes/login.tsx"),
+    route(AUTH_ROUTES.SIGNUP.slice(1), "routes/signup.tsx"),
 
-  // Main application layout - conditionally shows landing or protected content
-  layout("routes/layout.tsx", [
-    // Home route is now at the root with ID for loader data access
-    route(APP_ROUTES.HOME, "routes/home.tsx", { id: "home" }),
-
-    // Product related routes
-    route(APP_ROUTES.PRODUCTS.slice(1), "routes/product_listing.tsx"),
-    route(
-      `${APP_ROUTES.PRODUCTS.slice(1)}/:productId`,
-      "routes/product_detail.tsx"
-    ),
-
-    // Shopping cart and checkout
-    route(APP_ROUTES.CART.slice(1), "routes/cart.tsx"),
-    route(APP_ROUTES.CHECKOUT.slice(1), "routes/checkout.tsx"),
-    route(
-      APP_ROUTES.CHECKOUT_THANK_YOU.slice(1),
-      "routes/checkout_thank_you.tsx"
-    ),
-
-    // User account routes
-    route(APP_ROUTES.MY_DESIGNS.slice(1), "routes/my_designs.tsx"),
-    route(APP_ROUTES.ORDERS.slice(1), "routes/orders.tsx"),
-    route(APP_ROUTES.ACCOUNT.slice(1), "routes/account.tsx"),
-    route(APP_ROUTES.IMAGE_GENERATION.slice(1), "routes/image_generation.tsx"),
-    route(APP_ROUTES.ORDER_DETAIL.slice(1), "routes/order_detail.tsx"),
+    // Protected routes under authenticated layout
+    layout("layouts/protected_layout.tsx", [
+      route(APP_ROUTES.HOME.slice(1), "routes/home.tsx", { id: "home" }),
+      route(APP_ROUTES.PRODUCTS.slice(1), "routes/product_listing.tsx"),
+      route(
+        `${APP_ROUTES.PRODUCTS.slice(1)}/:productId`,
+        "routes/product_detail.tsx"
+      ),
+      route(APP_ROUTES.CART.slice(1), "routes/cart.tsx"),
+      route(APP_ROUTES.CHECKOUT.slice(1), "routes/checkout.tsx"),
+      route(
+        APP_ROUTES.CHECKOUT_THANK_YOU.slice(1),
+        "routes/checkout_thank_you.tsx"
+      ),
+      route(APP_ROUTES.MY_DESIGNS.slice(1), "routes/my_designs.tsx"),
+      route(APP_ROUTES.ORDERS.slice(1), "routes/orders.tsx"),
+      route(APP_ROUTES.ACCOUNT.slice(1), "routes/account.tsx"),
+      route(
+        APP_ROUTES.IMAGE_GENERATION.slice(1),
+        "routes/image_generation.tsx"
+      ),
+      route(APP_ROUTES.ORDER_DETAIL.slice(1), "routes/order_detail.tsx"),
+    ]),
   ]),
 
   // API routes
@@ -126,4 +124,13 @@ export default [
     "routes_api/api.printful_order.ts"
   ),
   route(API_ROUTES.USER_ORDERS.slice(1), "routes_api/api.user_orders.ts"),
+  route(API_ROUTES.THEME.slice(1), "routes_api/api.theme.ts"),
+  route(
+    API_ROUTES.PURCHASE_CREDITS.slice(1),
+    "routes_api/api.purchase_credits.ts"
+  ),
+  route(
+    API_ROUTES.CREDIT_PACKAGES.slice(1),
+    "routes_api/api.credit_packages.ts"
+  ),
 ] satisfies RouteConfig;

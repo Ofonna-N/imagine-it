@@ -1,8 +1,7 @@
 import { useQuery, type UseQueryOptions } from "@tanstack/react-query";
-import type {
-  PrintfulV2CatalogProduct,
-  PrintfulPagination,
-} from "~/types/printful";
+import type { PrintfulV2CatalogProduct } from "~/types/printful/catalog_product_types";
+import type { PrintfulPagination } from "~/types/printful/common_types";
+import ROUTE_PATHS from "~/constants/route_paths";
 
 interface CatalogProductsParams {
   limit?: number;
@@ -48,7 +47,9 @@ const useQueryCatalogProducts = ({
       if (categoryIds) queryParams.append("category_ids", categoryIds); // Changed parameter name
       if (search) queryParams.append("search", search);
 
-      const response = await fetch(`/api/catalog-products?${queryParams}`);
+      const response = await fetch(
+        `${ROUTE_PATHS.API.CATALOG_PRODUCTS}?${queryParams}`
+      );
       if (!response.ok) {
         throw new Error("Failed to fetch products");
       }

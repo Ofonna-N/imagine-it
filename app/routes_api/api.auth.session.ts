@@ -1,4 +1,4 @@
-import createSupabaseServerClient from "~/services/supabase/supabase_client.server";
+import createSupabaseServerClient from "~/services/supabase/supabase_client";
 
 /**
  * Resource route for getting the current user session

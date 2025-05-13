@@ -1,10 +1,10 @@
-import { ImageGenerationModelType } from "~/services/replicate/replicate_models";
+import type { ModelKey } from "./model_registry";
 
 export type PRUNAAI_HIDREAM_L1_FAST_SCHEMA = {
   input: {
     prompt: string;
     seed?: number;
-    model_type?: ImageGenerationModelType;
+    model_type?: "fast";
     speed_mode?:
       | "Unsqueezed 🍋 (highest quality)"
       | "Lightly Juiced 🍊 (more consistent)"
@@ -24,8 +24,13 @@ export type PRUNAAI_HIDREAM_L1_FAST_SCHEMA = {
   output: string[];
 };
 
-export interface GenerateImageInput {
+export interface GenerateImageInputPayload {
   /** Prompt */
   prompt: string;
-  orientation?: "landscape" | "portrait" | "square";
+  orientation?: "landscape" | "portrait" | "square" | "auto";
+  /**
+   * Model key from MODEL_REGISTRY (e.g., 'prunaai-fast', 'gpt-image-1')
+   */
+  model?: ModelKey;
+  transparent?: boolean;
 }

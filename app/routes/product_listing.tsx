@@ -32,7 +32,7 @@ import {
   FiChevronDown,
   FiChevronRight,
 } from "react-icons/fi";
-import type { PrintfulV2Category } from "~/types/printful";
+import type { PrintfulV2Category } from "~/types/printful/catalog_product_types";
 
 // Helper type for nested categories
 interface NestedCategory extends PrintfulV2Category {

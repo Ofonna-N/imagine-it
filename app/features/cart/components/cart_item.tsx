@@ -7,6 +7,7 @@ import {
   CardMedia,
   CardContent,
   Button,
+  Tooltip,
 } from "@mui/material";
 import { FiTrash2, FiImage } from "react-icons/fi";
 import Dialog from "@mui/material/Dialog";
@@ -84,9 +85,27 @@ export const CartItem: React.FC<CartItemProps> = ({
               {itemTotalDisplay}
             </Typography>
           </Box>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            Design: {designName}
-          </Typography>
+          {/* Clamp and tooltip for designName */}
+          <Box sx={{ mt: 1 }}>
+            <Tooltip title={designName} placement="top" arrow>
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{
+                  display: "-webkit-box",
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: "vertical",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "normal",
+                  minHeight: "3em",
+                  cursor: "pointer",
+                }}
+              >
+                Design: {designName}
+              </Typography>
+            </Tooltip>
+          </Box>
           <Box sx={{ display: "flex", alignItems: "center", mt: 2 }}>
             <TextField
               type="number"

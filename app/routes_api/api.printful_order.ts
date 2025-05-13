@@ -1,5 +1,5 @@
 import { type ActionFunctionArgs } from "react-router";
-import createSupabaseServerClient from "~/services/supabase/supabase_client.server";
+import createSupabaseServerClient from "~/services/supabase/supabase_client";
 import { createPrintfulOrder } from "~/services/printful/printful_api";
 import { insertOrder } from "~/db/queries/orders_queries";
 import type { PrintfulV2CreateOrderRequest } from "~/types/printful/order_types";
@@ -12,10 +12,11 @@ export async function action({ request }: ActionFunctionArgs) {
   // Use Supabase server client to get user session
   const { supabase } = createSupabaseServerClient({ request });
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  const userId = session?.user?.id;
-  if (!userId) {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
+  const userId = user?.id;
+  if (error || !userId) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
       status: 401,
       headers: { "Content-Type": "application/json" },

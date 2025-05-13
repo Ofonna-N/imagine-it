@@ -1,4 +1,4 @@
-import { Box, Typography, Paper, Button, Divider } from "@mui/material";
+import { Box, Typography, Paper, Button } from "@mui/material";
 import { FiShoppingBag, FiCreditCard } from "react-icons/fi";
 import { Link } from "react-router";
 
