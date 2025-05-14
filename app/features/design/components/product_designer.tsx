@@ -45,6 +45,8 @@ import type {
 } from "~/types/printful/catalog_product_types";
 import type { PrintfulV2MockupGeneratorTaskRequest } from "~/types/printful/mockup_task_types";
 import type { PrintfulV2OrderItem } from "~/types/printful/order_types";
+import useQueryUserProfile from "~/features/user/hooks/use_query_user_profile";
+import { hasUserFeature } from "~/utils/feature_gate";
 
 interface ProductDesignerProps {
   open: boolean;
@@ -158,6 +160,17 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
     error: addError,
     reset: resetAdd,
   } = useMutateAddCartItem();
+
+  const { data: userProfile } = useQueryUserProfile();
+
+  // Feature gating for premium styles
+  const canUsePremiumStyles = userProfile
+    ? hasUserFeature(userProfile, "premiumStyles")
+    : false;
+  // Feature gating for batch generation
+  const canBatchGenerate = userProfile
+    ? hasUserFeature(userProfile, "batchGeneration")
+    : false;
 
   // --- Effects --- //
 

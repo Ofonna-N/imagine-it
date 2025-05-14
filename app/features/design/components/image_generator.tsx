@@ -56,9 +56,13 @@ import type { ModelKey } from "~/services/image_generation/model_registry";
 import type { GenerateImageInputPayload } from "~/services/image_generation/image_generation_types";
 import CreditsBalance from "~/features/user/components/credits_balance";
 import PurchaseCreditsDialog from "~/features/user/components/purchase_credits_dialog";
-import useQueryUserProfile from "~/features/user/hooks/use_query_user_profile";
 import { createFilterOptions } from "@mui/material/Autocomplete";
 import StandardModal from "../../../components/standard_modal";
+import { hasUserFeature } from "~/utils/feature_gate";
+import { useUserSubscriptionTier } from "~/features/user/hooks/use_query_user_profile";
+import { getSubscriptionFeatures } from "~/config/subscription_tiers";
+import { canUserAccessFeature } from "~/utils/feature_gate";
+import useQueryUserProfile from "~/features/user/hooks/use_query_user_profile";
 
 /**
  * Props for ImageGenerator component
@@ -117,6 +121,33 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
     error: profileError,
     refetch: refetchUserProfile,
   } = useQueryUserProfile();
+
+  const { data: userProfile, isLoading: userLoading } = useQueryUserProfile();
+  const userTier = userProfile?.subscriptionTier || "free";
+  const features = getSubscriptionFeatures(userTier);
+  const creditsUsed =
+    features.artGenCreditsPerMonth - (userProfile?.credits ?? 0);
+
+  // Only check feature gate if userProfile is loaded
+  if (userLoading) {
+    return <Typography>Loading user profile...</Typography>;
+  }
+  if (!userProfile) {
+    return <Typography color="error">Unable to load user profile.</Typography>;
+  }
+
+  const canGenerate = canUserAccessFeature(
+    userProfile,
+    "artGenCredits",
+    creditsUsed
+  );
+
+  const canBatchGenerate = userProfile
+    ? hasUserFeature(userProfile, "batchGeneration")
+    : false;
+  const canUsePremiumStyles = userProfile
+    ? hasUserFeature(userProfile, "premiumStyles")
+    : false;
 
   const {
     control,
@@ -196,6 +227,23 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
     queryClient.getQueryData<GenerateImageResponse>([
       "lastGeneratedImageData",
     ])?.images;
+
+  // UI: show upgrade prompt if user is at their limit
+  if (!canGenerate) {
+    return (
+      <Box sx={{ textAlign: "center", mt: 4 }}>
+        <Typography variant="h6" color="error" gutterBottom>
+          You have reached your monthly image generation limit for your
+          subscription tier.
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          Upgrade your subscription or purchase more credits to continue
+          generating images.
+        </Typography>
+        {/* Add upgrade button or dialog here */}
+      </Box>
+    );
+  }
 
   return (
     <Paper

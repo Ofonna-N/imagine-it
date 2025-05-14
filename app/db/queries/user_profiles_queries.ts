@@ -23,8 +23,16 @@ export async function insertOrCreateUserProfile(user: User): Promise<void> {
         email: user.email ?? "",
         createdAt: new Date(),
         updatedAt: new Date(),
+        subscriptionTier: "free", // Default to free tier
       });
     } else {
+      // Optionally, update subscriptionTier if missing (migration safety)
+      if (!existingProfile[0].subscriptionTier) {
+        await db
+          .update(profilesTable)
+          .set({ subscriptionTier: "free" })
+          .where(eq(profilesTable.id, user.id));
+      }
       console.log(`Profile already exists for user ${user.id}`);
     }
   } catch (error) {

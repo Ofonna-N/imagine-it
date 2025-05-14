@@ -31,3 +31,11 @@ function useQueryUserProfile() {
 }
 
 export default useQueryUserProfile;
+
+/**
+ * Selector to get the user's subscription tier from the profile
+ */
+export function useUserSubscriptionTier(): string | undefined {
+  const { data: profile } = useQueryUserProfile();
+  return profile?.subscriptionTier;
+}
