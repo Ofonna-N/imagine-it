@@ -59,7 +59,6 @@ import PurchaseCreditsDialog from "~/features/user/components/purchase_credits_d
 import { createFilterOptions } from "@mui/material/Autocomplete";
 import StandardModal from "../../../components/standard_modal";
 import { hasUserFeature } from "~/utils/feature_gate";
-import { useUserSubscriptionTier } from "~/features/user/hooks/use_query_user_profile";
 import { getSubscriptionFeatures } from "~/config/subscription_tiers";
 import { canUserAccessFeature } from "~/utils/feature_gate";
 import useQueryUserProfile from "~/features/user/hooks/use_query_user_profile";

@@ -19,7 +19,12 @@ import { useAuth } from "~/context/auth_provider";
 import { useNavigate, useLoaderData } from "react-router";
 import { checkAuthAndRedirect } from "~/features/auth/utils/auth_redirects";
 import { AUTH_ROUTES } from "~/constants/route_paths"; // Import AUTH_ROUTES
+import {
+  SUBSCRIPTION_TIERS,
+  type SubscriptionTier,
+} from "~/config/subscription_tiers";
 import type { Route } from "./+types/account";
+import useQueryUserProfile from "~/features/user/hooks/use_query_user_profile";
 
 // Add loader to get authenticated user data
 export async function loader({ request }: Route.LoaderArgs) {
@@ -27,10 +32,101 @@ export async function loader({ request }: Route.LoaderArgs) {
   return await checkAuthAndRedirect(request, null, AUTH_ROUTES.LOGIN);
 }
 
+function SubscriptionManagementSection({
+  currentTier,
+}: Readonly<{ currentTier: SubscriptionTier }>) {
+  const [selectedTier, setSelectedTier] =
+    useState<SubscriptionTier>(currentTier);
+  const tiers = ["free", "creator", "pro"] as const;
+  return (
+    <Box sx={{ my: 6 }}>
+      <Typography variant="h5" sx={{ fontWeight: 700, mb: 2 }}>
+        Manage Your Subscription
+      </Typography>
+      <Grid container spacing={3}>
+        {tiers.map((tier) => {
+          const features = SUBSCRIPTION_TIERS[tier];
+          return (
+            <Grid size={{ xs: 12, sm: 6, md: 4 }} key={tier}>
+              <Paper
+                elevation={selectedTier === tier ? 6 : 2}
+                sx={{
+                  p: 3,
+                  borderRadius: 3,
+                  border: selectedTier === tier ? "2px solid" : "1px solid",
+                  borderColor:
+                    selectedTier === tier ? "primary.main" : "divider",
+                  background:
+                    selectedTier === tier
+                      ? "rgba(94,106,210,0.05)"
+                      : "background.paper",
+                  cursor: tier === currentTier ? "default" : "pointer",
+                  opacity: tier === currentTier ? 1 : 0.95,
+                  transition: "all 0.2s",
+                }}
+                onClick={() => setSelectedTier(tier)}
+              >
+                <Typography
+                  variant="h6"
+                  sx={{ fontWeight: 700, mb: 1, textTransform: "capitalize" }}
+                >
+                  {tier === "free"
+                    ? "Free"
+                    : tier.charAt(0).toUpperCase() + tier.slice(1)}
+                </Typography>
+                <Typography variant="subtitle1" color="primary" sx={{ mb: 1 }}>
+                  {tier === "free"
+                    ? "$0/mo"
+                    : tier === "creator"
+                    ? "$9/mo"
+                    : "$29/mo"}
+                </Typography>
+                <ul style={{ paddingLeft: 18, marginBottom: 8 }}>
+                  <li>{features.artGenCreditsPerMonth} AI art credits/mo</li>
+                  <li>
+                    {features.savedDesignsLimit ?? "Unlimited"} saved designs
+                  </li>
+                  <li>{features.uploadsPerMonth ?? "Unlimited"} uploads/mo</li>
+                  <li>
+                    {features.premiumStyles
+                      ? "Premium styles included"
+                      : "Basic styles only"}
+                  </li>
+                  <li>
+                    {features.batchGeneration
+                      ? "Batch generation enabled"
+                      : "No batch generation"}
+                  </li>
+                  <li>Support: {features.supportLevel}</li>
+                </ul>
+                <Button
+                  variant={selectedTier === tier ? "contained" : "outlined"}
+                  color="primary"
+                  fullWidth
+                  sx={{ mt: 1 }}
+                  disabled={selectedTier === tier || tier === currentTier}
+                >
+                  {tier === currentTier
+                    ? "Current Plan"
+                    : selectedTier === tier
+                    ? "Selected"
+                    : "Switch to this Plan"}
+                </Button>
+              </Paper>
+            </Grid>
+          );
+        })}
+      </Grid>
+    </Box>
+  );
+}
+
 export default function AccountPage() {
   const { signOut } = useAuth();
   const navigate = useNavigate();
   const { user } = useLoaderData<typeof loader>();
+  const userProfileQuery = useQueryUserProfile();
+  const userProfile = userProfileQuery.data;
   const [isEditing, setIsEditing] = useState(false);
 
   // Example user details - replace with actual user data in a real implementation
@@ -252,6 +348,10 @@ export default function AccountPage() {
               No recent orders found.
             </Typography>
           </Paper>
+
+          <SubscriptionManagementSection
+            currentTier={userProfileQuery.data?.subscriptionTier || "free"}
+          />
         </Grid>
       </Grid>
     </Box>

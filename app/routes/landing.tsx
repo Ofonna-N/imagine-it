@@ -40,6 +40,11 @@ import imagineImg from "~/assets/imagine-it.webp";
 import createImg from "~/assets/create-with-ai.webp";
 import purchaseImg from "~/assets/pruchase.webp";
 import { AUTH_ROUTES } from "~/constants/route_paths";
+import {
+  SUBSCRIPTION_TIERS,
+  type SubscriptionTier,
+} from "~/config/subscription_tiers";
+import { useState } from "react";
 
 // Define animations
 const floatAnimation = keyframes`
@@ -65,6 +70,96 @@ export default function LandingPage() {
   const handleSignup = () => {
     navigate(AUTH_ROUTES.SIGNUP);
   };
+
+  function SubscriptionPlansSection() {
+    const [selectedTier, setSelectedTier] = useState<SubscriptionTier>("free");
+    const tiers = ["free", "creator", "pro"] as const;
+    return (
+      <Box sx={{ my: 8 }}>
+        <Typography variant="h3" align="center" sx={{ fontWeight: 700, mb: 3 }}>
+          Choose Your Plan
+        </Typography>
+        <Grid container spacing={4} justifyContent="center">
+          {tiers.map((tier) => {
+            const features = SUBSCRIPTION_TIERS[tier];
+            return (
+              <Grid size={{ xs: 12, sm: 6, md: 4 }} key={tier}>
+                <Paper
+                  elevation={selectedTier === tier ? 6 : 2}
+                  sx={{
+                    p: 4,
+                    borderRadius: 4,
+                    border: selectedTier === tier ? "2px solid" : "1px solid",
+                    borderColor:
+                      selectedTier === tier ? "primary.main" : "divider",
+                    boxShadow: selectedTier === tier ? 6 : 1,
+                    transition: "all 0.2s",
+                    cursor: "pointer",
+                    background:
+                      selectedTier === tier
+                        ? "rgba(94,106,210,0.05)"
+                        : "background.paper",
+                  }}
+                  onClick={() => setSelectedTier(tier)}
+                >
+                  <Typography
+                    variant="h5"
+                    sx={{ fontWeight: 700, mb: 1, textTransform: "capitalize" }}
+                  >
+                    {tier === "free"
+                      ? "Free"
+                      : tier.charAt(0).toUpperCase() + tier.slice(1)}
+                  </Typography>
+                  <Typography variant="h6" color="primary" sx={{ mb: 2 }}>
+                    {tier === "free"
+                      ? "$0/mo"
+                      : tier === "creator"
+                      ? "$9/mo"
+                      : "$29/mo"}
+                  </Typography>
+                  <ul style={{ paddingLeft: 18, marginBottom: 12 }}>
+                    <li>{features.artGenCreditsPerMonth} AI art credits/mo</li>
+                    <li>
+                      {features.savedDesignsLimit === null
+                        ? "Unlimited"
+                        : features.savedDesignsLimit}{" "}
+                      saved designs
+                    </li>
+                    <li>
+                      {features.uploadsPerMonth === null
+                        ? "Unlimited"
+                        : features.uploadsPerMonth}{" "}
+                      uploads/mo
+                    </li>
+                    <li>
+                      {features.premiumStyles
+                        ? "Premium styles included"
+                        : "Basic styles only"}
+                    </li>
+                    <li>
+                      {features.batchGeneration
+                        ? "Batch generation enabled"
+                        : "No batch generation"}
+                    </li>
+                    <li>Support: {features.supportLevel}</li>
+                  </ul>
+                  <Button
+                    variant={selectedTier === tier ? "contained" : "outlined"}
+                    color="primary"
+                    fullWidth
+                    sx={{ mt: 2 }}
+                    disabled={selectedTier === tier}
+                  >
+                    {selectedTier === tier ? "Selected" : "Choose Plan"}
+                  </Button>
+                </Paper>
+              </Grid>
+            );
+          })}
+        </Grid>
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
@@ -182,6 +277,7 @@ export default function LandingPage() {
           </Zoom>
         </Box>
 
+        <SubscriptionPlansSection />
         <Divider sx={{ my: 6 }} />
 
         {/* How It Works Section */}
