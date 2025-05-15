@@ -25,6 +25,9 @@ import {
 } from "~/config/subscription_tiers";
 import type { Route } from "./+types/account";
 import useQueryUserProfile from "~/features/user/hooks/use_query_user_profile";
+import { useMutatePurchaseSubscription } from "~/features/user/hooks/use_mutate_purchase_subscription";
+import { PayPalButtons } from "@paypal/react-paypal-js";
+import { useTheme } from "@mui/material/styles";
 
 // Add loader to get authenticated user data
 export async function loader({ request }: Route.LoaderArgs) {
@@ -37,7 +40,22 @@ function SubscriptionManagementSection({
 }: Readonly<{ currentTier: SubscriptionTier }>) {
   const [selectedTier, setSelectedTier] =
     useState<SubscriptionTier>(currentTier);
+  const [debitCardExpanded, setDebitCardExpanded] = useState<
+    Record<SubscriptionTier, boolean>
+  >({
+    free: false,
+    creator: false,
+    pro: false,
+  });
   const tiers = ["free", "creator", "pro"] as const;
+  const theme = useTheme();
+  const paypalContainerBgColor = theme.palette.background.paper;
+  const {
+    mutate: purchaseSubscription,
+    isPending,
+    isSuccess,
+    error,
+  } = useMutatePurchaseSubscription();
   return (
     <Box sx={{ my: 6 }}>
       <Typography variant="h5" sx={{ fontWeight: 700, mb: 2 }}>
@@ -99,19 +117,98 @@ function SubscriptionManagementSection({
                   </li>
                   <li>Support: {features.supportLevel}</li>
                 </ul>
-                <Button
-                  variant={selectedTier === tier ? "contained" : "outlined"}
-                  color="primary"
-                  fullWidth
-                  sx={{ mt: 1 }}
-                  disabled={selectedTier === tier || tier === currentTier}
-                >
-                  {tier === currentTier
-                    ? "Current Plan"
-                    : selectedTier === tier
-                    ? "Selected"
-                    : "Switch to this Plan"}
-                </Button>
+                {tier !== "free" && (
+                  <Paper
+                    id="paypal-button-container"
+                    component={"div"}
+                    style={{
+                      colorScheme: "none",
+                      backgroundColor: debitCardExpanded[tier]
+                        ? "#ffff"
+                        : paypalContainerBgColor,
+                      padding: "10px",
+                      borderRadius: "5px",
+                    }}
+                  >
+                    <PayPalButtons
+                      style={{ layout: "vertical", color: "blue" }}
+                      createOrder={async (data, actions) => {
+                        if (data.paymentSource === "card") {
+                          setDebitCardExpanded((prev) => ({
+                            ...prev,
+                            [tier]: true,
+                          }));
+                        } else {
+                          setDebitCardExpanded((prev) => ({
+                            ...prev,
+                            [tier]: false,
+                          }));
+                        }
+                        return actions.order.create({
+                          purchase_units: [
+                            {
+                              amount: {
+                                value: tier === "creator" ? "9.00" : "29.00",
+                                currency_code: "USD",
+                              },
+                              description: `${
+                                tier.charAt(0).toUpperCase() + tier.slice(1)
+                              } Plan Subscription`,
+                            },
+                          ],
+                          intent: "CAPTURE",
+                        });
+                      }}
+                      onApprove={async (data, actions) => {
+                        if (data.orderID) {
+                          purchaseSubscription({
+                            tier,
+                            paymentId: data.orderID,
+                          });
+                        }
+                      }}
+                      onError={(err) => {
+                        // Optionally handle PayPal errors
+                        console.error("PayPal error", err);
+                      }}
+                      onCancel={() => {
+                        setDebitCardExpanded((prev) => ({
+                          ...prev,
+                          [tier]: false,
+                        }));
+                      }}
+                    />
+                  </Paper>
+                )}
+                {tier === "free" && (
+                  <Button
+                    variant="outlined"
+                    color="primary"
+                    fullWidth
+                    sx={{ mt: 2 }}
+                    onClick={() =>
+                      purchaseSubscription({ tier, paymentId: "" })
+                    }
+                    disabled={selectedTier === tier}
+                  >
+                    Switch to Free
+                  </Button>
+                )}
+                {isPending && selectedTier === tier && (
+                  <Typography color="primary" sx={{ mt: 1 }}>
+                    Processing...
+                  </Typography>
+                )}
+                {isSuccess && selectedTier === tier && (
+                  <Typography color="success.main" sx={{ mt: 1 }}>
+                    Plan updated!
+                  </Typography>
+                )}
+                {error && selectedTier === tier && (
+                  <Typography color="error" sx={{ mt: 1 }}>
+                    {error.message}
+                  </Typography>
+                )}
               </Paper>
             </Grid>
           );

@@ -91,6 +91,8 @@ export const API_ROUTES = {
    */
   PURCHASE_CREDITS: "/api/purchase-credits",
   CREDIT_PACKAGES: "/api/credit-packages", // GET: fetch available credit packages
+  // Add API route for purchasing subscription
+  PURCHASE_SUBSCRIPTION: "/api/purchase-subscription",
 };
 
 // A flattened version combining all routes for easier imports

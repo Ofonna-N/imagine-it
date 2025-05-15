@@ -39,12 +39,14 @@ import surrealFloatingIsland from "~/assets/surreal-floating-island.webp";
 import imagineImg from "~/assets/imagine-it.webp";
 import createImg from "~/assets/create-with-ai.webp";
 import purchaseImg from "~/assets/pruchase.webp";
-import { AUTH_ROUTES } from "~/constants/route_paths";
 import {
   SUBSCRIPTION_TIERS,
   type SubscriptionTier,
 } from "~/config/subscription_tiers";
 import { useState } from "react";
+import { PayPalButtons } from "@paypal/react-paypal-js";
+import { API_ROUTES, AUTH_ROUTES } from "~/constants/route_paths";
+import { useMutatePurchaseSubscription } from "~/features/user/hooks/use_mutate_purchase_subscription";
 
 // Define animations
 const floatAnimation = keyframes`
@@ -74,6 +76,14 @@ export default function LandingPage() {
   function SubscriptionPlansSection() {
     const [selectedTier, setSelectedTier] = useState<SubscriptionTier>("free");
     const tiers = ["free", "creator", "pro"] as const;
+    const {
+      mutate: purchaseSubscription,
+      isPending,
+      isSuccess,
+      error,
+    } = useMutatePurchaseSubscription();
+    const [isDebitCardExpanded, setIsDebitCardExpanded] = useState(false);
+    const paypalContainerBgColor = useTheme().palette.background.paper;
     return (
       <Box sx={{ my: 8 }}>
         <Typography variant="h3" align="center" sx={{ fontWeight: 700, mb: 3 }}>
@@ -143,15 +153,90 @@ export default function LandingPage() {
                     </li>
                     <li>Support: {features.supportLevel}</li>
                   </ul>
-                  <Button
-                    variant={selectedTier === tier ? "contained" : "outlined"}
-                    color="primary"
-                    fullWidth
-                    sx={{ mt: 2 }}
-                    disabled={selectedTier === tier}
-                  >
-                    {selectedTier === tier ? "Selected" : "Choose Plan"}
-                  </Button>
+                  {/* Subscription plan selection and PayPal payment */}
+                  {tier !== "free" && (
+                    <Paper
+                      id="paypal-button-container"
+                      component={"div"}
+                      style={{
+                        colorScheme: "none",
+                        backgroundColor: isDebitCardExpanded
+                          ? "#ffff"
+                          : paypalContainerBgColor,
+                        padding: "10px",
+                        borderRadius: "5px",
+                      }}
+                    >
+                      <PayPalButtons
+                        style={{ layout: "vertical", color: "blue" }}
+                        createOrder={async (data, actions) => {
+                          if (data.paymentSource === "card") {
+                            setIsDebitCardExpanded(true);
+                          } else {
+                            setIsDebitCardExpanded(false);
+                          }
+                          return actions.order.create({
+                            purchase_units: [
+                              {
+                                amount: {
+                                  value: tier === "creator" ? "9.00" : "29.00",
+                                  currency_code: "USD",
+                                },
+                                description: `${
+                                  tier.charAt(0).toUpperCase() + tier.slice(1)
+                                } Plan Subscription`,
+                              },
+                            ],
+                            intent: "CAPTURE",
+                          });
+                        }}
+                        onApprove={async (data, actions) => {
+                          if (data.orderID) {
+                            purchaseSubscription({
+                              tier,
+                              paymentId: data.orderID,
+                            });
+                          }
+                        }}
+                        onError={(err) => {
+                          // Optionally handle PayPal errors
+                          console.error("PayPal error", err);
+                        }}
+                        onCancel={() => {
+                          setIsDebitCardExpanded(false);
+                        }}
+                      />
+                    </Paper>
+                  )}
+                  {tier === "free" && (
+                    <Button
+                      variant="outlined"
+                      color="primary"
+                      fullWidth
+                      sx={{ mt: 2 }}
+                      onClick={() =>
+                        purchaseSubscription({ tier, paymentId: "" })
+                      }
+                      disabled={selectedTier === tier}
+                    >
+                      Switch to Free
+                    </Button>
+                  )}
+                  {isPending && selectedTier === tier && (
+                    <Typography color="primary" sx={{ mt: 1 }}>
+                      Processing...
+                    </Typography>
+                  )}
+                  {isSuccess && selectedTier === tier && (
+                    <Typography color="success.main" sx={{ mt: 1 }}>
+                      Plan updated!
+                    </Typography>
+                  )}
+                  {error && selectedTier === tier && (
+                    <Typography color="error" sx={{ mt: 1 }}>
+                      {error.message}
+                    </Typography>
+                  )}
                 </Paper>
               </Grid>
             );

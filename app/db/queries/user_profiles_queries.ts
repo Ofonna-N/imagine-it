@@ -87,6 +87,29 @@ export async function updateUserCredits(
 }
 
 /**
+ * Updates the subscription tier for a user.
+ * @param userId - The ID of the user.
+ * @param newTier - The new subscription tier.
+ * @returns The updated user profile.
+ */
+export async function updateUserSubscriptionTier(
+  userId: string,
+  newTier: "free" | "creator" | "pro"
+): Promise<UserProfile | null> {
+  try {
+    const updatedProfiles = await db
+      .update(profilesTable)
+      .set({ subscriptionTier: newTier, updatedAt: new Date() })
+      .where(eq(profilesTable.id, userId))
+      .returning();
+    return updatedProfiles[0] || null;
+  } catch (error) {
+    console.error("Error updating user subscription tier:", error);
+    throw new Error("Could not update user subscription tier.");
+  }
+}
+
+/**
  * Deducts credits from a user's balance.
  * @param userId - The ID of the user.
  * @param creditsToDeduct - The amount of credits to deduct.
