@@ -26,8 +26,10 @@ import {
 import type { Route } from "./+types/account";
 import useQueryUserProfile from "~/features/user/hooks/use_query_user_profile";
 import { useMutatePurchaseSubscription } from "~/features/user/hooks/use_mutate_purchase_subscription";
-import { PayPalButtons } from "@paypal/react-paypal-js";
 import { useTheme } from "@mui/material/styles";
+import { useMutateCancelSubscription } from "~/features/user/hooks/use_mutate_cancel_subscription";
+import { PayPalButtons } from "@paypal/react-paypal-js";
+import { useQueryClient } from "@tanstack/react-query";
 
 // Add loader to get authenticated user data
 export async function loader({ request }: Route.LoaderArgs) {
@@ -38,15 +40,9 @@ export async function loader({ request }: Route.LoaderArgs) {
 function SubscriptionManagementSection({
   currentTier,
 }: Readonly<{ currentTier: SubscriptionTier }>) {
+  const queryClient = useQueryClient();
   const [selectedTier, setSelectedTier] =
     useState<SubscriptionTier>(currentTier);
-  const [debitCardExpanded, setDebitCardExpanded] = useState<
-    Record<SubscriptionTier, boolean>
-  >({
-    free: false,
-    creator: false,
-    pro: false,
-  });
   const tiers = ["free", "creator", "pro"] as const;
   const theme = useTheme();
   const paypalContainerBgColor = theme.palette.background.paper;
@@ -55,7 +51,28 @@ function SubscriptionManagementSection({
     isPending,
     isSuccess,
     error,
-  } = useMutatePurchaseSubscription();
+  } = useMutatePurchaseSubscription({
+    onSuccess: (data) => {
+      if (data.success) {
+        queryClient.invalidateQueries({
+          queryKey: ["userProfile"],
+        });
+        setSelectedTier(data.newTier);
+      }
+    },
+  });
+  const {
+    mutate: cancelSubscription,
+    isPending: isCancelling,
+    isSuccess: cancelSuccess,
+    error: cancelError,
+  } = useMutateCancelSubscription({
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["userProfile"] });
+      setSelectedTier('free');
+    },
+  });
+
   return (
     <Box sx={{ my: 6 }}>
       <Typography variant="h5" sx={{ fontWeight: 700, mb: 2 }}>
@@ -63,7 +80,9 @@ function SubscriptionManagementSection({
       </Typography>
       <Grid container spacing={3}>
         {tiers.map((tier) => {
-          const features = SUBSCRIPTION_TIERS[tier];
+          const tierConfig = SUBSCRIPTION_TIERS.find((t) => t.id === tier);
+          const features = tierConfig?.features;
+          if (!features) return null;
           return (
             <Grid size={{ xs: 12, sm: 6, md: 4 }} key={tier}>
               <Paper
@@ -96,8 +115,8 @@ function SubscriptionManagementSection({
                   {tier === "free"
                     ? "$0/mo"
                     : tier === "creator"
-                    ? "$9/mo"
-                    : "$29/mo"}
+                    ? "$9.99/mo"
+                    : "$29.99/mo"}
                 </Typography>
                 <ul style={{ paddingLeft: 18, marginBottom: 8 }}>
                   <li>{features.artGenCreditsPerMonth} AI art credits/mo</li>
@@ -117,66 +136,36 @@ function SubscriptionManagementSection({
                   </li>
                   <li>Support: {features.supportLevel}</li>
                 </ul>
-                {tier !== "free" && (
+                {tier !== "free" && tierConfig?.paypalPlanId && (
                   <Paper
                     id="paypal-button-container"
                     component={"div"}
-                    style={{
+                    sx={{
                       colorScheme: "none",
-                      backgroundColor: debitCardExpanded[tier]
-                        ? "#ffff"
-                        : paypalContainerBgColor,
+                      backgroundColor: paypalContainerBgColor,
                       padding: "10px",
                       borderRadius: "5px",
+                      overflowX: "hidden",
                     }}
                   >
                     <PayPalButtons
-                      style={{ layout: "vertical", color: "blue" }}
-                      createOrder={async (data, actions) => {
-                        if (data.paymentSource === "card") {
-                          setDebitCardExpanded((prev) => ({
-                            ...prev,
-                            [tier]: true,
-                          }));
-                        } else {
-                          setDebitCardExpanded((prev) => ({
-                            ...prev,
-                            [tier]: false,
-                          }));
-                        }
-                        return actions.order.create({
-                          purchase_units: [
-                            {
-                              amount: {
-                                value: tier === "creator" ? "9.00" : "29.00",
-                                currency_code: "USD",
-                              },
-                              description: `${
-                                tier.charAt(0).toUpperCase() + tier.slice(1)
-                              } Plan Subscription`,
-                            },
-                          ],
-                          intent: "CAPTURE",
+                      style={{
+                        layout: "vertical",
+                        color: "blue",
+                      }}
+                      createSubscription={(_data, actions) => {
+                        return actions.subscription.create({
+                          plan_id: tierConfig.paypalPlanId as string,
                         });
                       }}
-                      onApprove={async (data, actions) => {
-                        if (data.orderID) {
-                          purchaseSubscription({
-                            tier,
-                            paymentId: data.orderID,
-                          });
-                        }
+                      onApprove={async (data, _actions) => {
+                        if (!data.subscriptionID) return;
+                        purchaseSubscription({
+                          tier,
+                          paymentId: data.subscriptionID,
+                        });
                       }}
-                      onError={(err) => {
-                        // Optionally handle PayPal errors
-                        console.error("PayPal error", err);
-                      }}
-                      onCancel={() => {
-                        setDebitCardExpanded((prev) => ({
-                          ...prev,
-                          [tier]: false,
-                        }));
-                      }}
+                      disabled={selectedTier !== tier || isPending}
                     />
                   </Paper>
                 )}
@@ -209,6 +198,31 @@ function SubscriptionManagementSection({
                     {error.message}
                   </Typography>
                 )}
+                {/* Cancel only on current paid tier */}
+                {tier === currentTier && tier !== 'free' && (
+                  <>
+                    <Button
+                      variant="outlined"
+                      color="error"
+                      fullWidth
+                      sx={{ mt: 2 }}
+                      onClick={() => cancelSubscription()}
+                      disabled={isCancelling}
+                    >
+                      {isCancelling ? 'Cancelling...' : 'Cancel Subscription'}
+                    </Button>
+                    {cancelSuccess && (
+                      <Typography color="success.main" sx={{ mt: 1 }}>
+                        Subscription cancelled. You are now on the Free plan.
+                      </Typography>
+                    )}
+                    {cancelError && (
+                      <Typography color="error" sx={{ mt: 1 }}>
+                        {cancelError.message}
+                      </Typography>
+                    )}
+                  </>
+                )}
               </Paper>
             </Grid>
           );
@@ -223,7 +237,6 @@ export default function AccountPage() {
   const navigate = useNavigate();
   const { user } = useLoaderData<typeof loader>();
   const userProfileQuery = useQueryUserProfile();
-  const userProfile = userProfileQuery.data;
   const [isEditing, setIsEditing] = useState(false);
 
   // Example user details - replace with actual user data in a real implementation
@@ -445,12 +458,13 @@ export default function AccountPage() {
               No recent orders found.
             </Typography>
           </Paper>
-
-          <SubscriptionManagementSection
-            currentTier={userProfileQuery.data?.subscriptionTier || "free"}
-          />
         </Grid>
       </Grid>
+
+      {/* Move SubscriptionManagementSection below the main grid for full width */}
+      <SubscriptionManagementSection
+        currentTier={userProfileQuery.data?.subscriptionTier || "free"}
+      />
     </Box>
   );
 }

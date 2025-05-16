@@ -45,7 +45,7 @@ import {
 } from "~/config/subscription_tiers";
 import { useState } from "react";
 import { PayPalButtons } from "@paypal/react-paypal-js";
-import { API_ROUTES, AUTH_ROUTES } from "~/constants/route_paths";
+import { AUTH_ROUTES } from "~/constants/route_paths";
 import { useMutatePurchaseSubscription } from "~/features/user/hooks/use_mutate_purchase_subscription";
 
 // Define animations
@@ -61,6 +61,149 @@ const pulseAnimation = keyframes`
   100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(94, 106, 210, 0); }
 `;
 
+// Top-level component for subscription plans section
+export function SubscriptionPlansSection() {
+  const [selectedTier, setSelectedTier] = useState<SubscriptionTier>("free");
+  const tiers = ["free", "creator", "pro"] as const;
+  const {
+    mutate: purchaseSubscription,
+    isPending,
+    isSuccess,
+    error,
+  } = useMutatePurchaseSubscription();
+
+  const paypalContainerBgColor = useTheme().palette.background.paper;
+  return (
+    <Box sx={{ my: 8 }}>
+      <Typography variant="h3" align="center" sx={{ fontWeight: 700, mb: 3 }}>
+        Choose Your Plan
+      </Typography>
+      <Grid container spacing={4} justifyContent="center">
+        {tiers.map((tier) => {
+          const tierConfig = SUBSCRIPTION_TIERS.find((t) => t.id === tier);
+          if (!tierConfig) return null;
+          const features = tierConfig.features;
+          return (
+            <Grid size={{ xs: 12, sm: 6, md: 4 }} key={tier}>
+              <Paper
+                elevation={selectedTier === tier ? 6 : 2}
+                sx={{
+                  p: 4,
+                  borderRadius: 4,
+                  border: selectedTier === tier ? "2px solid" : "1px solid",
+                  borderColor:
+                    selectedTier === tier ? "primary.main" : "divider",
+                  boxShadow: selectedTier === tier ? 6 : 1,
+                  transition: "all 0.2s",
+                  cursor: "pointer",
+                  background:
+                    selectedTier === tier
+                      ? "rgba(94,106,210,0.05)"
+                      : "background.paper",
+                }}
+                onClick={() => setSelectedTier(tier)}
+              >
+                <Typography
+                  variant="h5"
+                  sx={{ fontWeight: 700, mb: 1, textTransform: "capitalize" }}
+                >
+                  {tier === "free"
+                    ? "Free"
+                    : tier.charAt(0).toUpperCase() + tier.slice(1)}
+                </Typography>
+                <Typography variant="h6" color="primary" sx={{ mb: 2 }}>
+                  {tier === "free"
+                    ? "$0/mo"
+                    : tier === "creator"
+                    ? "$9.99/mo"
+                    : "$29.99/mo"}
+                </Typography>
+                <ul style={{ paddingLeft: 18, marginBottom: 12 }}>
+                  <li>{features.artGenCreditsPerMonth} AI art credits/mo</li>
+                  <li>
+                    {features.savedDesignsLimit ?? "Unlimited"} saved designs
+                  </li>
+                  <li>{features.uploadsPerMonth ?? "Unlimited"} uploads/mo</li>
+                  <li>
+                    {features.premiumStyles
+                      ? "Premium styles included"
+                      : "Basic styles only"}
+                  </li>
+                  <li>
+                    {features.batchGeneration
+                      ? "Batch generation enabled"
+                      : "No batch generation"}
+                  </li>
+                  <li>Support: {features.supportLevel}</li>
+                </ul>
+                {tier !== "free" && (
+                  <Paper
+                    id="paypal-button-container"
+                    component="div"
+                    style={{
+                      colorScheme: "none",
+                      backgroundColor: paypalContainerBgColor,
+                      padding: "10px",
+                      borderRadius: "5px",
+                    }}
+                  >
+                    <PayPalButtons
+                      style={{ layout: "vertical", color: "blue" }}
+                      createSubscription={(_data, actions) =>
+                        actions.subscription.create({
+                          plan_id: tierConfig.paypalPlanId!,
+                        })
+                      }
+                      onApprove={async (data) => {
+                        if (data.subscriptionID) {
+                          purchaseSubscription({
+                            tier,
+                            paymentId: data.subscriptionID,
+                          });
+                        }
+                      }}
+                      disabled={selectedTier !== tier || isPending}
+                    />
+                  </Paper>
+                )}
+                {tier === "free" && (
+                  <Button
+                    variant="outlined"
+                    color="primary"
+                    fullWidth
+                    sx={{ mt: 2 }}
+                    onClick={() =>
+                      purchaseSubscription({ tier, paymentId: "" })
+                    }
+                    disabled={selectedTier === tier}
+                  >
+                    Switch to Free
+                  </Button>
+                )}
+                {isPending && selectedTier === tier && (
+                  <Typography color="primary" sx={{ mt: 1 }}>
+                    Processing...
+                  </Typography>
+                )}
+                {isSuccess && selectedTier === tier && (
+                  <Typography color="success.main" sx={{ mt: 1 }}>
+                    Plan updated!
+                  </Typography>
+                )}
+                {error && selectedTier === tier && (
+                  <Typography color="error" sx={{ mt: 1 }}>
+                    {error.message}
+                  </Typography>
+                )}
+              </Paper>
+            </Grid>
+          );
+        })}
+      </Grid>
+    </Box>
+  );
+}
+
 export default function LandingPage() {
   const theme = useTheme();
   const navigate = useNavigate();
@@ -72,179 +215,6 @@ export default function LandingPage() {
   const handleSignup = () => {
     navigate(AUTH_ROUTES.SIGNUP);
   };
-
-  function SubscriptionPlansSection() {
-    const [selectedTier, setSelectedTier] = useState<SubscriptionTier>("free");
-    const tiers = ["free", "creator", "pro"] as const;
-    const {
-      mutate: purchaseSubscription,
-      isPending,
-      isSuccess,
-      error,
-    } = useMutatePurchaseSubscription();
-    const [isDebitCardExpanded, setIsDebitCardExpanded] = useState(false);
-    const paypalContainerBgColor = useTheme().palette.background.paper;
-    return (
-      <Box sx={{ my: 8 }}>
-        <Typography variant="h3" align="center" sx={{ fontWeight: 700, mb: 3 }}>
-          Choose Your Plan
-        </Typography>
-        <Grid container spacing={4} justifyContent="center">
-          {tiers.map((tier) => {
-            const features = SUBSCRIPTION_TIERS[tier];
-            return (
-              <Grid size={{ xs: 12, sm: 6, md: 4 }} key={tier}>
-                <Paper
-                  elevation={selectedTier === tier ? 6 : 2}
-                  sx={{
-                    p: 4,
-                    borderRadius: 4,
-                    border: selectedTier === tier ? "2px solid" : "1px solid",
-                    borderColor:
-                      selectedTier === tier ? "primary.main" : "divider",
-                    boxShadow: selectedTier === tier ? 6 : 1,
-                    transition: "all 0.2s",
-                    cursor: "pointer",
-                    background:
-                      selectedTier === tier
-                        ? "rgba(94,106,210,0.05)"
-                        : "background.paper",
-                  }}
-                  onClick={() => setSelectedTier(tier)}
-                >
-                  <Typography
-                    variant="h5"
-                    sx={{ fontWeight: 700, mb: 1, textTransform: "capitalize" }}
-                  >
-                    {tier === "free"
-                      ? "Free"
-                      : tier.charAt(0).toUpperCase() + tier.slice(1)}
-                  </Typography>
-                  <Typography variant="h6" color="primary" sx={{ mb: 2 }}>
-                    {tier === "free"
-                      ? "$0/mo"
-                      : tier === "creator"
-                      ? "$9/mo"
-                      : "$29/mo"}
-                  </Typography>
-                  <ul style={{ paddingLeft: 18, marginBottom: 12 }}>
-                    <li>{features.artGenCreditsPerMonth} AI art credits/mo</li>
-                    <li>
-                      {features.savedDesignsLimit === null
-                        ? "Unlimited"
-                        : features.savedDesignsLimit}{" "}
-                      saved designs
-                    </li>
-                    <li>
-                      {features.uploadsPerMonth === null
-                        ? "Unlimited"
-                        : features.uploadsPerMonth}{" "}
-                      uploads/mo
-                    </li>
-                    <li>
-                      {features.premiumStyles
-                        ? "Premium styles included"
-                        : "Basic styles only"}
-                    </li>
-                    <li>
-                      {features.batchGeneration
-                        ? "Batch generation enabled"
-                        : "No batch generation"}
-                    </li>
-                    <li>Support: {features.supportLevel}</li>
-                  </ul>
-                  {/* Subscription plan selection and PayPal payment */}
-                  {tier !== "free" && (
-                    <Paper
-                      id="paypal-button-container"
-                      component={"div"}
-                      style={{
-                        colorScheme: "none",
-                        backgroundColor: isDebitCardExpanded
-                          ? "#ffff"
-                          : paypalContainerBgColor,
-                        padding: "10px",
-                        borderRadius: "5px",
-                      }}
-                    >
-                      <PayPalButtons
-                        style={{ layout: "vertical", color: "blue" }}
-                        createOrder={async (data, actions) => {
-                          if (data.paymentSource === "card") {
-                            setIsDebitCardExpanded(true);
-                          } else {
-                            setIsDebitCardExpanded(false);
-                          }
-                          return actions.order.create({
-                            purchase_units: [
-                              {
-                                amount: {
-                                  value: tier === "creator" ? "9.00" : "29.00",
-                                  currency_code: "USD",
-                                },
-                                description: `${
-                                  tier.charAt(0).toUpperCase() + tier.slice(1)
-                                } Plan Subscription`,
-                              },
-                            ],
-                            intent: "CAPTURE",
-                          });
-                        }}
-                        onApprove={async (data, actions) => {
-                          if (data.orderID) {
-                            purchaseSubscription({
-                              tier,
-                              paymentId: data.orderID,
-                            });
-                          }
-                        }}
-                        onError={(err) => {
-                          // Optionally handle PayPal errors
-                          console.error("PayPal error", err);
-                        }}
-                        onCancel={() => {
-                          setIsDebitCardExpanded(false);
-                        }}
-                      />
-                    </Paper>
-                  )}
-                  {tier === "free" && (
-                    <Button
-                      variant="outlined"
-                      color="primary"
-                      fullWidth
-                      sx={{ mt: 2 }}
-                      onClick={() =>
-                        purchaseSubscription({ tier, paymentId: "" })
-                      }
-                      disabled={selectedTier === tier}
-                    >
-                      Switch to Free
-                    </Button>
-                  )}
-                  {isPending && selectedTier === tier && (
-                    <Typography color="primary" sx={{ mt: 1 }}>
-                      Processing...
-                    </Typography>
-                  )}
-                  {isSuccess && selectedTier === tier && (
-                    <Typography color="success.main" sx={{ mt: 1 }}>
-                      Plan updated!
-                    </Typography>
-                  )}
-                  {error && selectedTier === tier && (
-                    <Typography color="error" sx={{ mt: 1 }}>
-                      {error.message}
-                    </Typography>
-                  )}
-                </Paper>
-              </Grid>
-            );
-          })}
-        </Grid>
-      </Box>
-    );
-  }
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>

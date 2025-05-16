@@ -133,4 +133,12 @@ export default [
     API_ROUTES.CREDIT_PACKAGES.slice(1),
     "routes_api/api.credit_packages.ts"
   ),
+  route(
+    API_ROUTES.CANCEL_SUBSCRIPTION.slice(1),
+    "routes_api/api.cancel_subscription.ts"
+  ),
+  route(
+    API_ROUTES.PURCHASE_SUBSCRIPTION.slice(1),
+    "routes_api/api.purchase_subscription.ts"
+  ),
 ] satisfies RouteConfig;

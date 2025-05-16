@@ -27,6 +27,7 @@ export const profilesTable = pgTable("profiles", {
   subscriptionTier: subscriptionTierEnum("subscription_tier")
     .notNull()
     .default("free"),
+  paypalSubscriptionId: text("paypal_subscription_id"), // PayPal subscription ID for paid plans
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }).enableRLS();

@@ -295,7 +295,7 @@ export default function Home() {
                 component={motion.div}
                 animate={{ rotate: [0, 10, 0, -10, 0] }}
                 transition={{
-                  repeat: Infinity,
+                  // repeat: Infinity,
                   duration: 2,
                   ease: "easeInOut",
                 }}

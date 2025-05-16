@@ -168,3 +168,21 @@ export async function addUserCredits(
     throw error;
   }
 }
+
+// Update the user's PayPal subscription ID
+export async function updateUserPaypalSubscriptionId(
+  userId: string,
+  paypalSubscriptionId: string | null
+): Promise<UserProfile | null> {
+  try {
+    const updatedProfiles = await db
+      .update(profilesTable)
+      .set({ paypalSubscriptionId, updatedAt: new Date() })
+      .where(eq(profilesTable.id, userId))
+      .returning();
+    return updatedProfiles[0] || null;
+  } catch (error) {
+    console.error("Error updating user PayPal subscription ID:", error);
+    throw new Error("Could not update user PayPal subscription ID.");
+  }
+}

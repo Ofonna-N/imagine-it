@@ -58,7 +58,6 @@ import CreditsBalance from "~/features/user/components/credits_balance";
 import PurchaseCreditsDialog from "~/features/user/components/purchase_credits_dialog";
 import { createFilterOptions } from "@mui/material/Autocomplete";
 import StandardModal from "../../../components/standard_modal";
-import { hasUserFeature } from "~/utils/feature_gate";
 import { getSubscriptionFeatures } from "~/config/subscription_tiers";
 import { canUserAccessFeature } from "~/utils/feature_gate";
 import useQueryUserProfile from "~/features/user/hooks/use_query_user_profile";
@@ -113,40 +112,16 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
   singleSelect = false,
 }) => {
   const queryClient = useQueryClient();
-
   const {
-    data: userProfileData,
+    data: userProfile,
     isLoading: isProfileLoading,
     error: profileError,
     refetch: refetchUserProfile,
   } = useQueryUserProfile();
-
-  const { data: userProfile, isLoading: userLoading } = useQueryUserProfile();
-  const userTier = userProfile?.subscriptionTier || "free";
+  const userTier = userProfile?.subscriptionTier ?? "free";
   const features = getSubscriptionFeatures(userTier);
   const creditsUsed =
     features.artGenCreditsPerMonth - (userProfile?.credits ?? 0);
-
-  // Only check feature gate if userProfile is loaded
-  if (userLoading) {
-    return <Typography>Loading user profile...</Typography>;
-  }
-  if (!userProfile) {
-    return <Typography color="error">Unable to load user profile.</Typography>;
-  }
-
-  const canGenerate = canUserAccessFeature(
-    userProfile,
-    "artGenCredits",
-    creditsUsed
-  );
-
-  const canBatchGenerate = userProfile
-    ? hasUserFeature(userProfile, "batchGeneration")
-    : false;
-  const canUsePremiumStyles = userProfile
-    ? hasUserFeature(userProfile, "premiumStyles")
-    : false;
 
   const {
     control,
@@ -164,29 +139,35 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
       orientation: "square",
     },
   });
-
   const selectedModel = watch("selectedModel");
-
   const imageGenerationMutation = useMutateGenerateImage({
     onSuccess: (data: GenerateImageResponse) => {
       queryClient.setQueryData(["lastGeneratedImageData"], data);
       refetchUserProfile();
     },
   });
-
   const { mutate: saveDesign, ...saveDesignState } = useMutateSaveDesign();
-
   const [purchaseDialogOpen, setPurchaseDialogOpen] = React.useState(false);
-
-  // State to control error dialog visibility
   const [errorDialogOpen, setErrorDialogOpen] = React.useState(false);
-
-  // Show dialog when mutation fails
   React.useEffect(() => {
     if (imageGenerationMutation.isError) {
       setErrorDialogOpen(true);
     }
   }, [imageGenerationMutation.isError]);
+
+  // Only check feature gate if userProfile is loaded
+  if (isProfileLoading) {
+    return <Typography>Loading user profile...</Typography>;
+  }
+  if (!userProfile) {
+    return <Typography color="error">Unable to load user profile.</Typography>;
+  }
+
+  const canGenerate = canUserAccessFeature(
+    userProfile,
+    "artGenCredits",
+    creditsUsed
+  );
 
   const onSubmit: SubmitHandler<ImageGenerationFormValues> = (data) => {
     saveDesignState.reset();
@@ -336,7 +317,7 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
                   disabled={
                     isSubmitting ||
                     imageGenerationMutation.isPending ||
-                    !userProfileData?.credits
+                    !userProfile?.credits
                   }
                   startIcon={
                     isSubmitting || imageGenerationMutation.isPending ? (
@@ -351,8 +332,7 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
                   Generate Image
                   {(isSubmitting || imageGenerationMutation.isPending) &&
                     "s..."}
-                  {(!userProfileData?.credits ||
-                    userProfileData.credits < 2) && (
+                  {(!userProfile?.credits || userProfile.credits < 2) && (
                     <Typography variant="caption" sx={{ ml: 2 }}>
                       (Insufficient credits)
                     </Typography>
@@ -519,7 +499,7 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
                       }}
                     >
                       <CreditsBalance
-                        credits={userProfileData?.credits}
+                        credits={userProfile?.credits}
                         isLoading={isProfileLoading}
                         error={profileError}
                       />
