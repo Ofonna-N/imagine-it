@@ -1,9 +1,8 @@
 import type { ActionFunctionArgs } from "react-router";
 import createSupabaseServerClient from "~/services/supabase/supabase_client";
-import { cancelPaypalSubscription } from "../services/paypal/paypal_server_client";
+import { cancelPaypalSubscription, getPaypalSubscriptionDetails } from "../services/paypal/paypal_server_client";
 import {
-  updateUserSubscriptionTier,
-  updateUserPaypalSubscriptionId,
+  updateUserSubscriptionStatusAndPeriodEnd,
   getUserProfileById,
 } from "~/db/queries/user_profiles_queries";
 
@@ -52,9 +51,20 @@ export async function action({ request }: ActionFunctionArgs) {
       }
     );
   }
-  // Downgrade user to free tier and clear PayPal subscription ID
-  await updateUserSubscriptionTier(userId, "free");
-  await updateUserPaypalSubscriptionId(userId, null);
+  // Get PayPal subscription details to find period end
+  let periodEnd: string | null = null;
+  try {
+    const details = await getPaypalSubscriptionDetails(paypalSubscriptionId);
+    periodEnd = details.billing_info?.next_billing_time ?? null;
+  } catch (err) {
+    console.error("Failed to fetch PayPal subscription details:", err);
+    // fallback: leave periodEnd as null
+  }
+  // Mark user as pending_cancel, keep period end
+  await updateUserSubscriptionStatusAndPeriodEnd(userId, {
+    status: "pending_cancel",
+    periodEnd,
+  });
   return new Response(JSON.stringify({ success: true }), {
     status: 200,
     headers: { "Content-Type": "application/json" },

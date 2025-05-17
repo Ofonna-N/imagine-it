@@ -6,6 +6,7 @@ import {
   OrdersController,
   PaymentsController,
 } from "@paypal/paypal-server-sdk";
+import type { PaypalSubscriptionDetails } from "./paypal_subscription_details.types";
 
 // Utility to get PayPal access token using client credentials
 export async function getPaypalAccessToken() {
@@ -15,7 +16,9 @@ export async function getPaypalAccessToken() {
 }
 
 // Utility to get PayPal subscription details
-export async function getPaypalSubscriptionDetails(subscriptionId: string) {
+export async function getPaypalSubscriptionDetails(
+  subscriptionId: string
+): Promise<PaypalSubscriptionDetails> {
   const accessToken = await getPaypalAccessToken();
   const baseUrl =
     process.env.PAYPAL_BASE_URL ?? "https://api-m.sandbox.paypal.com";

@@ -98,6 +98,7 @@ export const API_ROUTES = {
    * Resource route for cancelling a user's subscription
    */
   CANCEL_SUBSCRIPTION: "/api/cancel-subscription",
+  PAYPAL_WEBHOOK: "/api/paypal-webhook",
 };
 
 // A flattened version combining all routes for easier imports

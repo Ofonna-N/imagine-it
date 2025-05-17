@@ -3,15 +3,14 @@ import createSupabaseServerClient from "~/services/supabase/supabase_client";
 import {
   ordersController,
   capturePaypalSubscriptionPayment,
+  getPaypalSubscriptionDetails,
 } from "../services/paypal/paypal_server_client";
-import { CaptureStatus, OrderStatus } from "@paypal/paypal-server-sdk";
-import { getUserProfileById } from "~/db/queries/user_profiles_queries";
-import { updateUserSubscriptionTier } from "~/db/queries/user_profiles_queries";
-import { updateUserPaypalSubscriptionId } from "~/db/queries/user_profiles_queries";
 import {
-  SUBSCRIPTION_TIERS,
-  type SubscriptionTier,
-} from "~/config/subscription_tiers";
+  getUserProfileById,
+  updateUserSubscriptionStatus,
+  updateUserLastCreditsGrantedAt,
+} from "~/db/queries/user_profiles_queries";
+import { type SubscriptionTier } from "~/config/subscription_tiers";
 
 /**
  * POST /api/purchase-subscription
@@ -40,10 +39,50 @@ export async function action({ request }: ActionFunctionArgs) {
   const body = (await request.json()) as PurchaseSubscriptionRequest;
   const { tier, paymentId } = body;
   const planPrice = tier === "creator" ? 9 : tier === "pro" ? 29 : 0;
+  const userId = userResponse.data.user.id;
+  // Get PayPal subscription details if paymentId is present
+  let periodEnd: Date | null = null;
+  if (paymentId && tier !== "free") {
+    try {
+      const details = await getPaypalSubscriptionDetails(paymentId);
+      // PayPal returns ISO8601 string for current_period_end
+      periodEnd = details.billing_info?.next_billing_time
+        ? new Date(details.billing_info.next_billing_time)
+        : null;
+    } catch (e) {
+      // fallback: don't set periodEnd
+      periodEnd = null;
+    }
+  }
+  // Get current profile to check for resubscribe edge case
+  const profile = await getUserProfileById(userId);
+  if (
+    profile &&
+    profile.subscriptionStatus === "pending_cancel" &&
+    profile.subscriptionPeriodEnd &&
+    periodEnd &&
+    profile.subscriptionPeriodEnd > new Date()
+  ) {
+    // Just update status and PayPal info, do not grant extra credits
+    await updateUserSubscriptionStatus({
+      userId,
+      status: "active",
+      periodEnd,
+      paypalSubscriptionId: paymentId,
+    });
+    return new Response(JSON.stringify({ success: true, newTier: tier }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
   if (planPrice === 0) {
     // Free plan, just downgrade
-    await updateUserSubscriptionTier(userResponse.data.user.id, "free");
-    await updateUserPaypalSubscriptionId(userResponse.data.user.id, null);
+    await updateUserSubscriptionStatus({
+      userId,
+      status: "active",
+      periodEnd: null,
+      paypalSubscriptionId: null,
+    });
     return new Response(JSON.stringify({ success: true, newTier: tier }), {
       status: 200,
       headers: { "Content-Type": "application/json" },
@@ -63,14 +102,15 @@ export async function action({ request }: ActionFunctionArgs) {
   //     { status: 400, headers: { "Content-Type": "application/json" } }
   //   );
   // }
-  // Update user subscription tier
-  await updateUserSubscriptionTier(userResponse.data.user.id, tier);
-  // Save PayPal subscription ID if present (for paid plans)
-  if (paymentId && tier !== "free") {
-    await updateUserPaypalSubscriptionId(userResponse.data.user.id, paymentId);
-  } else if (tier === "free") {
-    await updateUserPaypalSubscriptionId(userResponse.data.user.id, null);
-  }
+  // Set user to active, update period end, PayPal ID
+  await updateUserSubscriptionStatus({
+    userId,
+    status: "active",
+    periodEnd,
+    paypalSubscriptionId: paymentId,
+  });
+  // Grant credits for new billing cycle
+  await updateUserLastCreditsGrantedAt(userId, new Date());
   return new Response(JSON.stringify({ success: true, newTier: tier }), {
     status: 200,
     headers: { "Content-Type": "application/json" },

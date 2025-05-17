@@ -14,6 +14,11 @@ export const subscriptionTierEnum = pgEnum("subscription_tier", [
   "creator",
   "pro",
 ]);
+export const subscriptionStatusEnum = pgEnum("subscription_status", [
+  "active",
+  "pending_cancel",
+  "cancelled",
+]);
 
 export const profilesTable = pgTable("profiles", {
   id: uuid("id").primaryKey(),
@@ -27,6 +32,11 @@ export const profilesTable = pgTable("profiles", {
   subscriptionTier: subscriptionTierEnum("subscription_tier")
     .notNull()
     .default("free"),
+  subscriptionStatus: subscriptionStatusEnum("subscription_status")
+    .notNull()
+    .default("active"),
+  subscriptionPeriodEnd: timestamp("subscription_period_end"),
+  lastCreditsGrantedAt: timestamp("last_credits_granted_at"),
   paypalSubscriptionId: text("paypal_subscription_id"), // PayPal subscription ID for paid plans
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),

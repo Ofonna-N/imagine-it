@@ -141,4 +141,5 @@ export default [
     API_ROUTES.PURCHASE_SUBSCRIPTION.slice(1),
     "routes_api/api.purchase_subscription.ts"
   ),
+  route(API_ROUTES.PAYPAL_WEBHOOK.slice(1), "routes_api/api.paypal_webhook.ts"),
 ] satisfies RouteConfig;

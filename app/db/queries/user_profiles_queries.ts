@@ -1,7 +1,7 @@
 import type { User } from "@supabase/supabase-js";
 import { db } from "..";
 import { profilesTable, type UserProfile } from "../schema/profiles";
-import { eq } from "drizzle-orm";
+import { eq, and, lt } from "drizzle-orm";
 
 export async function insertOrCreateUserProfile(user: User): Promise<void> {
   try {
@@ -185,4 +185,108 @@ export async function updateUserPaypalSubscriptionId(
     console.error("Error updating user PayPal subscription ID:", error);
     throw new Error("Could not update user PayPal subscription ID.");
   }
+}
+
+/**
+ * Update a user's subscription status, period end, and PayPal subscription ID
+ */
+export async function updateUserSubscriptionStatus({
+  userId,
+  status,
+  periodEnd,
+  paypalSubscriptionId,
+}: {
+  userId: string;
+  status: "active" | "pending_cancel" | "cancelled";
+  periodEnd?: Date | null;
+  paypalSubscriptionId?: string | null;
+}): Promise<void> {
+  await db
+    .update(profilesTable)
+    .set({
+      subscriptionStatus: status,
+      subscriptionPeriodEnd: periodEnd,
+      paypalSubscriptionId,
+      updatedAt: new Date(),
+    })
+    .where(eq(profilesTable.id, userId));
+}
+
+/**
+ * Update a user's subscription status and period end (without changing PayPal ID)
+ */
+export async function updateUserSubscriptionStatusAndPeriodEnd(
+  userId: string,
+  {
+    status,
+    periodEnd,
+  }: {
+    status: "active" | "pending_cancel" | "cancelled";
+    periodEnd?: string | Date | null;
+  }
+): Promise<void> {
+  await db
+    .update(profilesTable)
+    .set({
+      subscriptionStatus: status,
+      subscriptionPeriodEnd: periodEnd ? new Date(periodEnd) : null,
+      updatedAt: new Date(),
+    })
+    .where(eq(profilesTable.id, userId));
+}
+
+/**
+ * Update lastCreditsGrantedAt for a user
+ */
+export async function updateUserLastCreditsGrantedAt(
+  userId: string,
+  date: Date
+): Promise<void> {
+  await db
+    .update(profilesTable)
+    .set({ lastCreditsGrantedAt: date, updatedAt: new Date() })
+    .where(eq(profilesTable.id, userId));
+}
+
+/**
+ * Get users whose subscription is pending_cancel and period end has passed
+ */
+export async function getUsersToDowngrade(now: Date): Promise<UserProfile[]> {
+  return db
+    .select()
+    .from(profilesTable)
+    .where(
+      and(
+        eq(profilesTable.subscriptionStatus, "pending_cancel"),
+        lt(profilesTable.subscriptionPeriodEnd, now)
+      )
+    );
+}
+
+/**
+ * Get user profile by PayPal subscription ID
+ */
+export async function getUserProfileByPaypalId(
+  paypalSubscriptionId: string
+): Promise<UserProfile | null> {
+  const result = await db
+    .select()
+    .from(profilesTable)
+    .where(eq(profilesTable.paypalSubscriptionId, paypalSubscriptionId))
+    .limit(1);
+  return result[0] || null;
+}
+
+/**
+ * Grant user subscription credits for the current tier
+ */
+import { getSubscriptionTierConfig } from "~/config/subscription_tiers";
+export async function grantUserSubscriptionCredits(
+  userId: string,
+  tier: "free" | "creator" | "pro"
+): Promise<void> {
+  const config = getSubscriptionTierConfig(tier);
+  const credits = config.features.artGenCreditsPerMonth;
+  await addUserCredits(userId, credits);
+  await updateUserLastCreditsGrantedAt(userId, new Date());
 }
