@@ -2,8 +2,6 @@
 import type { ActionFunctionArgs } from "react-router";
 import { getPaypalSubscriptionDetails } from "~/services/paypal/paypal_server_client";
 import {
-  updateUserSubscriptionTier,
-  updateUserPaypalSubscriptionId,
   updateUserSubscriptionStatusAndPeriodEnd,
   getUserProfileByPaypalId,
   grantUserSubscriptionCredits,
