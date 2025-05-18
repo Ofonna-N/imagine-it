@@ -16,7 +16,7 @@ export function canUserAccessFeature(
   feature: "artGenCredits" | "savedDesigns" | "uploads",
   currentUsage: number
 ): boolean {
-  const tier = (user.subscriptionTier || "free") as SubscriptionTier;
+  const tier = (user.activeSubscriptionTier ?? "free") as SubscriptionTier;
   const features = getSubscriptionFeatures(tier);
   switch (feature) {
     case "artGenCredits":
@@ -43,7 +43,7 @@ export function hasUserFeature(
   user: UserProfile,
   feature: "premiumStyles" | "batchGeneration"
 ): boolean {
-  const tier = (user.subscriptionTier || "free") as SubscriptionTier;
+  const tier = (user.activeSubscriptionTier ?? "free") as SubscriptionTier;
   const features = getSubscriptionFeatures(tier);
   return features[feature];
 }

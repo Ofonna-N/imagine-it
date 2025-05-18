@@ -14,11 +14,6 @@ export const subscriptionTierEnum = pgEnum("subscription_tier", [
   "creator",
   "pro",
 ]);
-export const subscriptionStatusEnum = pgEnum("subscription_status", [
-  "active",
-  "pending_cancel",
-  "cancelled",
-]);
 
 export const profilesTable = pgTable("profiles", {
   id: uuid("id").primaryKey(),
@@ -29,22 +24,23 @@ export const profilesTable = pgTable("profiles", {
   avatarUrl: text("avatar_url"),
   roles: userRoleEnum("roles").array().notNull().default(["customer"]),
   credits: integer("credits").notNull().default(0), // Add credits column
-  subscriptionTier: subscriptionTierEnum("subscription_tier")
-    .notNull()
-    .default("free"),
-  subscriptionStatus: subscriptionStatusEnum("subscription_status")
-    .notNull()
-    .default("active"),
-  subscriptionPeriodEnd: timestamp("subscription_period_end"),
-  lastCreditsGrantedAt: timestamp("last_credits_granted_at"),
-  paypalSubscriptionId: text("paypal_subscription_id"), // PayPal subscription ID for paid plans
+  // --- Active subscription fields ---
+  activePaypalSubscriptionId: text("active_paypal_subscription_id"),
+  activeSubscriptionTier: subscriptionTierEnum("active_subscription_tier"),
+  activeSubscriptionPeriodEnd: timestamp("active_subscription_period_end"),
+  // --- Pending-cancel subscription fields ---
+  pendingPaypalSubscriptionId: text("pending_paypal_subscription_id"),
+  pendingSubscriptionTier: subscriptionTierEnum("pending_subscription_tier"),
+  pendingSubscriptionPeriodEnd: timestamp("pending_subscription_period_end"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }).enableRLS();
 
 export type UserProfile = typeof profilesTable.$inferSelect & {
-  subscriptionTier: "free" | "creator" | "pro";
+  activeSubscriptionTier?: "free" | "creator" | "pro" | null;
+  pendingSubscriptionTier?: "free" | "creator" | "pro" | null;
 };
 export type NewUserProfile = typeof profilesTable.$inferInsert & {
-  subscriptionTier?: "free" | "creator" | "pro";
+  activeSubscriptionTier?: "free" | "creator" | "pro" | null;
+  pendingSubscriptionTier?: "free" | "creator" | "pro" | null;
 };

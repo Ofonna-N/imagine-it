@@ -1,7 +1,8 @@
 import type { User } from "@supabase/supabase-js";
 import { db } from "..";
 import { profilesTable, type UserProfile } from "../schema/profiles";
-import { eq, and, lt } from "drizzle-orm";
+import { eq, or, lt, and, isNotNull } from "drizzle-orm";
+import { getSubscriptionTierConfig } from "~/config/subscription_tiers";
 
 export async function insertOrCreateUserProfile(user: User): Promise<void> {
   try {
@@ -9,7 +10,7 @@ export async function insertOrCreateUserProfile(user: User): Promise<void> {
     const existingProfile = await db
       .select()
       .from(profilesTable)
-      .where(eq(profilesTable.id ?? "", user.id))
+      .where(eq(profilesTable.id, user.id))
       .limit(1);
 
     if (existingProfile.length === 0) {
@@ -23,16 +24,10 @@ export async function insertOrCreateUserProfile(user: User): Promise<void> {
         email: user.email ?? "",
         createdAt: new Date(),
         updatedAt: new Date(),
-        subscriptionTier: "free", // Default to free tier
+        // No subscription fields set here; handled by business logic elsewhere
       });
     } else {
-      // Optionally, update subscriptionTier if missing (migration safety)
-      if (!existingProfile[0].subscriptionTier) {
-        await db
-          .update(profilesTable)
-          .set({ subscriptionTier: "free" })
-          .where(eq(profilesTable.id, user.id));
-      }
+      // Profile already exists
       console.log(`Profile already exists for user ${user.id}`);
     }
   } catch (error) {
@@ -50,10 +45,11 @@ export async function getUserProfileById(
       .from(profilesTable)
       .where(eq(profilesTable.id, userId))
       .limit(1);
-    return result[0] || null;
+    if (!result[0]) return null;
+    return result[0];
   } catch (error) {
     console.error("Error fetching user profile by ID:", error);
-    throw new Error("Could not fetch user profile."); // Changed to throw error
+    throw new Error("Could not fetch user profile.");
   }
 }
 
@@ -76,36 +72,14 @@ export async function updateUserCredits(
       .set({ credits: newCreditAmount, updatedAt: new Date() })
       .where(eq(profilesTable.id, userId))
       .returning();
-    return updatedProfiles[0] || null;
+    if (!updatedProfiles[0]) return null;
+    return updatedProfiles[0];
   } catch (error) {
     console.error("Error updating user credits:", error);
     if (error instanceof Error) {
       throw error;
     }
     throw new Error("Could not update user credits.");
-  }
-}
-
-/**
- * Updates the subscription tier for a user.
- * @param userId - The ID of the user.
- * @param newTier - The new subscription tier.
- * @returns The updated user profile.
- */
-export async function updateUserSubscriptionTier(
-  userId: string,
-  newTier: "free" | "creator" | "pro"
-): Promise<UserProfile | null> {
-  try {
-    const updatedProfiles = await db
-      .update(profilesTable)
-      .set({ subscriptionTier: newTier, updatedAt: new Date() })
-      .where(eq(profilesTable.id, userId))
-      .returning();
-    return updatedProfiles[0] || null;
-  } catch (error) {
-    console.error("Error updating user subscription tier:", error);
-    throw new Error("Could not update user subscription tier.");
   }
 }
 
@@ -169,118 +143,9 @@ export async function addUserCredits(
   }
 }
 
-// Update the user's PayPal subscription ID
-export async function updateUserPaypalSubscriptionId(
-  userId: string,
-  paypalSubscriptionId: string | null
-): Promise<UserProfile | null> {
-  try {
-    const updatedProfiles = await db
-      .update(profilesTable)
-      .set({ paypalSubscriptionId, updatedAt: new Date() })
-      .where(eq(profilesTable.id, userId))
-      .returning();
-    return updatedProfiles[0] || null;
-  } catch (error) {
-    console.error("Error updating user PayPal subscription ID:", error);
-    throw new Error("Could not update user PayPal subscription ID.");
-  }
-}
-
-/**
- * Update a user's subscription status, period end, and PayPal subscription ID
- */
-export async function updateUserSubscriptionStatus({
-  userId,
-  status,
-  periodEnd,
-  paypalSubscriptionId,
-}: {
-  userId: string;
-  status: "active" | "pending_cancel" | "cancelled";
-  periodEnd?: Date | null;
-  paypalSubscriptionId?: string | null;
-}): Promise<void> {
-  await db
-    .update(profilesTable)
-    .set({
-      subscriptionStatus: status,
-      subscriptionPeriodEnd: periodEnd,
-      paypalSubscriptionId,
-      updatedAt: new Date(),
-    })
-    .where(eq(profilesTable.id, userId));
-}
-
-/**
- * Update a user's subscription status and period end (without changing PayPal ID)
- */
-export async function updateUserSubscriptionStatusAndPeriodEnd(
-  userId: string,
-  {
-    status,
-    periodEnd,
-  }: {
-    status: "active" | "pending_cancel" | "cancelled";
-    periodEnd?: string | Date | null;
-  }
-): Promise<void> {
-  await db
-    .update(profilesTable)
-    .set({
-      subscriptionStatus: status,
-      subscriptionPeriodEnd: periodEnd ? new Date(periodEnd) : null,
-      updatedAt: new Date(),
-    })
-    .where(eq(profilesTable.id, userId));
-}
-
-/**
- * Update lastCreditsGrantedAt for a user
- */
-export async function updateUserLastCreditsGrantedAt(
-  userId: string,
-  date: Date
-): Promise<void> {
-  await db
-    .update(profilesTable)
-    .set({ lastCreditsGrantedAt: date, updatedAt: new Date() })
-    .where(eq(profilesTable.id, userId));
-}
-
-/**
- * Get users whose subscription is pending_cancel and period end has passed
- */
-export async function getUsersToDowngrade(now: Date): Promise<UserProfile[]> {
-  return db
-    .select()
-    .from(profilesTable)
-    .where(
-      and(
-        eq(profilesTable.subscriptionStatus, "pending_cancel"),
-        lt(profilesTable.subscriptionPeriodEnd, now)
-      )
-    );
-}
-
-/**
- * Get user profile by PayPal subscription ID
- */
-export async function getUserProfileByPaypalId(
-  paypalSubscriptionId: string
-): Promise<UserProfile | null> {
-  const result = await db
-    .select()
-    .from(profilesTable)
-    .where(eq(profilesTable.paypalSubscriptionId, paypalSubscriptionId))
-    .limit(1);
-  return result[0] || null;
-}
-
 /**
  * Grant user subscription credits for the current tier
  */
-import { getSubscriptionTierConfig } from "~/config/subscription_tiers";
 export async function grantUserSubscriptionCredits(
   userId: string,
   tier: "free" | "creator" | "pro"
@@ -288,5 +153,143 @@ export async function grantUserSubscriptionCredits(
   const config = getSubscriptionTierConfig(tier);
   const credits = config.features.artGenCreditsPerMonth;
   await addUserCredits(userId, credits);
-  await updateUserLastCreditsGrantedAt(userId, new Date());
+  // Removed updateUserLastCreditsGrantedAt
+}
+
+// --- Subscription management queries ---
+
+/**
+ * Update the user's active subscription fields atomically.
+ */
+export async function updateUserActiveSubscription(
+  userId: string,
+  {
+    paypalSubscriptionId,
+    subscriptionTier,
+    subscriptionPeriodEnd,
+  }: {
+    paypalSubscriptionId: string | null;
+    subscriptionTier: "free" | "creator" | "pro" | null;
+    subscriptionPeriodEnd: Date | null;
+  }
+): Promise<UserProfile | null> {
+  const updated = await db
+    .update(profilesTable)
+    .set({
+      activePaypalSubscriptionId: paypalSubscriptionId,
+      activeSubscriptionTier: subscriptionTier,
+      activeSubscriptionPeriodEnd: subscriptionPeriodEnd,
+      updatedAt: new Date(),
+    })
+    .where(eq(profilesTable.id, userId))
+    .returning();
+  return updated[0] ?? null;
+}
+
+/**
+ * Update the user's pending-cancel subscription fields atomically.
+ */
+export async function updateUserPendingSubscription(
+  userId: string,
+  {
+    paypalSubscriptionId,
+    subscriptionTier,
+    subscriptionPeriodEnd,
+  }: {
+    paypalSubscriptionId: string | null;
+    subscriptionTier: "free" | "creator" | "pro" | null;
+    subscriptionPeriodEnd: Date | null;
+  }
+): Promise<UserProfile | null> {
+  const updated = await db
+    .update(profilesTable)
+    .set({
+      pendingPaypalSubscriptionId: paypalSubscriptionId,
+      pendingSubscriptionTier: subscriptionTier,
+      pendingSubscriptionPeriodEnd: subscriptionPeriodEnd,
+      updatedAt: new Date(),
+    })
+    .where(eq(profilesTable.id, userId))
+    .returning();
+  return updated[0] ?? null;
+}
+
+/**
+ * Clear the user's active subscription fields.
+ */
+export async function clearUserActiveSubscription(
+  userId: string
+): Promise<UserProfile | null> {
+  const updated = await db
+    .update(profilesTable)
+    .set({
+      activePaypalSubscriptionId: null,
+      activeSubscriptionTier: null,
+      activeSubscriptionPeriodEnd: null,
+      updatedAt: new Date(),
+    })
+    .where(eq(profilesTable.id, userId))
+    .returning();
+  return updated[0] ?? null;
+}
+
+/**
+ * Clear the user's pending-cancel subscription fields.
+ */
+export async function clearUserPendingSubscription(
+  userId: string
+): Promise<UserProfile | null> {
+  const updated = await db
+    .update(profilesTable)
+    .set({
+      pendingPaypalSubscriptionId: null,
+      pendingSubscriptionTier: null,
+      pendingSubscriptionPeriodEnd: null,
+      updatedAt: new Date(),
+    })
+    .where(eq(profilesTable.id, userId))
+    .returning();
+  return updated[0] ?? null;
+}
+
+/**
+ * Find users whose active or pending subscription period has expired (for downgrading).
+ */
+export async function getUsersWithExpiredSubscriptions(
+  now: Date
+): Promise<UserProfile[]> {
+  return await db
+    .select()
+    .from(profilesTable)
+    .where(
+      or(
+        and(
+          lt(profilesTable.activeSubscriptionPeriodEnd, now),
+          isNotNull(profilesTable.activeSubscriptionPeriodEnd)
+        ),
+        and(
+          lt(profilesTable.pendingSubscriptionPeriodEnd, now),
+          isNotNull(profilesTable.pendingSubscriptionPeriodEnd)
+        )
+      )
+    );
+}
+
+/**
+ * Find a user by PayPal subscription ID (active or pending).
+ */
+export async function getUserProfileByPaypalSubscriptionId(
+  paypalSubscriptionId: string
+): Promise<UserProfile | null> {
+  const result = await db
+    .select()
+    .from(profilesTable)
+    .where(
+      or(
+        eq(profilesTable.activePaypalSubscriptionId, paypalSubscriptionId),
+        eq(profilesTable.pendingPaypalSubscriptionId, paypalSubscriptionId)
+      )
+    )
+    .limit(1);
+  return result[0] ?? null;
 }

@@ -3,6 +3,7 @@
 - Name mutation hooks as `use_mutate_<resource_name>`.
 - Use snake_case for file names.
 - Use camelCase for function names and variable names; only file names should use snake_case.
+- Import statements should be placed at the top of the file.
 
 # React Router v7 Instructions
 - Outside of types, only actions and loaders should be exported from resource/api routes

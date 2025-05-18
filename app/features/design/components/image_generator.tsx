@@ -118,7 +118,7 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
     error: profileError,
     refetch: refetchUserProfile,
   } = useQueryUserProfile();
-  const userTier = userProfile?.subscriptionTier ?? "free";
+  const userTier = userProfile?.activeSubscriptionTier ?? "free";
   const features = getSubscriptionFeatures(userTier);
   const creditsUsed =
     features.artGenCreditsPerMonth - (userProfile?.credits ?? 0);

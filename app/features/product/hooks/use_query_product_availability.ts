@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { API_ROUTES } from "~/constants/route_paths";
-import type { PrintfulV2ProductAvailabilityResponse } from "~/types/printful";
+import type { PrintfulV2ProductAvailabilityResponse } from "~/types/printful/catalog_product_types";
 
 // Legacy types kept for backward compatibility with existing code
 export interface ProductAvailabilityRegion {

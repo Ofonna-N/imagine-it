@@ -2,8 +2,10 @@
 import type { ActionFunctionArgs } from "react-router";
 import { getPaypalSubscriptionDetails } from "~/services/paypal/paypal_server_client";
 import {
-  updateUserSubscriptionStatusAndPeriodEnd,
-  getUserProfileByPaypalId,
+  updateUserActiveSubscription,
+  updateUserPendingSubscription,
+  clearUserPendingSubscription,
+  getUserProfileByPaypalSubscriptionId,
   grantUserSubscriptionCredits,
 } from "~/db/queries/user_profiles_queries";
 
@@ -23,8 +25,10 @@ export async function action({ request }: ActionFunctionArgs) {
       headers: { "Content-Type": "application/json" },
     });
   }
-  // Find user by PayPal subscription id
-  const userProfile = await getUserProfileByPaypalId(subscriptionId);
+  // Find user by PayPal subscription id (active or pending)
+  const userProfile = await getUserProfileByPaypalSubscriptionId(
+    subscriptionId
+  );
   if (!userProfile) {
     return new Response(JSON.stringify({ error: "User not found" }), {
       status: 404,
@@ -35,21 +39,24 @@ export async function action({ request }: ActionFunctionArgs) {
     // Grant credits and update period end
     const details = await getPaypalSubscriptionDetails(subscriptionId);
     const nextBillingTime = details.billing_info.next_billing_time;
-    await updateUserSubscriptionStatusAndPeriodEnd(userProfile.id, {
-      status: "active",
-      periodEnd: nextBillingTime,
+    await updateUserActiveSubscription(userProfile.id, {
+      paypalSubscriptionId: subscriptionId,
+      subscriptionTier: userProfile.activeSubscriptionTier ?? "free",
+      subscriptionPeriodEnd: nextBillingTime ? new Date(nextBillingTime) : null,
     });
+    await clearUserPendingSubscription(userProfile.id);
     await grantUserSubscriptionCredits(
       userProfile.id,
-      userProfile.subscriptionTier
+      userProfile.activeSubscriptionTier ?? "free"
     );
   } else if (eventType === "BILLING.SUBSCRIPTION.CANCELLED") {
     // Mark as pending_cancel, keep period end
     const details = await getPaypalSubscriptionDetails(subscriptionId);
     const periodEnd = details.billing_info.next_billing_time;
-    await updateUserSubscriptionStatusAndPeriodEnd(userProfile.id, {
-      status: "pending_cancel",
-      periodEnd,
+    await updateUserPendingSubscription(userProfile.id, {
+      paypalSubscriptionId: subscriptionId,
+      subscriptionTier: userProfile.activeSubscriptionTier ?? "free",
+      subscriptionPeriodEnd: periodEnd ? new Date(periodEnd) : null,
     });
   }
   // Add more event types as needed

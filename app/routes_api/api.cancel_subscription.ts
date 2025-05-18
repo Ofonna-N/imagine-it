@@ -1,8 +1,11 @@
 import type { ActionFunctionArgs } from "react-router";
 import createSupabaseServerClient from "~/services/supabase/supabase_client";
-import { cancelPaypalSubscription, getPaypalSubscriptionDetails } from "../services/paypal/paypal_server_client";
 import {
-  updateUserSubscriptionStatusAndPeriodEnd,
+  cancelPaypalSubscription,
+  getPaypalSubscriptionDetails,
+} from "../services/paypal/paypal_server_client";
+import {
+  updateUserPendingSubscription,
   getUserProfileById,
 } from "~/db/queries/user_profiles_queries";
 
@@ -24,10 +27,10 @@ export async function action({ request }: ActionFunctionArgs) {
       headers: { "Content-Type": "application/json" },
     });
   }
-  // Get user's PayPal subscription ID from Drizzle query function
+  // Get user's active PayPal subscription ID from Drizzle query function
   const userId = userResponse.data.user.id;
   const profile = await getUserProfileById(userId);
-  const paypalSubscriptionId = profile?.paypalSubscriptionId;
+  const paypalSubscriptionId = profile?.activePaypalSubscriptionId;
   if (!paypalSubscriptionId) {
     return new Response(
       JSON.stringify({ error: "No active subscription found" }),
@@ -61,9 +64,10 @@ export async function action({ request }: ActionFunctionArgs) {
     // fallback: leave periodEnd as null
   }
   // Mark user as pending_cancel, keep period end
-  await updateUserSubscriptionStatusAndPeriodEnd(userId, {
-    status: "pending_cancel",
-    periodEnd,
+  await updateUserPendingSubscription(userId, {
+    paypalSubscriptionId,
+    subscriptionTier: profile.activeSubscriptionTier ?? null,
+    subscriptionPeriodEnd: periodEnd ? new Date(periodEnd) : null,
   });
   return new Response(JSON.stringify({ success: true }), {
     status: 200,

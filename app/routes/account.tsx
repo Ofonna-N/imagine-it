@@ -69,7 +69,7 @@ function SubscriptionManagementSection({
   } = useMutateCancelSubscription({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["userProfile"] });
-      setSelectedTier('free');
+      setSelectedTier("free");
     },
   });
 
@@ -199,7 +199,7 @@ function SubscriptionManagementSection({
                   </Typography>
                 )}
                 {/* Cancel only on current paid tier */}
-                {tier === currentTier && tier !== 'free' && (
+                {tier === currentTier && tier !== "free" && (
                   <>
                     <Button
                       variant="outlined"
@@ -209,7 +209,7 @@ function SubscriptionManagementSection({
                       onClick={() => cancelSubscription()}
                       disabled={isCancelling}
                     >
-                      {isCancelling ? 'Cancelling...' : 'Cancel Subscription'}
+                      {isCancelling ? "Cancelling..." : "Cancel Subscription"}
                     </Button>
                     {cancelSuccess && (
                       <Typography color="success.main" sx={{ mt: 1 }}>
@@ -261,6 +261,9 @@ export default function AccountPage() {
     // In a real app, implement profile update logic here
     setIsEditing(false);
   };
+
+  // Use activeSubscriptionTier for current plan
+  const currentTier = userProfileQuery.data?.activeSubscriptionTier ?? "free";
 
   return (
     <Box sx={{ py: 4 }}>
@@ -462,9 +465,7 @@ export default function AccountPage() {
       </Grid>
 
       {/* Move SubscriptionManagementSection below the main grid for full width */}
-      <SubscriptionManagementSection
-        currentTier={userProfileQuery.data?.subscriptionTier || "free"}
-      />
+      <SubscriptionManagementSection currentTier={currentTier} />
     </Box>
   );
 }
