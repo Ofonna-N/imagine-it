@@ -5,6 +5,7 @@ import {
   FiShoppingCart,
   FiFileText,
 } from "react-icons/fi";
+import { FaMagic } from "react-icons/fa";
 import { APP_ROUTES } from "./route_paths";
 
 // Navigation items for the main menu/drawer with feature flag requirements
@@ -21,7 +22,7 @@ export const NAV_ITEMS: NavigationItem[] = [
   {
     text: "Image Generation",
     path: APP_ROUTES.IMAGE_GENERATION,
-    icon: <FiImage />,
+    icon: <FaMagic />,
     featureFlag: "enableDesignPlayground",
   },
   {
