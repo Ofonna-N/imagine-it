@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router";
+import { Link, useNavigate } from "react-router";
 import {
   AppBar,
   Box,
@@ -13,7 +13,6 @@ import {
   MenuItem,
   Avatar,
   Stack,
-  alpha,
   ListItemIcon,
 } from "@mui/material";
 import {
@@ -31,6 +30,8 @@ import { useAuth } from "~/context/auth_provider";
 import { useColorScheme } from "~/context/mui_theme_provider";
 import { NavigationItem } from "~/components/navigation_item";
 import { useQueryUserFeatures } from "~/features/user/hooks/use_query_user_features";
+import useQueryUserProfile from "~/features/user/hooks/use_query_user_profile";
+import CreditsBalance from "~/features/user/components/credits_balance";
 
 const drawerWidth = 240;
 
@@ -39,12 +40,17 @@ export default function ProtectedNavbar() {
   const [userMenuAnchor, setUserMenuAnchor] = useState<null | HTMLElement>(
     null
   );
-  const location = useLocation();
   const navigate = useNavigate();
   const { signOut } = useAuth();
   const { mode, setMode } = useColorScheme();
   const cartItemsCount = 0; // Placeholder for cart items count
   const { data: userFeatures } = useQueryUserFeatures();
+  const {
+    data: userProfile,
+    isLoading: isProfileLoading,
+    error: profileError,
+    refetch: refetchUserProfile,
+  } = useQueryUserProfile();
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
@@ -96,10 +102,33 @@ export default function ProtectedNavbar() {
           >
             <FiImage />
           </Box>
-          Imagine It
+          Imagine It{" "}
         </Typography>{" "}
       </Toolbar>
-      <Divider sx={{ my: -1, backgroundColor: "divider" }} />
+      {/* Mobile Credits Display - Enhanced with better visual appeal */}
+      <Box
+        sx={{
+          mx: 2,
+          my: 3,
+          p: 2,
+          bgcolor: "background.paper",
+          borderRadius: 2,
+          border: 1,
+          borderColor: "divider",
+          boxShadow: 1,
+        }}
+      >
+        <CreditsBalance
+          credits={userProfile?.credits}
+          isLoading={isProfileLoading}
+          error={profileError}
+          onCreditsUpdated={refetchUserProfile}
+          variant="compact"
+          showLabel={true}
+        />
+      </Box>
+
+      <Divider sx={{ my: 0, backgroundColor: "divider" }} />
       <List sx={{ px: 2, py: 1 }}>
         {NAV_ITEMS.map((item) => {
           // Check if navigation item should be shown based on feature flags
@@ -155,8 +184,7 @@ export default function ProtectedNavbar() {
             }}
           >
             Imagine It
-          </Typography>
-
+          </Typography>{" "}
           <Stack
             direction="row"
             spacing={1}
@@ -166,10 +194,10 @@ export default function ProtectedNavbar() {
               alignItems: "center",
             }}
           >
+            {" "}
             <IconButton onClick={toggleColorMode} size="small" sx={{ ml: 1 }}>
               {mode === "light" ? <FiMoon /> : <FiSun />}
             </IconButton>
-
             <IconButton
               component={Link}
               to={APP_ROUTES.CART}
@@ -199,12 +227,10 @@ export default function ProtectedNavbar() {
                 </Box>
               )}
             </IconButton>
-
             <IconButton size="small" onClick={handleUserMenuOpen}>
               <Avatar sx={{ width: 32, height: 32 }} alt="User" />
             </IconButton>
           </Stack>
-
           <Menu
             anchorEl={userMenuAnchor}
             open={Boolean(userMenuAnchor)}
