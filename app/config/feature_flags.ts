@@ -38,7 +38,7 @@ export const FEATURE_FLAGS: FeatureFlags = {
   enablePremiumStyles: false,
   enableBatchGeneration: false,
   enableArtStyles: false,
-  enableMultipleModels: false,
+  enableMultipleModels: true,
   
   // Enabled for MVP - core revenue-generating features
   enableCreditsSystem: true,

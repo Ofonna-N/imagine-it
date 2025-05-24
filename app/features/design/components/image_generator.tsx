@@ -59,7 +59,6 @@ import PurchaseCreditsDialog from "~/features/user/components/purchase_credits_d
 import { createFilterOptions } from "@mui/material/Autocomplete";
 import StandardModal from "../../../components/standard_modal";
 import { getSubscriptionFeatures } from "~/config/subscription_tiers";
-import { canUserAccessFeature } from "~/utils/feature_gate";
 import useQueryUserProfile from "~/features/user/hooks/use_query_user_profile";
 import { useQueryUserFeatures } from "~/features/user/hooks/use_query_user_features";
 
@@ -122,8 +121,7 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
   const { data: userFeatures } = useQueryUserFeatures();
   const userTier = userProfile?.activeSubscriptionTier ?? "free";
   const features = getSubscriptionFeatures(userTier);
-  const creditsUsed =
-    features.artGenCreditsPerMonth - (userProfile?.credits ?? 0);
+
   const {
     control,
     handleSubmit,
@@ -174,12 +172,6 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
     return <Typography color="error">Unable to load user profile.</Typography>;
   }
 
-  const canGenerate = canUserAccessFeature(
-    userProfile,
-    "artGenCredits",
-    creditsUsed
-  );
-
   const onSubmit: SubmitHandler<ImageGenerationFormValues> = (data) => {
     saveDesignState.reset();
     let finalPrompt = data.prompt;
@@ -218,23 +210,6 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
     queryClient.getQueryData<GenerateImageResponse>([
       "lastGeneratedImageData",
     ])?.images;
-
-  // UI: show upgrade prompt if user is at their limit
-  if (!canGenerate) {
-    return (
-      <Box sx={{ textAlign: "center", mt: 4 }}>
-        <Typography variant="h6" color="error" gutterBottom>
-          You have reached your monthly image generation limit for your
-          subscription tier.
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          Upgrade your subscription or purchase more credits to continue
-          generating images.
-        </Typography>
-        {/* Add upgrade button or dialog here */}
-      </Box>
-    );
-  }
 
   return (
     <Paper
