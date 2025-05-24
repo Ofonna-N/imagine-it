@@ -19,7 +19,17 @@ import { useAuth } from "~/context/auth_provider";
 import { useNavigate, useLoaderData } from "react-router";
 import { checkAuthAndRedirect } from "~/features/auth/utils/auth_redirects";
 import { AUTH_ROUTES } from "~/constants/route_paths"; // Import AUTH_ROUTES
+import {
+  SUBSCRIPTION_TIERS,
+  type SubscriptionTier,
+} from "~/config/subscription_tiers";
 import type { Route } from "./+types/account";
+import useQueryUserProfile from "~/features/user/hooks/use_query_user_profile";
+import { useMutatePurchaseSubscription } from "~/features/user/hooks/use_mutate_purchase_subscription";
+import { useTheme } from "@mui/material/styles";
+import { useMutateCancelSubscription } from "~/features/user/hooks/use_mutate_cancel_subscription";
+import { PayPalButtons } from "@paypal/react-paypal-js";
+import { useQueryClient } from "@tanstack/react-query";
 
 // Add loader to get authenticated user data
 export async function loader({ request }: Route.LoaderArgs) {
@@ -27,10 +37,206 @@ export async function loader({ request }: Route.LoaderArgs) {
   return await checkAuthAndRedirect(request, null, AUTH_ROUTES.LOGIN);
 }
 
+function SubscriptionManagementSection({
+  currentTier,
+}: Readonly<{ currentTier: SubscriptionTier }>) {
+  const queryClient = useQueryClient();
+  const [selectedTier, setSelectedTier] =
+    useState<SubscriptionTier>(currentTier);
+  const tiers = ["free", "creator", "pro"] as const;
+  const theme = useTheme();
+  const paypalContainerBgColor = theme.palette.background.paper;
+  const {
+    mutate: purchaseSubscription,
+    isPending,
+    isSuccess,
+    error,
+  } = useMutatePurchaseSubscription({
+    onSuccess: (data) => {
+      if (data.success) {
+        queryClient.invalidateQueries({
+          queryKey: ["userProfile"],
+        });
+        setSelectedTier(data.newTier);
+      }
+    },
+  });
+  const {
+    mutate: cancelSubscription,
+    isPending: isCancelling,
+    isSuccess: cancelSuccess,
+    error: cancelError,
+  } = useMutateCancelSubscription({
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["userProfile"] });
+      setSelectedTier("free");
+    },
+  });
+
+  return (
+    <Box sx={{ my: 6 }}>
+      <Typography variant="h5" sx={{ fontWeight: 700, mb: 2 }}>
+        Manage Your Subscription
+      </Typography>
+      <Grid container spacing={3}>
+        {tiers.map((tier) => {
+          const tierConfig = SUBSCRIPTION_TIERS.find((t) => t.id === tier);
+          const features = tierConfig?.features;
+          if (!features) return null;
+          return (
+            <Grid size={{ xs: 12, sm: 6, md: 4 }} key={tier}>
+              <Paper
+                elevation={selectedTier === tier ? 6 : 2}
+                sx={{
+                  p: 3,
+                  borderRadius: 3,
+                  border: selectedTier === tier ? "2px solid" : "1px solid",
+                  borderColor:
+                    selectedTier === tier ? "primary.main" : "divider",
+                  background:
+                    selectedTier === tier
+                      ? "rgba(94,106,210,0.05)"
+                      : "background.paper",
+                  cursor: tier === currentTier ? "default" : "pointer",
+                  opacity: tier === currentTier ? 1 : 0.95,
+                  transition: "all 0.2s",
+                }}
+                onClick={() => setSelectedTier(tier)}
+              >
+                <Typography
+                  variant="h6"
+                  sx={{ fontWeight: 700, mb: 1, textTransform: "capitalize" }}
+                >
+                  {tier === "free"
+                    ? "Free"
+                    : tier.charAt(0).toUpperCase() + tier.slice(1)}
+                </Typography>
+                <Typography variant="subtitle1" color="primary" sx={{ mb: 1 }}>
+                  {tier === "free"
+                    ? "$0/mo"
+                    : tier === "creator"
+                    ? "$9.99/mo"
+                    : "$29.99/mo"}
+                </Typography>
+                <ul style={{ paddingLeft: 18, marginBottom: 8 }}>
+                  <li>{features.artGenCreditsPerMonth} AI art credits/mo</li>
+                  <li>
+                    {features.savedDesignsLimit ?? "Unlimited"} saved designs
+                  </li>
+                  <li>{features.uploadsPerMonth ?? "Unlimited"} uploads/mo</li>
+                  <li>
+                    {features.premiumStyles
+                      ? "Premium styles included"
+                      : "Basic styles only"}
+                  </li>
+                  <li>
+                    {features.batchGeneration
+                      ? "Batch generation enabled"
+                      : "No batch generation"}
+                  </li>
+                  <li>Support: {features.supportLevel}</li>
+                </ul>
+                {tier !== "free" && tierConfig?.paypalPlanId && (
+                  <Paper
+                    id="paypal-button-container"
+                    component={"div"}
+                    sx={{
+                      colorScheme: "none",
+                      backgroundColor: paypalContainerBgColor,
+                      padding: "10px",
+                      borderRadius: "5px",
+                      overflowX: "hidden",
+                    }}
+                  >
+                    <PayPalButtons
+                      style={{
+                        layout: "vertical",
+                        color: "blue",
+                      }}
+                      createSubscription={(_data, actions) => {
+                        return actions.subscription.create({
+                          plan_id: tierConfig.paypalPlanId as string,
+                        });
+                      }}
+                      onApprove={async (data, _actions) => {
+                        if (!data.subscriptionID) return;
+                        purchaseSubscription({
+                          tier,
+                          paymentId: data.subscriptionID,
+                        });
+                      }}
+                      disabled={selectedTier !== tier || isPending}
+                    />
+                  </Paper>
+                )}
+                {tier === "free" && (
+                  <Button
+                    variant="outlined"
+                    color="primary"
+                    fullWidth
+                    sx={{ mt: 2 }}
+                    onClick={() =>
+                      purchaseSubscription({ tier, paymentId: "" })
+                    }
+                    disabled={selectedTier === tier}
+                  >
+                    Switch to Free
+                  </Button>
+                )}
+                {isPending && selectedTier === tier && (
+                  <Typography color="primary" sx={{ mt: 1 }}>
+                    Processing...
+                  </Typography>
+                )}
+                {isSuccess && selectedTier === tier && (
+                  <Typography color="success.main" sx={{ mt: 1 }}>
+                    Plan updated!
+                  </Typography>
+                )}
+                {error && selectedTier === tier && (
+                  <Typography color="error" sx={{ mt: 1 }}>
+                    {error.message}
+                  </Typography>
+                )}
+                {/* Cancel only on current paid tier */}
+                {tier === currentTier && tier !== "free" && (
+                  <>
+                    <Button
+                      variant="outlined"
+                      color="error"
+                      fullWidth
+                      sx={{ mt: 2 }}
+                      onClick={() => cancelSubscription()}
+                      disabled={isCancelling}
+                    >
+                      {isCancelling ? "Cancelling..." : "Cancel Subscription"}
+                    </Button>
+                    {cancelSuccess && (
+                      <Typography color="success.main" sx={{ mt: 1 }}>
+                        Subscription cancelled. You are now on the Free plan.
+                      </Typography>
+                    )}
+                    {cancelError && (
+                      <Typography color="error" sx={{ mt: 1 }}>
+                        {cancelError.message}
+                      </Typography>
+                    )}
+                  </>
+                )}
+              </Paper>
+            </Grid>
+          );
+        })}
+      </Grid>
+    </Box>
+  );
+}
+
 export default function AccountPage() {
   const { signOut } = useAuth();
   const navigate = useNavigate();
   const { user } = useLoaderData<typeof loader>();
+  const userProfileQuery = useQueryUserProfile();
   const [isEditing, setIsEditing] = useState(false);
 
   // Example user details - replace with actual user data in a real implementation
@@ -55,6 +261,9 @@ export default function AccountPage() {
     // In a real app, implement profile update logic here
     setIsEditing(false);
   };
+
+  // Use activeSubscriptionTier for current plan
+  const currentTier = userProfileQuery.data?.activeSubscriptionTier ?? "free";
 
   return (
     <Box sx={{ py: 4 }}>
@@ -254,6 +463,9 @@ export default function AccountPage() {
           </Paper>
         </Grid>
       </Grid>
+
+      {/* Move SubscriptionManagementSection below the main grid for full width */}
+      <SubscriptionManagementSection currentTier={currentTier} />
     </Box>
   );
 }

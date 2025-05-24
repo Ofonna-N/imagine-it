@@ -56,9 +56,11 @@ import type { ModelKey } from "~/services/image_generation/model_registry";
 import type { GenerateImageInputPayload } from "~/services/image_generation/image_generation_types";
 import CreditsBalance from "~/features/user/components/credits_balance";
 import PurchaseCreditsDialog from "~/features/user/components/purchase_credits_dialog";
-import useQueryUserProfile from "~/features/user/hooks/use_query_user_profile";
 import { createFilterOptions } from "@mui/material/Autocomplete";
 import StandardModal from "../../../components/standard_modal";
+import { getSubscriptionFeatures } from "~/config/subscription_tiers";
+import useQueryUserProfile from "~/features/user/hooks/use_query_user_profile";
+import { useQueryUserFeatures } from "~/features/user/hooks/use_query_user_features";
 
 /**
  * Props for ImageGenerator component
@@ -110,13 +112,15 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
   singleSelect = false,
 }) => {
   const queryClient = useQueryClient();
-
   const {
-    data: userProfileData,
+    data: userProfile,
     isLoading: isProfileLoading,
     error: profileError,
     refetch: refetchUserProfile,
   } = useQueryUserProfile();
+  const { data: userFeatures } = useQueryUserFeatures();
+  const userTier = userProfile?.activeSubscriptionTier ?? "free";
+  const features = getSubscriptionFeatures(userTier);
 
   const {
     control,
@@ -128,35 +132,45 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
     resolver: zodResolver(imageGenerationSchema),
     defaultValues: {
       prompt: "",
-      selectedModel: "advanced",
+      selectedModel: userFeatures?.flags.enableMultipleModels
+        ? "advanced"
+        : "basic",
       isTransparent: false,
       artStyle: [], // Now an array
       orientation: "square",
     },
   });
-
   const selectedModel = watch("selectedModel");
-
   const imageGenerationMutation = useMutateGenerateImage({
     onSuccess: (data: GenerateImageResponse) => {
       queryClient.setQueryData(["lastGeneratedImageData"], data);
       refetchUserProfile();
     },
   });
-
   const { mutate: saveDesign, ...saveDesignState } = useMutateSaveDesign();
-
   const [purchaseDialogOpen, setPurchaseDialogOpen] = React.useState(false);
-
-  // State to control error dialog visibility
   const [errorDialogOpen, setErrorDialogOpen] = React.useState(false);
-
-  // Show dialog when mutation fails
   React.useEffect(() => {
     if (imageGenerationMutation.isError) {
       setErrorDialogOpen(true);
     }
   }, [imageGenerationMutation.isError]);
+
+  // Reset model selection if advanced models are disabled
+  React.useEffect(() => {
+    if (userFeatures && !userFeatures.flags.enableMultipleModels) {
+      setValue("selectedModel", "basic");
+      setValue("isTransparent", false);
+    }
+  }, [userFeatures, setValue]);
+
+  // Only check feature gate if userProfile is loaded
+  if (isProfileLoading) {
+    return <Typography>Loading user profile...</Typography>;
+  }
+  if (!userProfile) {
+    return <Typography color="error">Unable to load user profile.</Typography>;
+  }
 
   const onSubmit: SubmitHandler<ImageGenerationFormValues> = (data) => {
     saveDesignState.reset();
@@ -289,7 +303,7 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
                   disabled={
                     isSubmitting ||
                     imageGenerationMutation.isPending ||
-                    !userProfileData?.credits
+                    !userProfile?.credits
                   }
                   startIcon={
                     isSubmitting || imageGenerationMutation.isPending ? (
@@ -304,8 +318,7 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
                   Generate Image
                   {(isSubmitting || imageGenerationMutation.isPending) &&
                     "s..."}
-                  {(!userProfileData?.credits ||
-                    userProfileData.credits < 2) && (
+                  {(!userProfile?.credits || userProfile.credits < 2) && (
                     <Typography variant="caption" sx={{ ml: 2 }}>
                       (Insufficient credits)
                     </Typography>
@@ -362,6 +375,7 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
                         control={control}
                         render={({ field }) => (
                           <Box sx={{ width: "100%" }}>
+                            {" "}
                             <ToggleButtonGroup
                               {...field}
                               exclusive
@@ -416,37 +430,40 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
                                   </Typography>
                                 </Stack>
                               </ToggleButton>
-                              <ToggleButton
-                                value="advanced"
-                                aria-label="Advanced model"
-                                sx={{
-                                  flex: "1 1 0",
-                                  minWidth: 0,
-                                  justifyContent: "center",
-                                  p: 1.5,
-                                }}
-                              >
-                                <Stack
-                                  direction="column"
-                                  alignItems="center"
-                                  spacing={0.5}
-                                  width="100%"
+                              {userFeatures?.flags.enableMultipleModels && (
+                                <ToggleButton
+                                  value="advanced"
+                                  aria-label="Advanced model"
+                                  sx={{
+                                    flex: "1 1 0",
+                                    minWidth: 0,
+                                    justifyContent: "center",
+                                    p: 1.5,
+                                  }}
                                 >
-                                  <FiStar size={22} />
-                                  <Typography
-                                    variant="body2"
-                                    sx={{ fontWeight: 500 }}
+                                  <Stack
+                                    direction="column"
+                                    alignItems="center"
+                                    spacing={0.5}
+                                    width="100%"
                                   >
-                                    Advanced
-                                  </Typography>
-                                  <Typography
-                                    variant="caption"
-                                    color="text.secondary"
-                                  >
-                                    {MODEL_CREDIT_COSTS["gpt-image-1"]} credits
-                                  </Typography>
-                                </Stack>
-                              </ToggleButton>
+                                    <FiStar size={22} />
+                                    <Typography
+                                      variant="body2"
+                                      sx={{ fontWeight: 500 }}
+                                    >
+                                      Advanced
+                                    </Typography>
+                                    <Typography
+                                      variant="caption"
+                                      color="text.secondary"
+                                    >
+                                      {MODEL_CREDIT_COSTS["gpt-image-1"]}{" "}
+                                      credits
+                                    </Typography>
+                                  </Stack>
+                                </ToggleButton>
+                              )}
                             </ToggleButtonGroup>
                           </Box>
                         )}
@@ -461,7 +478,6 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
                         </Typography>
                       )}
                     </FormControl>
-
                     {/* Show credits and buy button */}
                     <Box
                       sx={{
@@ -472,7 +488,7 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
                       }}
                     >
                       <CreditsBalance
-                        credits={userProfileData?.credits}
+                        credits={userProfile?.credits}
                         isLoading={isProfileLoading}
                         error={profileError}
                       />
@@ -493,95 +509,98 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
                         });
                         refetchUserProfile();
                       }}
-                    />
-
-                    {selectedModel === "advanced" && (
+                    />{" "}
+                    {selectedModel === "advanced" &&
+                      userFeatures?.flags.enableAdvancedImageOptions && (
+                        <Controller
+                          name="isTransparent"
+                          control={control}
+                          render={({ field }) => (
+                            <FormControlLabel
+                              control={
+                                <Switch
+                                  {...field}
+                                  checked={field.value ?? false} // Ensure checked is always boolean
+                                  disabled={
+                                    isSubmitting ||
+                                    imageGenerationMutation.isPending
+                                  }
+                                />
+                              }
+                              label="Transparent Background (PNG)"
+                            />
+                          )}
+                        />
+                      )}{" "}
+                    {userFeatures?.flags.enableArtStyles && (
                       <Controller
-                        name="isTransparent"
+                        name="artStyle"
                         control={control}
                         render={({ field }) => (
-                          <FormControlLabel
-                            control={
-                              <Switch
-                                {...field}
-                                checked={field.value ?? false} // Ensure checked is always boolean
-                                disabled={
-                                  isSubmitting ||
-                                  imageGenerationMutation.isPending
-                                }
-                              />
+                          <Autocomplete
+                            multiple
+                            options={artStyleOptions}
+                            getOptionLabel={(option: {
+                              value: ArtStyleUnion;
+                              label: string;
+                            }) => option.label}
+                            value={
+                              Array.isArray(field.value)
+                                ? artStyleOptions.filter((o) =>
+                                    (field.value ?? []).includes(o.value)
+                                  )
+                                : []
                             }
-                            label="Transparent Background (PNG)"
+                            onChange={(
+                              _,
+                              newValue: {
+                                value: ArtStyleUnion;
+                                label: string;
+                              }[] = []
+                            ) => field.onChange(newValue.map((v) => v.value))}
+                            isOptionEqualToValue={(
+                              option: { value: ArtStyleUnion },
+                              val: { value: ArtStyleUnion }
+                            ) => option.value === val.value}
+                            disabled={
+                              isSubmitting || imageGenerationMutation.isPending
+                            }
+                            filterOptions={artStyleFilterOptions}
+                            renderInput={(params) => (
+                              <TextField
+                                {...params}
+                                label="Art Style (Optional)"
+                                error={!!errors.artStyle}
+                                helperText={errors.artStyle?.message}
+                              />
+                            )}
+                            renderOption={(
+                              props: React.HTMLAttributes<HTMLLIElement>,
+                              option: { value: ArtStyleUnion; label: string },
+                              state: { selected: boolean }
+                            ) => (
+                              <li
+                                {...props}
+                                key={option.value}
+                                style={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                }}
+                              >
+                                {state.selected && (
+                                  <FiCheck
+                                    style={{ marginRight: 8, color: "#1976d2" }}
+                                  />
+                                )}
+                                {option.label}
+                              </li>
+                            )}
+                            clearOnEscape
+                            fullWidth
                           />
                         )}
                       />
                     )}
-
-                    <Controller
-                      name="artStyle"
-                      control={control}
-                      render={({ field }) => (
-                        <Autocomplete
-                          multiple
-                          options={artStyleOptions}
-                          getOptionLabel={(option: {
-                            value: ArtStyleUnion;
-                            label: string;
-                          }) => option.label}
-                          value={
-                            Array.isArray(field.value)
-                              ? artStyleOptions.filter((o) =>
-                                  (field.value ?? []).includes(o.value)
-                                )
-                              : []
-                          }
-                          onChange={(
-                            _,
-                            newValue: {
-                              value: ArtStyleUnion;
-                              label: string;
-                            }[] = []
-                          ) => field.onChange(newValue.map((v) => v.value))}
-                          isOptionEqualToValue={(
-                            option: { value: ArtStyleUnion },
-                            val: { value: ArtStyleUnion }
-                          ) => option.value === val.value}
-                          disabled={
-                            isSubmitting || imageGenerationMutation.isPending
-                          }
-                          filterOptions={artStyleFilterOptions}
-                          renderInput={(params) => (
-                            <TextField
-                              {...params}
-                              label="Art Style (Optional)"
-                              error={!!errors.artStyle}
-                              helperText={errors.artStyle?.message}
-                            />
-                          )}
-                          renderOption={(
-                            props: React.HTMLAttributes<HTMLLIElement>,
-                            option: { value: ArtStyleUnion; label: string },
-                            state: { selected: boolean }
-                          ) => (
-                            <li
-                              {...props}
-                              key={option.value}
-                              style={{ display: "flex", alignItems: "center" }}
-                            >
-                              {state.selected && (
-                                <FiCheck
-                                  style={{ marginRight: 8, color: "#1976d2" }}
-                                />
-                              )}
-                              {option.label}
-                            </li>
-                          )}
-                          clearOnEscape
-                          fullWidth
-                        />
-                      )}
-                    />
-
                     <Controller
                       name="orientation"
                       control={control}
@@ -726,46 +745,53 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
                               </IconButton>
                             </Tooltip>
                           )}
-                          <Tooltip
-                            title={
-                              saveDesignState.isPending
-                                ? "Saving..."
-                                : saveDesignState.isSuccess
-                                ? "Design Saved!"
-                                : "Save Design"
-                            }
-                          >
-                            <span>
-                              <IconButton
-                                disabled={
-                                  saveDesignState.isPending ||
-                                  (saveDesignState.isSuccess &&
-                                    saveDesignState.variables?.image_url ===
-                                      url)
-                                }
-                                onClick={() =>
-                                  saveDesign({
-                                    name:
-                                      watch("prompt") || `AI Design ${idx + 1}`,
-                                    image_url: url,
-                                  })
-                                }
-                                sx={{
-                                  color: "common.white",
-                                  "&:hover": {
-                                    bgcolor: "rgba(255,255,255,0.1)",
-                                  },
-                                }}
-                              >
-                                {saveDesignState.isPending &&
-                                saveDesignState.variables?.image_url === url ? (
-                                  <CircularProgress size={24} color="inherit" />
-                                ) : (
-                                  <FiSave />
-                                )}
-                              </IconButton>
-                            </span>
-                          </Tooltip>
+                          {userFeatures?.canSaveDesign && (
+                            <Tooltip
+                              title={
+                                saveDesignState.isPending
+                                  ? "Saving..."
+                                  : saveDesignState.isSuccess
+                                  ? "Design Saved!"
+                                  : "Save Design"
+                              }
+                            >
+                              <span>
+                                <IconButton
+                                  disabled={
+                                    saveDesignState.isPending ||
+                                    (saveDesignState.isSuccess &&
+                                      saveDesignState.variables?.image_url ===
+                                        url)
+                                  }
+                                  onClick={() =>
+                                    saveDesign({
+                                      name:
+                                        watch("prompt") ||
+                                        `AI Design ${idx + 1}`,
+                                      image_url: url,
+                                    })
+                                  }
+                                  sx={{
+                                    color: "common.white",
+                                    "&:hover": {
+                                      bgcolor: "rgba(255,255,255,0.1)",
+                                    },
+                                  }}
+                                >
+                                  {saveDesignState.isPending &&
+                                  saveDesignState.variables?.image_url ===
+                                    url ? (
+                                    <CircularProgress
+                                      size={24}
+                                      color="inherit"
+                                    />
+                                  ) : (
+                                    <FiSave />
+                                  )}
+                                </IconButton>
+                              </span>
+                            </Tooltip>
+                          )}
                         </Stack>
                       </Box>
                     </Card>

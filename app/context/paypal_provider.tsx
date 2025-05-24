@@ -11,6 +11,7 @@ export default function PaypalProvider({
     disableFunding: "paylater",
     components: ["buttons"],
     enableFunding: "venmo",
+    vault: true,
   };
 
   return (

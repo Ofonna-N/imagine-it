@@ -20,13 +20,13 @@ export default [
       route(
         APP_ROUTES.CHECKOUT_THANK_YOU.slice(1),
         "routes/checkout_thank_you.tsx"
-      ),
-      route(APP_ROUTES.MY_DESIGNS.slice(1), "routes/my_designs.tsx"),
+      ),      
+      route(APP_ROUTES.MY_DESIGNS.slice(1), "routes/my_designs_coming_soon.tsx"),
       route(APP_ROUTES.ORDERS.slice(1), "routes/orders.tsx"),
       route(APP_ROUTES.ACCOUNT.slice(1), "routes/account.tsx"),
       route(
         APP_ROUTES.IMAGE_GENERATION.slice(1),
-        "routes/image_generation.tsx"
+        "routes/image_generation_coming_soon.tsx"
       ),
       route(APP_ROUTES.ORDER_DETAIL.slice(1), "routes/order_detail.tsx"),
     ]),
@@ -52,10 +52,13 @@ export default [
     {
       id: "catalog-product-availability", // Keep ID if needed elsewhere
     }
-  ),
-  route(
+  ),  route(
     API_ROUTES.USER_PROFILE.slice(1), // Use constant and slice leading '/'
     "routes_api/api.user.profile.ts"
+  ),
+  route(
+    API_ROUTES.USER_FEATURES.slice(1), // Use constant and slice leading '/'
+    "routes_api/api.user.features.ts"
   ),
   route(
     API_ROUTES.MOCKUP_TASKS?.slice
@@ -133,4 +136,13 @@ export default [
     API_ROUTES.CREDIT_PACKAGES.slice(1),
     "routes_api/api.credit_packages.ts"
   ),
+  route(
+    API_ROUTES.CANCEL_SUBSCRIPTION.slice(1),
+    "routes_api/api.cancel_subscription.ts"
+  ),
+  route(
+    API_ROUTES.PURCHASE_SUBSCRIPTION.slice(1),
+    "routes_api/api.purchase_subscription.ts"
+  ),
+  route(API_ROUTES.PAYPAL_WEBHOOK.slice(1), "routes_api/api.paypal_webhook.ts"),
 ] satisfies RouteConfig;

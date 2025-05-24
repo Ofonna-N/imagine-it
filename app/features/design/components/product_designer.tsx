@@ -45,6 +45,9 @@ import type {
 } from "~/types/printful/catalog_product_types";
 import type { PrintfulV2MockupGeneratorTaskRequest } from "~/types/printful/mockup_task_types";
 import type { PrintfulV2OrderItem } from "~/types/printful/order_types";
+import useQueryUserProfile from "~/features/user/hooks/use_query_user_profile";
+import { hasUserFeature } from "~/utils/feature_gate";
+import { useQueryUserFeatures } from "~/features/user/hooks/use_query_user_features";
 
 interface ProductDesignerProps {
   open: boolean;
@@ -81,7 +84,6 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
   // --- State for product option selection --- //
   const [selectedCatalogOptionName, setSelectedCatalogOptionName] =
     useState<string>("");
-
   // --- State for selected product options --- //
   // Keep selected options as an array of ProductOption objects
   const [productOptions, setProductOptions] = useState<ProductOption[]>([]);
@@ -97,6 +99,9 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
     designName: string;
     designImageUrl: string;
   } | null>(null);
+
+  // --- Feature flags hook --- //
+  const { data: userFeatures } = useQueryUserFeatures();
 
   // console.log("Product Options:", productOptions);
   // --- Helper: Get required product options (excluding 'notes') --- //
@@ -158,6 +163,17 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
     error: addError,
     reset: resetAdd,
   } = useMutateAddCartItem();
+
+  const { data: userProfile } = useQueryUserProfile();
+
+  // Feature gating for premium styles
+  const canUsePremiumStyles = userProfile
+    ? hasUserFeature(userProfile, "premiumStyles")
+    : false;
+  // Feature gating for batch generation
+  const canBatchGenerate = userProfile
+    ? hasUserFeature(userProfile, "batchGeneration")
+    : false;
 
   // --- Effects --- //
 
@@ -589,7 +605,7 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
                       <FiImage size={48} color="grey" />
                     </Box>
                   )}
-                </Card>
+                </Card>{" "}
                 {/* Action Buttons */}
                 <Stack spacing={1} sx={{ mt: 1 }}>
                   <Button
@@ -600,14 +616,16 @@ const ProductDesigner: React.FC<ProductDesignerProps> = ({
                   >
                     {imageUrl ? "Change Image" : "Generate AI Image"}
                   </Button>
-                  <Button
-                    variant="outlined"
-                    startIcon={<FiCheck />}
-                    onClick={() => setOpenDesignsGallery(true)}
-                    sx={{ minWidth: 120 }}
-                  >
-                    Choose from My Designs
-                  </Button>
+                  {userFeatures?.flags.enableDesignsGallery && (
+                    <Button
+                      variant="outlined"
+                      startIcon={<FiCheck />}
+                      onClick={() => setOpenDesignsGallery(true)}
+                      sx={{ minWidth: 120 }}
+                    >
+                      Choose from My Designs
+                    </Button>
+                  )}
                 </Stack>
               </Box>
               <Typography

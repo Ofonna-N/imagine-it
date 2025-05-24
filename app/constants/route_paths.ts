@@ -31,8 +31,9 @@ export const API_ROUTES = {
   CATALOG_PRODUCTS: "/api/catalog-products",
   CATALOG_CATEGORIES: "/api/catalog-categories", // Added category route
   CATALOG_PRODUCT_AVAILABILITY: (id: string) =>
-    `/api/catalog-products/${id}/availability`,
+    `/api/catalog-products/${id}/availability`,  
   USER_PROFILE: "/api/user/profile",
+  USER_FEATURES: "/api/user/features",
   AUTH: {
     LOGIN: "/api/auth/login",
     SIGNUP: "/api/auth/signup",
@@ -91,6 +92,14 @@ export const API_ROUTES = {
    */
   PURCHASE_CREDITS: "/api/purchase-credits",
   CREDIT_PACKAGES: "/api/credit-packages", // GET: fetch available credit packages
+  // Add API route for purchasing subscription
+  PURCHASE_SUBSCRIPTION: "/api/purchase-subscription",
+  /**
+   * POST /api/cancel-subscription
+   * Resource route for cancelling a user's subscription
+   */
+  CANCEL_SUBSCRIPTION: "/api/cancel-subscription",
+  PAYPAL_WEBHOOK: "/api/paypal-webhook",
 };
 
 // A flattened version combining all routes for easier imports
