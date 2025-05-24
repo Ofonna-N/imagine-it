@@ -38,8 +38,27 @@ import {
 import { useMutateDeleteDesign } from "~/features/design/hooks/use_mutate_delete_design";
 import { useQueryClient } from "@tanstack/react-query";
 import { useMutateSaveDesign } from "~/features/design/hooks/use_mutate_save_design";
+import { useQueryUserFeatures } from "~/features/user/hooks/use_query_user_features";
+import { ComingSoonPage } from "~/components/coming_soon_page";
 
 export default function MyDesigns() {
+  const { data: userFeatures } = useQueryUserFeatures();
+
+  // If My Designs page is not enabled, show coming soon
+  if (!userFeatures?.flags.enableMyDesignsPage) {
+    return (
+      <ComingSoonPage
+        featureName="My Designs"
+        description="Save and manage your custom designs in one place. This feature will be available soon!"
+        estimatedLaunch="Coming in our next release"
+        onNotifyMe={() => {
+          // TODO: Implement notify me functionality
+          console.log("User wants to be notified about My Designs feature");
+        }}
+      />
+    );
+  }
+
   const { data: myDesigns = [], isLoading, isError } = useQueryUserDesigns();
   const [selectedDesign, setSelectedDesign] = useState<null | UserDesign>(null);
   const [openViewDialog, setOpenViewDialog] = useState(false);

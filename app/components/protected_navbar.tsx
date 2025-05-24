@@ -7,10 +7,6 @@ import {
   Drawer,
   IconButton,
   List,
-  ListItem,
-  ListItemButton,
-  ListItemIcon,
-  ListItemText,
   Toolbar,
   Typography,
   Menu,
@@ -18,6 +14,7 @@ import {
   Avatar,
   Stack,
   alpha,
+  ListItemIcon,
 } from "@mui/material";
 import {
   FiMenu,
@@ -32,6 +29,8 @@ import { NAV_ITEMS } from "~/constants/navigation";
 import { APP_ROUTES } from "~/constants/route_paths";
 import { useAuth } from "~/context/auth_provider";
 import { useColorScheme } from "~/context/mui_theme_provider";
+import { NavigationItem } from "~/components/navigation_item";
+import { useQueryUserFeatures } from "~/features/user/hooks/use_query_user_features";
 
 const drawerWidth = 240;
 
@@ -45,6 +44,7 @@ export default function ProtectedNavbar() {
   const { signOut } = useAuth();
   const { mode, setMode } = useColorScheme();
   const cartItemsCount = 0; // Placeholder for cart items count
+  const { data: userFeatures } = useQueryUserFeatures();
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
@@ -97,107 +97,25 @@ export default function ProtectedNavbar() {
             <FiImage />
           </Box>
           Imagine It
-        </Typography>
+        </Typography>{" "}
       </Toolbar>
       <Divider sx={{ my: -1, backgroundColor: "divider" }} />
       <List sx={{ px: 2, py: 1 }}>
-        {NAV_ITEMS.map((item) => (
-          <ListItem key={item.text} disablePadding sx={{ mb: 0.5 }}>
-            <ListItemButton
-              component={Link}
+        {NAV_ITEMS.map((item) => {
+          // Check if navigation item should be shown based on feature flags
+          const isComingSoon =
+            item.featureFlag && !userFeatures?.flags[item.featureFlag];
+
+          return (
+            <NavigationItem
+              key={item.text}
               to={item.path}
-              selected={
-                // Use APP_ROUTES for path comparison
-                location.pathname === item.path ||
-                (item.path !== APP_ROUTES.HOME &&
-                  location.pathname.startsWith(item.path))
-              }
-              sx={[
-                {
-                  borderRadius: 0,
-                  py: 1.75,
-                  borderLeft: "3px solid transparent",
-                  transition: "all 0.2s ease",
-                  position: "relative",
-                  "&::before": {
-                    content: '""',
-                    position: "absolute",
-                    left: 0,
-                    top: 0,
-                    bottom: 0,
-                    width: 0,
-                    backgroundColor: "primary.main",
-                    transition: "width 0.2s ease",
-                  },
-                  "&:hover": {
-                    backgroundColor: "rgba(0,0,0,0.04)",
-                    "&::before": { width: "3px" },
-                    "& .MuiListItemIcon-root": {
-                      color: "primary.light",
-                      transform: "translateX(2px)",
-                    },
-                  },
-                  "&.Mui-selected": {
-                    backgroundColor: (theme) =>
-                      alpha(theme.palette.primary.main, 0.08),
-                    borderLeft: "none",
-                    "&::before": { width: "3px" },
-                    "&:hover": {
-                      backgroundColor: (theme) =>
-                        alpha(theme.palette.primary.main, 0.12),
-                    },
-                    "& .MuiListItemIcon-root": {
-                      color: "primary.main",
-                      transform: "translateX(2px) scale(1.1)",
-                    },
-                    "& .MuiListItemText-primary": {
-                      fontWeight: 600,
-                      color: "primary.main",
-                    },
-                  },
-                },
-                (theme) =>
-                  theme.applyStyles("dark", {
-                    "&:hover": {
-                      backgroundColor: "rgba(255,255,255,0.08)",
-                    },
-                    "&.Mui-selected": {
-                      backgroundColor: alpha(theme.palette.primary.main, 0.16),
-                      "&:hover": {
-                        backgroundColor: alpha(
-                          theme.palette.primary.main,
-                          0.24
-                        ),
-                      },
-                    },
-                  }),
-              ]}
-            >
-              <ListItemIcon
-                sx={{
-                  minWidth: 40,
-                  color: "text.secondary",
-                  transition: "all 0.2s ease",
-                  fontSize: "1.25rem",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                {item.icon}
-              </ListItemIcon>
-              <ListItemText
-                primary={item.text}
-                sx={{
-                  "& .MuiTypography-root": {
-                    fontSize: "0.95rem",
-                    transition: "font-weight 0.2s ease, color 0.2s ease",
-                  },
-                }}
-              />
-            </ListItemButton>
-          </ListItem>
-        ))}
+              icon={item.icon}
+              text={item.text}
+              isComingSoon={isComingSoon}
+            />
+          );
+        })}
       </List>
     </Box>
   );

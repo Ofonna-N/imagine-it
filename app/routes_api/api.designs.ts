@@ -7,12 +7,25 @@ import {
   deleteDesignByIdAndUser,
 } from "~/db/queries/designs_queries";
 import { getStoragePath } from "../utils/storage_path";
+import { getAllFeatureFlags } from "~/config/feature_flags";
 
 /**
  * GET /api/designs
  * Returns the list of designs for the authenticated user
  */
 export async function loader({ request }: { request: Request }) {
+  // ✅ SERVER-SIDE FEATURE FLAG VALIDATION
+  const featureFlags = getAllFeatureFlags();
+  if (!featureFlags.enableDesignSaving) {
+    return new Response(
+      JSON.stringify({ designs: [], error: "Design saving is currently disabled" }),
+      {
+        status: 403,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+  }
+
   const { headers, supabase } = createSupabaseServerClient({ request });
   const url = new URL(request.url);
   const designId = url.searchParams.get("designId");
@@ -63,8 +76,19 @@ export async function loader({ request }: { request: Request }) {
  * POST /api/designs - Saves a new design for the authenticated user
  * DELETE /api/designs - Deletes a design for the authenticated user
  */
-export async function action({ request }: { request: Request }) {
-  if (request.method === "POST") {
+export async function action({ request }: { request: Request }) {  if (request.method === "POST") {
+    // ✅ SERVER-SIDE FEATURE FLAG VALIDATION
+    const featureFlags = getAllFeatureFlags();
+    if (!featureFlags.enableDesignSaving) {
+      return new Response(
+        JSON.stringify({ error: "Design saving is currently disabled" }),
+        {
+          status: 403,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
     // Existing POST logic
     const { headers, supabase } = createSupabaseServerClient({ request });
     const {

@@ -6,6 +6,7 @@ import {
   deductUserCredits,
 } from "~/db/queries/user_profiles_queries"; // Import new queries
 import type { ModelKey } from "~/services/image_generation/model_registry";
+import { getAllFeatureFlags } from "~/config/feature_flags";
 
 // Define credit costs per model
 // 1 credit = $0.06 (example pricing)
@@ -35,11 +36,21 @@ export async function action({ request }: { request: Request }) {
       status: 401,
       headers: { "Content-Type": "application/json" },
     });
-  }
-
-  try {
+  }  try {
     const body = (await request.json()) as GenerateImageInputPayload;
     console.log("Received request body for image generation:", body);
+
+    // ✅ SERVER-SIDE FEATURE FLAG VALIDATION
+    const featureFlags = getAllFeatureFlags();
+    if (!featureFlags.enableImageGeneration) {
+      return new Response(
+        JSON.stringify({ error: "Image generation is currently disabled" }),
+        {
+          status: 403,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
 
     if (!body.prompt) {
       return new Response(JSON.stringify({ error: "Prompt is required" }), {

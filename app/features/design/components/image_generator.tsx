@@ -61,6 +61,7 @@ import StandardModal from "../../../components/standard_modal";
 import { getSubscriptionFeatures } from "~/config/subscription_tiers";
 import { canUserAccessFeature } from "~/utils/feature_gate";
 import useQueryUserProfile from "~/features/user/hooks/use_query_user_profile";
+import { useQueryUserFeatures } from "~/features/user/hooks/use_query_user_features";
 
 /**
  * Props for ImageGenerator component
@@ -118,11 +119,11 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
     error: profileError,
     refetch: refetchUserProfile,
   } = useQueryUserProfile();
+  const { data: userFeatures } = useQueryUserFeatures();
   const userTier = userProfile?.activeSubscriptionTier ?? "free";
   const features = getSubscriptionFeatures(userTier);
   const creditsUsed =
     features.artGenCreditsPerMonth - (userProfile?.credits ?? 0);
-
   const {
     control,
     handleSubmit,
@@ -133,7 +134,9 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
     resolver: zodResolver(imageGenerationSchema),
     defaultValues: {
       prompt: "",
-      selectedModel: "advanced",
+      selectedModel: userFeatures?.flags.enableMultipleModels
+        ? "advanced"
+        : "basic",
       isTransparent: false,
       artStyle: [], // Now an array
       orientation: "square",
@@ -154,6 +157,14 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
       setErrorDialogOpen(true);
     }
   }, [imageGenerationMutation.isError]);
+
+  // Reset model selection if advanced models are disabled
+  React.useEffect(() => {
+    if (userFeatures && !userFeatures.flags.enableMultipleModels) {
+      setValue("selectedModel", "basic");
+      setValue("isTransparent", false);
+    }
+  }, [userFeatures, setValue]);
 
   // Only check feature gate if userProfile is loaded
   if (isProfileLoading) {
@@ -389,6 +400,7 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
                         control={control}
                         render={({ field }) => (
                           <Box sx={{ width: "100%" }}>
+                            {" "}
                             <ToggleButtonGroup
                               {...field}
                               exclusive
@@ -443,37 +455,40 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
                                   </Typography>
                                 </Stack>
                               </ToggleButton>
-                              <ToggleButton
-                                value="advanced"
-                                aria-label="Advanced model"
-                                sx={{
-                                  flex: "1 1 0",
-                                  minWidth: 0,
-                                  justifyContent: "center",
-                                  p: 1.5,
-                                }}
-                              >
-                                <Stack
-                                  direction="column"
-                                  alignItems="center"
-                                  spacing={0.5}
-                                  width="100%"
+                              {userFeatures?.flags.enableMultipleModels && (
+                                <ToggleButton
+                                  value="advanced"
+                                  aria-label="Advanced model"
+                                  sx={{
+                                    flex: "1 1 0",
+                                    minWidth: 0,
+                                    justifyContent: "center",
+                                    p: 1.5,
+                                  }}
                                 >
-                                  <FiStar size={22} />
-                                  <Typography
-                                    variant="body2"
-                                    sx={{ fontWeight: 500 }}
+                                  <Stack
+                                    direction="column"
+                                    alignItems="center"
+                                    spacing={0.5}
+                                    width="100%"
                                   >
-                                    Advanced
-                                  </Typography>
-                                  <Typography
-                                    variant="caption"
-                                    color="text.secondary"
-                                  >
-                                    {MODEL_CREDIT_COSTS["gpt-image-1"]} credits
-                                  </Typography>
-                                </Stack>
-                              </ToggleButton>
+                                    <FiStar size={22} />
+                                    <Typography
+                                      variant="body2"
+                                      sx={{ fontWeight: 500 }}
+                                    >
+                                      Advanced
+                                    </Typography>
+                                    <Typography
+                                      variant="caption"
+                                      color="text.secondary"
+                                    >
+                                      {MODEL_CREDIT_COSTS["gpt-image-1"]}{" "}
+                                      credits
+                                    </Typography>
+                                  </Stack>
+                                </ToggleButton>
+                              )}
                             </ToggleButtonGroup>
                           </Box>
                         )}
@@ -488,7 +503,6 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
                         </Typography>
                       )}
                     </FormControl>
-
                     {/* Show credits and buy button */}
                     <Box
                       sx={{
@@ -520,95 +534,98 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
                         });
                         refetchUserProfile();
                       }}
-                    />
-
-                    {selectedModel === "advanced" && (
+                    />{" "}
+                    {selectedModel === "advanced" &&
+                      userFeatures?.flags.enableAdvancedImageOptions && (
+                        <Controller
+                          name="isTransparent"
+                          control={control}
+                          render={({ field }) => (
+                            <FormControlLabel
+                              control={
+                                <Switch
+                                  {...field}
+                                  checked={field.value ?? false} // Ensure checked is always boolean
+                                  disabled={
+                                    isSubmitting ||
+                                    imageGenerationMutation.isPending
+                                  }
+                                />
+                              }
+                              label="Transparent Background (PNG)"
+                            />
+                          )}
+                        />
+                      )}{" "}
+                    {userFeatures?.flags.enableArtStyles && (
                       <Controller
-                        name="isTransparent"
+                        name="artStyle"
                         control={control}
                         render={({ field }) => (
-                          <FormControlLabel
-                            control={
-                              <Switch
-                                {...field}
-                                checked={field.value ?? false} // Ensure checked is always boolean
-                                disabled={
-                                  isSubmitting ||
-                                  imageGenerationMutation.isPending
-                                }
-                              />
+                          <Autocomplete
+                            multiple
+                            options={artStyleOptions}
+                            getOptionLabel={(option: {
+                              value: ArtStyleUnion;
+                              label: string;
+                            }) => option.label}
+                            value={
+                              Array.isArray(field.value)
+                                ? artStyleOptions.filter((o) =>
+                                    (field.value ?? []).includes(o.value)
+                                  )
+                                : []
                             }
-                            label="Transparent Background (PNG)"
+                            onChange={(
+                              _,
+                              newValue: {
+                                value: ArtStyleUnion;
+                                label: string;
+                              }[] = []
+                            ) => field.onChange(newValue.map((v) => v.value))}
+                            isOptionEqualToValue={(
+                              option: { value: ArtStyleUnion },
+                              val: { value: ArtStyleUnion }
+                            ) => option.value === val.value}
+                            disabled={
+                              isSubmitting || imageGenerationMutation.isPending
+                            }
+                            filterOptions={artStyleFilterOptions}
+                            renderInput={(params) => (
+                              <TextField
+                                {...params}
+                                label="Art Style (Optional)"
+                                error={!!errors.artStyle}
+                                helperText={errors.artStyle?.message}
+                              />
+                            )}
+                            renderOption={(
+                              props: React.HTMLAttributes<HTMLLIElement>,
+                              option: { value: ArtStyleUnion; label: string },
+                              state: { selected: boolean }
+                            ) => (
+                              <li
+                                {...props}
+                                key={option.value}
+                                style={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                }}
+                              >
+                                {state.selected && (
+                                  <FiCheck
+                                    style={{ marginRight: 8, color: "#1976d2" }}
+                                  />
+                                )}
+                                {option.label}
+                              </li>
+                            )}
+                            clearOnEscape
+                            fullWidth
                           />
                         )}
                       />
                     )}
-
-                    <Controller
-                      name="artStyle"
-                      control={control}
-                      render={({ field }) => (
-                        <Autocomplete
-                          multiple
-                          options={artStyleOptions}
-                          getOptionLabel={(option: {
-                            value: ArtStyleUnion;
-                            label: string;
-                          }) => option.label}
-                          value={
-                            Array.isArray(field.value)
-                              ? artStyleOptions.filter((o) =>
-                                  (field.value ?? []).includes(o.value)
-                                )
-                              : []
-                          }
-                          onChange={(
-                            _,
-                            newValue: {
-                              value: ArtStyleUnion;
-                              label: string;
-                            }[] = []
-                          ) => field.onChange(newValue.map((v) => v.value))}
-                          isOptionEqualToValue={(
-                            option: { value: ArtStyleUnion },
-                            val: { value: ArtStyleUnion }
-                          ) => option.value === val.value}
-                          disabled={
-                            isSubmitting || imageGenerationMutation.isPending
-                          }
-                          filterOptions={artStyleFilterOptions}
-                          renderInput={(params) => (
-                            <TextField
-                              {...params}
-                              label="Art Style (Optional)"
-                              error={!!errors.artStyle}
-                              helperText={errors.artStyle?.message}
-                            />
-                          )}
-                          renderOption={(
-                            props: React.HTMLAttributes<HTMLLIElement>,
-                            option: { value: ArtStyleUnion; label: string },
-                            state: { selected: boolean }
-                          ) => (
-                            <li
-                              {...props}
-                              key={option.value}
-                              style={{ display: "flex", alignItems: "center" }}
-                            >
-                              {state.selected && (
-                                <FiCheck
-                                  style={{ marginRight: 8, color: "#1976d2" }}
-                                />
-                              )}
-                              {option.label}
-                            </li>
-                          )}
-                          clearOnEscape
-                          fullWidth
-                        />
-                      )}
-                    />
-
                     <Controller
                       name="orientation"
                       control={control}
@@ -753,46 +770,53 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
                               </IconButton>
                             </Tooltip>
                           )}
-                          <Tooltip
-                            title={
-                              saveDesignState.isPending
-                                ? "Saving..."
-                                : saveDesignState.isSuccess
-                                ? "Design Saved!"
-                                : "Save Design"
-                            }
-                          >
-                            <span>
-                              <IconButton
-                                disabled={
-                                  saveDesignState.isPending ||
-                                  (saveDesignState.isSuccess &&
-                                    saveDesignState.variables?.image_url ===
-                                      url)
-                                }
-                                onClick={() =>
-                                  saveDesign({
-                                    name:
-                                      watch("prompt") || `AI Design ${idx + 1}`,
-                                    image_url: url,
-                                  })
-                                }
-                                sx={{
-                                  color: "common.white",
-                                  "&:hover": {
-                                    bgcolor: "rgba(255,255,255,0.1)",
-                                  },
-                                }}
-                              >
-                                {saveDesignState.isPending &&
-                                saveDesignState.variables?.image_url === url ? (
-                                  <CircularProgress size={24} color="inherit" />
-                                ) : (
-                                  <FiSave />
-                                )}
-                              </IconButton>
-                            </span>
-                          </Tooltip>
+                          {userFeatures?.canSaveDesign && (
+                            <Tooltip
+                              title={
+                                saveDesignState.isPending
+                                  ? "Saving..."
+                                  : saveDesignState.isSuccess
+                                  ? "Design Saved!"
+                                  : "Save Design"
+                              }
+                            >
+                              <span>
+                                <IconButton
+                                  disabled={
+                                    saveDesignState.isPending ||
+                                    (saveDesignState.isSuccess &&
+                                      saveDesignState.variables?.image_url ===
+                                        url)
+                                  }
+                                  onClick={() =>
+                                    saveDesign({
+                                      name:
+                                        watch("prompt") ||
+                                        `AI Design ${idx + 1}`,
+                                      image_url: url,
+                                    })
+                                  }
+                                  sx={{
+                                    color: "common.white",
+                                    "&:hover": {
+                                      bgcolor: "rgba(255,255,255,0.1)",
+                                    },
+                                  }}
+                                >
+                                  {saveDesignState.isPending &&
+                                  saveDesignState.variables?.image_url ===
+                                    url ? (
+                                    <CircularProgress
+                                      size={24}
+                                      color="inherit"
+                                    />
+                                  ) : (
+                                    <FiSave />
+                                  )}
+                                </IconButton>
+                              </span>
+                            </Tooltip>
+                          )}
                         </Stack>
                       </Box>
                     </Card>
