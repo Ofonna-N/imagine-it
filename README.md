@@ -4,6 +4,7 @@
 (Click the thumbnail to watch the full demo)
 
 [![Imagine It SaaS Demo Video](https://img.youtube.com/vi/xE40Yoq07ow/hqdefault.jpg)](https://www.youtube.com/watch?v=xE40Yoq07ow)
+
 An innovative e-commerce platform that lets you browse products and customize them with your own AI-generated designs before purchasing.
 
 ## 🚀 Features
