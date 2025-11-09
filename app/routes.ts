@@ -21,12 +21,12 @@ export default [
         APP_ROUTES.CHECKOUT_THANK_YOU.slice(1),
         "routes/checkout_thank_you.tsx"
       ),      
-      route(APP_ROUTES.MY_DESIGNS.slice(1), "routes/my_designs_coming_soon.tsx"),
+      route(APP_ROUTES.MY_DESIGNS.slice(1), "routes/my_designs.tsx"),
       route(APP_ROUTES.ORDERS.slice(1), "routes/orders.tsx"),
       route(APP_ROUTES.ACCOUNT.slice(1), "routes/account.tsx"),
       route(
         APP_ROUTES.IMAGE_GENERATION.slice(1),
-        "routes/image_generation_coming_soon.tsx"
+        "routes/image_generation.tsx"
       ),
       route(APP_ROUTES.ORDER_DETAIL.slice(1), "routes/order_detail.tsx"),
     ]),

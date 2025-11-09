@@ -29,12 +29,12 @@ export interface FeatureFlags {
 // MVP feature flags - disable advanced features, keep core functionality
 export const FEATURE_FLAGS: FeatureFlags = {
   // Disabled for MVP
-  enableDesignSaving: false,
-  enableDesignsGallery: false,
-  enableDesignPlayground: false,
+  enableDesignSaving: true,
+  enableDesignsGallery: true,
+  enableDesignPlayground: true,
   enableSubscriptionPlans: false,
-  enableMyDesignsPage: false,
-  enableAdvancedImageOptions: false,
+  enableMyDesignsPage: true,
+  enableAdvancedImageOptions: true,
   enablePremiumStyles: false,
   enableBatchGeneration: false,
   enableArtStyles: false,
